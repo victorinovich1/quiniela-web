@@ -44,6 +44,7 @@ export default function Navbar({
               <Link href="/predictions" className={linkClass('/predictions')}>Pronósticos</Link>
               <Link href="/leaderboard" className={linkClass('/leaderboard')}>Ranking</Link>
               <Link href="/entries" className={linkClass('/entries')}>Mis jugadas</Link>
+              <Link href="/profile" className={linkClass('/profile')}>Perfil</Link>
               {isAdmin && (
                 <Link href="/admin" className={linkClass('/admin')}>Admin</Link>
               )}

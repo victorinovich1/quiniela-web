@@ -22,6 +22,7 @@
 
 ## Completados (histórico)
 
+- [x] **Página de Perfil de Usuario** (2026-05-04): Agregada ruta `/profile` con formulario para editar nombre de pantalla y cambiar contraseña. Accesible desde Navbar (desktop) y BottomNav (mobile).
 - [x] **Banderas en Admin** (2026-05-04): `AdminClient.tsx` muestra `<Flag />` junto a todos los nombres de equipos en las pestañas Equipos y Resultados. Emoji de banderas removido de la UI.
 - [x] **Botón '+ Quiniela'** (2026-05-04): En `/entries`, el botón de creación cambió de "Crear jugada" a "+ Quiniela" con descripción explicativa.
 - [x] **Bloqueo de eliminación de entries** (2026-05-04): Migración `018_lock_entries_deletion.sql` aplicada. RLS de `entries` DELETE bloquea a participantes tras el inicio del primer partido. Admin conserva permiso total.

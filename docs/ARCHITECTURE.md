@@ -5,7 +5,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                       USUARIO (browser)                      │
-│  [Pronósticos]  [Ranking]  [Mis jugadas]  [Admin]            │
+│  [Pronósticos]  [Ranking]  [Mis jugadas]  [Perfil]  [Admin]  │
 └──────────────────────────┬──────────────────────────────────┘
                            │ HTTPS
                            ▼
@@ -72,6 +72,7 @@
 - `/predictions` → requiere autenticación
 - `/leaderboard` → requiere autenticación
 - `/entries` → requiere autenticación
+- `/profile` → requiere autenticación (gestión de perfil y cambio de contraseña)
 - `/admin` → requiere autenticación + rol admin (validado en el server component también)
 
 Si no autenticado, redirige a `/login?next=<ruta_original>`.

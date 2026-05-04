@@ -2,6 +2,7 @@
 
 import { useState, useEffect, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 export default function ResetPasswordPage() {
@@ -108,9 +109,9 @@ export default function ResetPasswordPage() {
             <div className="bg-danger/15 border border-danger/40 text-danger rounded-lg p-3 text-sm">
               {error}
             </div>
-            <a href="/forgot-password" className="btn btn-outline w-full text-center block">
+            <Link href="/forgot-password" className="btn btn-outline w-full text-center block">
               Solicitar nuevo enlace
-            </a>
+            </Link>
           </div>
         ) : success ? (
           <div className="bg-fifaGreen/15 border border-fifaGreen/40 rounded-lg p-4">

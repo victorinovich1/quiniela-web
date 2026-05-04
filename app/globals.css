@@ -8,6 +8,10 @@
   --color-surface: #161c44;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 html, body {
   background: var(--color-bg-deep);
   color: #ffffff;

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { computeGroupStandings } from '@/lib/standings'
 import Flag from '@/components/Flag'
@@ -187,7 +188,7 @@ export default function PredictionsClient({
               <option key={e.id} value={e.id} className="bg-navy-deepest text-white">{e.alias}</option>
             ))}
           </select>
-          <a href="/entries" className="text-xs text-fifaGreen hover:text-fifaGreen-light whitespace-nowrap font-bold uppercase tracking-wider">Gestionar</a>
+          <Link href="/entries" className="text-xs text-fifaGreen hover:text-fifaGreen-light whitespace-nowrap font-bold uppercase tracking-wider">Gestionar</Link>
         </div>
       ) : (
         <div className="mb-4 flex items-center justify-between text-sm">
@@ -195,7 +196,7 @@ export default function PredictionsClient({
             <span className="label-up">Jugada</span>{' '}
             <span className="font-bold text-white uppercase">{activeEntry?.alias}</span>
           </span>
-          <a href="/entries" className="text-xs text-fifaGreen hover:text-fifaGreen-light font-bold uppercase tracking-wider">+ Nueva</a>
+          <Link href="/entries" className="text-xs text-fifaGreen hover:text-fifaGreen-light font-bold uppercase tracking-wider">+ Nueva</Link>
         </div>
       )}
 

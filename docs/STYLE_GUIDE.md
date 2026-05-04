@@ -192,9 +192,92 @@ export default function MyPageClient({ data }: Props) {
 }
 ```
 
-**Contenedor base:**
-El `layout.tsx` ya define el contenedor principal con `max-w-5xl mx-auto px-4 py-6`.
-No añadas contenedores adicionales a menos que necesites un ancho específico menor (ej: formularios con `max-w-2xl`).
+### Contenedor estándar (obligatorio)
+
+**⚠️ REGLA CRÍTICA:** Todas las páginas DEBEN usar el contenedor global definido en `layout.tsx`. **NO** agregues contenedores `max-w-*` adicionales en el JSX de las páginas.
+
+**Contenedor global:**
+El `layout.tsx` define el contenedor principal:
+```tsx
+<main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-6">
+  {children}
+</main>
+```
+
+**Qué significa:**
+- `max-w-7xl` — Ancho máximo de 80rem (1280px)
+- `mx-auto` — Centrado horizontal
+- `px-4 sm:px-6 lg:px-8` — Padding horizontal responsivo (16px → 24px → 32px)
+- `py-6` — Padding vertical de 1.5rem
+- `pb-24 md:pb-6` — Padding bottom extra en mobile para el BottomNav
+
+**El Navbar también usa el mismo contenedor:**
+```tsx
+<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+```
+
+**Excepción única:**
+Solo usa contenedores más pequeños (`max-w-2xl`, `max-w-3xl`) para **elementos específicos** dentro de una página, como:
+- Formularios de login/signup
+- Cards centrados
+- Texto largo que necesita líneas más cortas para legibilidad
+
+**Ejemplo correcto:**
+```tsx
+// ❌ MAL — duplica contenedor
+export default function MyPage() {
+  return (
+    <div className="max-w-5xl mx-auto px-4">  {/* NO HACER */}
+      <PageHeader title="..." />
+    </div>
+  )
+}
+
+// ✅ BIEN — usa contenedor del layout
+export default function MyPage() {
+  return (
+    <div>
+      <PageHeader title="..." />
+      {/* Contenido usa automáticamente el max-w-7xl del layout */}
+    </div>
+  )
+}
+
+// ✅ BIEN — contenedor específico para un elemento
+export default function LoginPage() {
+  return (
+    <div className="max-w-md mx-auto">  {/* OK para centrar form */}
+      <form>...</form>
+    </div>
+  )
+}
+```
+
+### Estabilización del layout (prevenir saltos visuales)
+
+**Problema:** Al navegar entre páginas con distinto contenido (cortas vs largas), la scrollbar aparece/desaparece causando un "salto" lateral del contenido.
+
+**Solución implementada en `globals.css`:**
+```css
+html {
+  scrollbar-gutter: stable;
+}
+```
+
+Esto **reserva espacio para la scrollbar siempre**, incluso en páginas cortas, eliminando el layout shift.
+
+**Navegación sin recarga:**
+- **SIEMPRE** usa `<Link>` de `next/link` para navegación interna
+- **NUNCA** uses `<a href="...">` para rutas internas
+
+```tsx
+// ❌ MAL — recarga la página completa
+<a href="/predictions">Pronósticos</a>
+
+// ✅ BIEN — navegación instantánea sin recarga
+import Link from 'next/link'
+<Link href="/predictions">Pronósticos</Link>
+```
 
 **Espaciado:**
 - Entre secciones: `space-y-6` o `mb-6`

@@ -2,6 +2,18 @@
 
 Este archivo describe el proyecto, sus convenciones y las reglas que cualquier agente IA debe respetar al modificar este código.
 
+## Reglas de Brevedad (MÁXIMA PRIORIDAD)
+
+**EDICIONES QUIRÚRGICAS:** TERMINANTEMENTE PROHIBIDO reescribir archivos completos si solo cambias pocas líneas. Usa herramientas de edición precisa (`replace_string_in_file`, `multi_replace_string_in_file`) sobre bloques afectados únicamente.
+
+**EXPLICACIONES MINIMALISTAS:** No expliques conceptos básicos de programación ni resumas lo que vas a hacer antes de hacerlo. Ve directo a la ejecución. Solo explica si hay riesgo crítico de seguridad.
+
+**SIN FLUFF:** Elimina frases de cortesía, introducciones largas, descripciones obvias, emojis decorativos. Sé directo y técnico.
+
+**RESPUESTAS CONCISAS:** Tras realizar un cambio, confirma con un resumen de 1-2 líneas: qué archivos tocaste y qué se modificó. Nada más.
+
+**PRIORIDAD DE DIFF:** Si una respuesta de código es muy larga, muestra solo las partes modificadas indicando el contexto mínimo.
+
 ## Qué es este proyecto
 
 Una **quiniela web del Mundial 2026** construida en Next.js 14 (App Router) + Supabase. Permite a un grupo cerrado (con invitaciones) pronosticar todos los partidos del torneo. Cada usuario puede crear varias "jugadas" (entries) con alias distintos, cada una con su cuota.

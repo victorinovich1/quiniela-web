@@ -3,6 +3,18 @@
 Proyecto: quiniela web del Mundial 2026. Next.js 14 App Router + Supabase. El propietario NO programa; mantén las cosas simples y bien documentadas.
 UI en español. Comentarios y docs en español. Variables/tipos en inglés.
 
+## Reglas de Brevedad (CRÍTICO)
+
+**EDICIONES QUIRÚRGICAS:** PROHIBIDO reescribir archivos completos. Usa `replace_string_in_file` o `multi_replace_string_in_file` con contexto mínimo (3-5 líneas antes/después).
+
+**EXPLICACIONES MINIMALISTAS:** No expliques conceptos básicos. Ve directo a la ejecución. Solo explica si hay riesgo crítico de seguridad.
+
+**SIN FLUFF:** Elimina frases de cortesía, introducciones largas, emojis excesivos. Sé directo.
+
+**RESPUESTAS CONCISAS:** Tras un cambio, confirma con 1-2 líneas: qué archivos tocaste y resultado.
+
+**PRIORIDAD DE DIFF:** Si el código es largo, muestra solo las partes modificadas con contexto mínimo.
+
 ## Stack (NO cambiar sin razón fuerte)
 
 - next 14.2.15 (App Router — NO migrar a 15+)

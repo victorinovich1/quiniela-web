@@ -144,6 +144,26 @@ Componente clave: `FifaMatchRow` en `app/predictions/PredictionsClient.tsx`.
 - Clase base: `score-input` (definida en `globals.css`)
 - Siempre con `inputMode="numeric"` para teclado numérico en móvil
 
+**Inputs y selects estándar:**
+- Clase base: `.input` (definida en `globals.css`)
+- Aplica a `<input>`, `<textarea>` y `<select>`
+- Estilos: fondo oscuro `bg-white/5`, borde `border-white/15`, texto `text-white`
+- Las opciones (`<option>`) heredan visibilidad del navegador
+
+```tsx
+<input type="text" className="input" />
+<select className="input">
+  <option value="1">Opción 1</option>
+  <option value="2">Opción 2</option>
+</select>
+```
+
+**Para ajustes de tamaño:** Combinar `.input` con clases de Tailwind:
+```tsx
+<select className="input text-xs">  {/* Select pequeño */}
+<input className="input w-20" />    {/* Input angosto */}
+```
+
 ### Banderas
 
 Componente `<Flag team={team} size={N} />`. Carga PNG de flagcdn.com.

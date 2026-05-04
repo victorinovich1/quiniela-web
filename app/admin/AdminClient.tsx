@@ -235,7 +235,7 @@ function MatchesTab({ initialMatches, teams }: { initialMatches: Match[]; teams:
                   value={m.status}
                   onChange={(e) => update(m.id, { status: e.target.value as Match['status'] })}
                   onBlur={() => save(m)}
-                  className="text-xs border rounded px-2 py-1"
+                  className="input text-xs"
                 >
                   <option value="scheduled">Programado</option>
                   <option value="live">En vivo</option>
@@ -592,7 +592,7 @@ function ParticipantsTab({
                   <select
                     value={p.role}
                     onChange={(e) => setRole(p, e.target.value as 'admin' | 'participant')}
-                    className="text-xs border rounded px-2 py-1"
+                    className="input text-xs"
                   >
                     <option value="participant">Participante</option>
                     <option value="admin">Admin</option>

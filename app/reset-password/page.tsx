@@ -17,27 +17,48 @@ export default function ResetPasswordPage() {
     // Cuando el usuario llega aquí desde el email, Supabase establece una sesión
     // de "recovery" automáticamente. Esperamos a confirmarla.
     const supabase = createClient()
-    supabase.auth.getSession().then(({ data }) => {
+    
+    // Verificar sesión actual
+    supabase.auth.getSession().then(({ data, error: sessionError }) => {
+      if (sessionError) {
+        console.error('Error getting session:', sessionError)
+        setError('Error al verificar la sesión. Intenta solicitar un nuevo enlace.')
+        return
+      }
+      
       const hasSession = !!data.session
       setReady(hasSession)
       
-      // Si no hay sesión después de un timeout, mostramos error
+      // Si no hay sesión, esperar 3 segundos por si está en proceso
       if (!hasSession) {
-        setTimeout(() => {
-          if (!ready) {
-            setError('El enlace ha expirado o es inválido. Solicita uno nuevo desde "Olvidé mi contraseña".')
-          }
+        const timer = setTimeout(() => {
+          supabase.auth.getSession().then(({ data: retryData }) => {
+            if (!retryData.session) {
+              setError('El enlace ha expirado o es inválido. Solicita uno nuevo desde "Olvidé mi contraseña".')
+            } else {
+              setReady(true)
+            }
+          })
         }, 3000)
+        return () => clearTimeout(timer)
       }
     })
 
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+    // Escuchar eventos de autenticación
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setReady(true)
+        setError(null)
+      }
+      if (event === 'SIGNED_IN' && session) {
         setReady(true)
         setError(null)
       }
     })
-    return () => sub.subscription.unsubscribe()
+    
+    return () => {
+      sub.subscription.unsubscribe()
+    }
   }, [])
 
   async function onSubmit(e: FormEvent) {

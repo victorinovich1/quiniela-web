@@ -19,8 +19,15 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Redirect to a small client page so we can redeem any pending invite from
-  // localStorage as well (in case it wasn't passed as ?invite=).
+  // Si el destino es reset-password, ir directo (flujo de recuperación de contraseña)
+  // No necesita pasar por /auth/finish porque no hay invitación que canjear
+  if (next === '/reset-password') {
+    const target = new URL(next, request.url)
+    return NextResponse.redirect(target)
+  }
+
+  // Para otros casos (signup con invitación), redirect to /auth/finish
+  // para canjear invitación desde localStorage
   const target = new URL('/auth/finish', request.url)
   if (invite) target.searchParams.set('invite', invite)
   target.searchParams.set('next', next)

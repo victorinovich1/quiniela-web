@@ -50,6 +50,23 @@
 3. Cookie de sesión se setea automáticamente
 4. Redirect a `/predictions`
 
+### Recuperación de contraseña
+1. Usuario va a `/forgot-password` (o admin usa botón en `/admin` → Participantes)
+2. Ingresa email → `supabase.auth.resetPasswordForEmail(email, { redirectTo: origin + '/auth/callback?next=/reset-password' })`
+3. Supabase envía email vía SMTP (Resend) con enlace que contiene código de un solo uso
+4. Usuario hace clic en enlace del email → `/auth/callback?code=XXX&next=/reset-password`
+5. Callback ejecuta `supabase.auth.exchangeCodeForSession(code)` → crea sesión temporal de recovery
+6. Callback redirige a `/reset-password`
+7. Página verifica sesión activa (evento `PASSWORD_RECOVERY`)
+8. Usuario ingresa nueva contraseña → `supabase.auth.updateUser({ password: newPassword })`
+9. Contraseña actualizada, redirect a `/predictions`
+
+**Notas:**
+- Enlace de recuperación expira en 1 hora
+- Si Resend está en plan free, emails solo llegan al correo verificado (el admin puede enviarlos manualmente)
+- El código se intercambia por sesión en server-side (seguro)
+- La sesión de recovery permite solo cambiar la contraseña, no acceso completo
+
 ### Pronosticar
 1. `/predictions` (server component) carga del usuario:
    - Sus entries

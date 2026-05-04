@@ -77,6 +77,38 @@
 
 Si no autenticado, redirige a `/login?next=<ruta_original>`.
 
+## Capacidades administrativas
+
+El panel `/admin` ofrece control completo del sistema al rol `admin`:
+
+### Gestión de Equipos
+- Editar nombres de los 48 equipos según el sorteo oficial
+- Ver banderas automáticas vía flagcdn.com (iso_code)
+
+### Gestión de Resultados
+- Capturar marcadores oficiales tras cada partido
+- Marcar partidos como "finalizado" para que cuenten en el ranking
+- Editar fechas, estadios y detalles de partidos
+- Manejar ganadores por penales en eliminatorias
+
+### Gestión de Invitaciones
+- Generar códigos únicos de invitación
+- Opcionalmente restringir códigos a emails específicos
+- Ver estado de invitaciones (usadas/disponibles)
+
+### Gestión de Participantes
+- Ver todas las jugadas (entries) de cada usuario
+- Marcar jugadas como pagadas/pendientes
+- Cambiar roles (admin/participant)
+- **Enviar correos de recuperación de contraseña**: Botón de "sobre" junto a cada usuario permite enviar email de reset password directamente (útil cuando Resend está en plan free y solo envía a email verificado)
+
+### Configuración del Sistema
+- Establecer fecha/hora de cierre de pronósticos (`lock_at`)
+- Configurar sistema de puntos (16 categorías editables)
+- Cargar resultados especiales al final del torneo (campeón, goleador, MVP, etc.)
+
+Todos los cambios en configuración y resultados actualizan el ranking automáticamente gracias a las views calculadas en tiempo real.
+
 ## Bloqueo de pronósticos (lock_at)
 
 - `settings.lock_at` (timestamptz) marca cuándo se cierran los pronósticos.

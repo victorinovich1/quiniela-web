@@ -479,6 +479,7 @@ function ParticipantsTab({
   const [profiles, setProfiles] = useState(initialProfiles)
   const [entries, setEntries] = useState(initialEntries)
   const [msg, setMsg] = useState<string | null>(null)
+  const [sendingResetTo, setSendingResetTo] = useState<string | null>(null)
 
   // Agrupar entries por user_id
   const entriesByUser = useMemo(() => {
@@ -509,6 +510,39 @@ function ParticipantsTab({
     }
   }
 
+  async function sendPasswordReset(p: Profile) {
+    if (!p.email) {
+      setMsg('Este usuario no tiene email registrado')
+      setTimeout(() => setMsg(null), 2000)
+      return
+    }
+    
+    if (!confirm(`¿Enviar correo de recuperación de contraseña a ${p.email}?`)) return
+    
+    setSendingResetTo(p.id)
+    setMsg(null)
+    
+    try {
+      const supabase = createClient()
+      const origin = typeof window !== 'undefined' ? window.location.origin : ''
+      const { error } = await supabase.auth.resetPasswordForEmail(p.email, {
+        redirectTo: `${origin}/auth/callback?next=/reset-password`
+      })
+      
+      if (error && !error.message.includes('User not found')) {
+        throw error
+      }
+      
+      setMsg(`✉️ Correo de recuperación enviado a ${p.email}`)
+      setTimeout(() => setMsg(null), 3000)
+    } catch (err) {
+      setMsg(`Error: ${err instanceof Error ? err.message : 'No se pudo enviar el correo'}`)
+      setTimeout(() => setMsg(null), 3000)
+    } finally {
+      setSendingResetTo(null)
+    }
+  }
+
   const totalEntries = entries.length
   const paidEntries = entries.filter((e) => e.paid).length
 
@@ -526,20 +560,39 @@ function ParticipantsTab({
           return (
             <div key={p.id} className="card">
               <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="font-bold text-fifaGreen truncate">
                     {p.display_name || p.email || 'Sin nombre'}
                   </div>
                   <div className="text-xs text-white/60 truncate">{p.email}</div>
                 </div>
-                <select
-                  value={p.role}
-                  onChange={(e) => setRole(p, e.target.value as 'admin' | 'participant')}
-                  className="text-xs border rounded px-2 py-1"
-                >
-                  <option value="participant">Participante</option>
-                  <option value="admin">Admin</option>
-                </select>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => sendPasswordReset(p)}
+                    disabled={sendingResetTo === p.id || !p.email}
+                    className="p-2 rounded hover:bg-white/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    title="Enviar correo de recuperación de contraseña"
+                  >
+                    {sendingResetTo === p.id ? (
+                      <svg className="animate-spin h-4 w-4 text-white/60" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : (
+                      <svg className="h-4 w-4 text-white/60 hover:text-fifaGreen" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                  </button>
+                  <select
+                    value={p.role}
+                    onChange={(e) => setRole(p, e.target.value as 'admin' | 'participant')}
+                    className="text-xs border rounded px-2 py-1"
+                  >
+                    <option value="participant">Participante</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
               </div>
 
               {userEntries.length === 0 ? (

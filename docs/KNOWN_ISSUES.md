@@ -3,7 +3,12 @@
 ## Pendientes de funcionalidad
 
 ### Alta prioridad
-- [ ] **Resend solo manda a un email:** sin dominio verificado en Resend, los reset-password emails solo llegan al dueño del proyecto. Si un participante real pide reset, el admin tiene que ir a Supabase Dashboard → Auth → Users → "Send password recovery".
+- [ ] **Dominio verificado en Resend:** Actualmente los emails de recuperación de contraseña solo llegan al email verificado en Resend (el dueño del proyecto). Para que funcione con todos los participantes, se necesita:
+  1. Verificar un dominio propio en Resend (ej. `quiniela2026.com`)
+  2. Configurar DNS (SPF, DKIM)
+  3. Actualizar `NEXT_PUBLIC_SITE_URL` en variables de entorno
+  
+  **Workaround actual:** El admin puede enviar recovery emails manualmente desde Supabase Dashboard → Auth → Users → "Send password recovery".
 
 ### Media prioridad
 - [ ] **Auto-sync depende de configuración:** ya existe `GET /api/cron/sync-results`, pero si faltan `FOOTBALL_DATA_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY` o `CRON_SECRET`, no sincroniza.
@@ -22,6 +27,7 @@
 
 ## Completados (histórico)
 
+- [x] **Flujo de Recuperación de Contraseña** (2026-05-04): Implementado flujo completo `/forgot-password` → email → `/reset-password`. Detección automática de URL (producción/local) usando `window.location.origin`. Mensajes de UX mejorados con mejor manejo de errores y enlaces expirados. Funcionalmente completo, pendiente solo configurar dominio verificado en Resend para uso con todos los participantes.
 - [x] **Página de Perfil de Usuario** (2026-05-04): Agregada ruta `/profile` con formulario para editar nombre de pantalla y cambiar contraseña. Accesible desde Navbar (desktop) y BottomNav (mobile).
 - [x] **Banderas en Admin** (2026-05-04): `AdminClient.tsx` muestra `<Flag />` junto a todos los nombres de equipos en las pestañas Equipos y Resultados. Emoji de banderas removido de la UI.
 - [x] **Botón '+ Quiniela'** (2026-05-04): En `/entries`, el botón de creación cambió de "Crear jugada" a "+ Quiniela" con descripción explicativa.

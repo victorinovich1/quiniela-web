@@ -21,10 +21,14 @@ export default function ForgotPasswordPage() {
         email.trim().toLowerCase(),
         { redirectTo: `${origin}/auth/callback?next=/reset-password` }
       )
-      if (err) throw err
+      // Siempre mostramos mensaje de éxito, incluso si el email no existe
+      // (mejor práctica de seguridad: no revelar qué emails están registrados)
+      if (err && !err.message.includes('User not found')) {
+        throw err
+      }
       setSent(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo enviar el correo')
+      setError(err instanceof Error ? err.message : 'Hubo un error. Inténtalo de nuevo.')
     } finally {
       setLoading(false)
     }
@@ -39,9 +43,12 @@ export default function ForgotPasswordPage() {
         </p>
         {sent ? (
           <div className="bg-fifaGreen/15 border border-fifaGreen/40 rounded-lg p-4">
-            <p className="font-bold uppercase tracking-wider text-fifaGreen text-xs">Correo enviado</p>
+            <p className="font-bold uppercase tracking-wider text-fifaGreen text-xs">Enlace enviado</p>
             <p className="text-sm mt-2 text-white/80">
-              Revisa la bandeja de <strong className="text-white">{email}</strong>. El enlace caduca en 1 hora.
+              Si el correo <strong className="text-white">{email}</strong> está registrado, recibirás un enlace para restablecer tu contraseña. El enlace caduca en 1 hora.
+            </p>
+            <p className="text-xs mt-3 text-white/60">
+              No olvides revisar la carpeta de spam.
             </p>
           </div>
         ) : (

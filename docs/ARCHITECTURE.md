@@ -83,6 +83,26 @@
 2. La view recalcula puntos cada vez que se consulta (no hay cache)
 3. Punto fuerte: los puntos siempre reflejan el estado actual (resultados + scoring config)
 
+### Gestionar jugadas (entries)
+1. `/entries` muestra todas las jugadas (participaciones) del usuario
+2. Cada jugada tiene:
+   - **Alias único** (ej: "Casa", "Oficina", "Conservadora")
+   - Estado de pago (pagada/pendiente) — marcado por el admin
+   - Fecha de creación
+   - Pronósticos independientes
+3. Usuarios pueden:
+   - **Crear nuevas jugadas** (si el torneo no ha empezado)
+   - **Editar el alias** de jugadas existentes (botón de lápiz junto al nombre)
+   - **Eliminar jugadas** (solo si el torneo no ha empezado)
+   - Navegar a `/predictions?entry=N` para llenar pronósticos
+4. Cada jugada compite independientemente en el ranking
+5. Cada jugada paga su propia cuota (marcada manualmente por el admin)
+
+**Restricciones:**
+- Alias deben ser únicos por usuario
+- No se pueden crear/editar/eliminar jugadas después de `lock_at`
+- RLS asegura que solo el usuario pueda modificar sus propias jugadas
+
 ## Páginas y guard de auth
 
 `middleware.ts` protege estas rutas:

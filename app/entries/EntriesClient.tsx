@@ -21,6 +21,12 @@ export default function EntriesClient({
   const [creating, setCreating] = useState(false)
   const [alias, setAlias] = useState('')
   const [error, setError] = useState<string | null>(null)
+  
+  // Estado para edición de alias
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editingAlias, setEditingAlias] = useState('')
+  const [editError, setEditError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
 
   async function createEntry(e: React.FormEvent) {
     e.preventDefault()
@@ -54,6 +60,46 @@ export default function EntriesClient({
     }
   }
 
+  function startEditing(entry: Entry) {
+    setEditingId(entry.id)
+    setEditingAlias(entry.alias)
+    setEditError(null)
+  }
+
+  function cancelEditing() {
+    setEditingId(null)
+    setEditingAlias('')
+    setEditError(null)
+  }
+
+  async function saveAlias(id: number) {
+    const trimmedAlias = editingAlias.trim()
+    if (!trimmedAlias) {
+      setEditError('El alias no puede estar vacío')
+      return
+    }
+    
+    setSaving(true)
+    setEditError(null)
+    const supabase = createClient()
+    const { error: err } = await supabase
+      .from('entries')
+      .update({ alias: trimmedAlias })
+      .eq('id', id)
+    
+    setSaving(false)
+    
+    if (err) {
+      setEditError(err.message.includes('duplicate') ? 'Ya tienes una jugada con ese alias.' : err.message)
+      return
+    }
+    
+    // Actualizar estado local
+    setEntries(entries.map((e) => (e.id === id ? { ...e, alias: trimmedAlias } : e)))
+    setEditingId(null)
+    setEditingAlias('')
+  }
+
   return (
     <div>
       <PageHeader
@@ -70,26 +116,100 @@ export default function EntriesClient({
       ) : (
         <div className="space-y-2 mb-6">
           {entries.map((e) => (
-            <div key={e.id} className="card flex items-center justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-base font-extrabold text-white uppercase tracking-tight truncate">{e.alias}</h3>
-                <div className="text-[10px] text-white/40 uppercase tracking-wider mt-0.5 flex items-center gap-2">
-                  <span>{new Date(e.created_at).toLocaleDateString('es-ES')}</span>
-                  <span>·</span>
-                  {e.paid
-                    ? <span className="text-fifaGreen font-bold">Pagada</span>
-                    : <span className="text-warning font-bold">Pendiente</span>}
+            <div key={e.id} className="card">
+              {editingId === e.id ? (
+                // Modo edición
+                <div className="space-y-3">
+                  <div>
+                    <label className="label-up block mb-1.5">Nuevo nombre</label>
+                    <input
+                      type="text"
+                      required
+                      maxLength={40}
+                      value={editingAlias}
+                      onChange={(ev) => setEditingAlias(ev.target.value)}
+                      className="input"
+                      placeholder="Nombre de la jugada"
+                      autoFocus
+                    />
+                  </div>
+                  {editError && (
+                    <div className="text-danger text-xs">{editError}</div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => saveAlias(e.id)}
+                      disabled={saving || !editingAlias.trim()}
+                      className="btn btn-primary text-xs !py-2 !px-3 !min-h-0"
+                    >
+                      {saving ? 'Guardando...' : 'Guardar'}
+                    </button>
+                    <button
+                      onClick={cancelEditing}
+                      disabled={saving}
+                      className="btn btn-outline text-xs !py-2 !px-3 !min-h-0"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <Link href={`/predictions?entry=${e.id}`} className="btn btn-primary text-xs whitespace-nowrap !py-2 !px-3 !min-h-0">
-                {locked ? 'Ver' : 'Llenar'}
-              </Link>
-              {!locked && (
-                <button onClick={() => deleteEntry(e.id)}
-                  className="text-[10px] text-danger hover:opacity-80 uppercase tracking-wider font-bold px-2"
-                  aria-label="Eliminar">
-                  Eliminar
-                </button>
+              ) : (
+                // Modo vista
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-extrabold text-white uppercase tracking-tight truncate">
+                        {e.alias}
+                      </h3>
+                      <button
+                        onClick={() => startEditing(e)}
+                        className="text-white/40 hover:text-fifaGreen transition-colors"
+                        aria-label="Editar nombre"
+                        title="Editar nombre"
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="text-[10px] text-white/40 uppercase tracking-wider mt-0.5 flex items-center gap-2">
+                      <span>{new Date(e.created_at).toLocaleDateString('es-ES')}</span>
+                      <span>·</span>
+                      {e.paid ? (
+                        <span className="text-fifaGreen font-bold">Pagada</span>
+                      ) : (
+                        <span className="text-warning font-bold">Pendiente</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/predictions?entry=${e.id}`}
+                      className="btn btn-primary text-xs whitespace-nowrap !py-2 !px-3 !min-h-0"
+                    >
+                      {locked ? 'Ver' : 'Llenar'}
+                    </Link>
+                    {!locked && (
+                      <button
+                        onClick={() => deleteEntry(e.id)}
+                        className="text-[10px] text-danger hover:opacity-80 uppercase tracking-wider font-bold px-2"
+                        aria-label="Eliminar"
+                      >
+                        Eliminar
+                      </button>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           ))}

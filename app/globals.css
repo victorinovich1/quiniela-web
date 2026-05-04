@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg: #0f1437;
+  --color-bg-deep: #080b22;
+  --color-surface: #161c44;
+}
+
+html, body {
+  background: var(--color-bg-deep);
+  color: #ffffff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background: linear-gradient(180deg, #0f1437 0%, #080b22 100%);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: -200px;
+  left: -200px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.18) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -200px;
+  right: -200px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-3 font-bold uppercase tracking-wider text-sm transition-all min-h-[44px];
+  }
+  .btn-primary {
+    @apply bg-fifaGreen text-navy-deepest hover:bg-fifaGreen-light disabled:bg-white/10 disabled:text-white/30;
+  }
+  .btn-gold {
+    @apply bg-gold text-navy-deepest hover:bg-gold-light disabled:bg-white/10 disabled:text-white/30;
+  }
+  .btn-outline {
+    @apply border-2 border-white/30 text-white hover:bg-white/10 hover:border-white/50;
+  }
+  .btn-secondary {
+    @apply bg-white/10 text-white hover:bg-white/20;
+  }
+  .btn-danger {
+    @apply bg-danger text-white hover:opacity-90;
+  }
+  .input {
+    @apply w-full rounded-lg bg-white/5 border border-white/15 px-3 py-2.5 text-base text-white placeholder-white/30 focus:border-fifaGreen focus:outline-none focus:ring-2 focus:ring-fifaGreen/30 disabled:opacity-50;
+  }
+  .score-input {
+    @apply w-12 h-12 text-center text-2xl font-extrabold rounded-lg bg-white/5 border-2 border-white/20 text-white focus:border-fifaGreen focus:outline-none focus:ring-2 focus:ring-fifaGreen/30 disabled:bg-white/5 disabled:text-white/40;
+  }
+  .card {
+    @apply bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-4 relative;
+  }
+  .card-dark {
+    @apply bg-navy-dark/60 backdrop-blur-sm rounded-2xl border border-white/10 p-4;
+  }
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider;
+  }
+  .label-up {
+    @apply uppercase tracking-[0.2em] text-[10px] font-bold text-white/50;
+  }
+  .divider-with-label {
+    @apply relative text-center my-6;
+  }
+  .divider-with-label::before {
+    content: '';
+    @apply absolute left-0 right-0 top-1/2 h-px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  }
+  .divider-with-label > span {
+    @apply relative inline-block px-4 bg-navy-deepest text-white text-xs font-extrabold uppercase tracking-[0.2em];
+  }
+}
+
+main {
+  position: relative;
+  z-index: 1;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) opacity(0.7);
+}

@@ -1,0 +1,42 @@
+# Migraciones SQL
+
+Cada archivo en este directorio es una migración aplicada a la base de datos en orden numérico.
+
+## Cómo ejecutar todas (recovery / nuevo entorno)
+
+Si necesitas recrear la BD desde cero:
+
+1. Abre Supabase Dashboard → SQL Editor
+2. Copia y pega el contenido de `001_core_schema.sql` → Run
+3. Repite con `002_*.sql`, `003_*.sql`, ... `017_*.sql` en orden
+
+O usa Supabase MCP `apply_migration(name, query)` si tienes un agente con acceso.
+
+## Histórico
+
+| # | Nombre | Qué hace |
+|---|--------|----------|
+| 001 | core_schema | Tablas base: profiles, settings, invitations, teams, matches, predictions, special_predictions + triggers |
+| 002 | rls_policies | RLS habilitado + policies en cada tabla + funciones helper `is_admin()`, `predictions_locked()` |
+| 003 | scoring_views | Views: match_scores, special_scores, teams_in_phase, leaderboard |
+| 004 | invite_rpc | Funciones `redeem_invite(code)` y `validate_invite(code, email)` |
+| 005 | seed_teams_and_matches | 48 equipos placeholder + 104 partidos |
+| 006 | fix_security_advisors | Convierte views a security_invoker + fija search_path en funciones |
+| 007 | auto_admin | Trigger handle_new_user marca a `victorinovich@gmail.com` como admin |
+| 008 | real_teams_2026 | Carga nombres oficiales del sorteo Mundial 2026 + flag_emoji |
+| 009 | multi_jugada_entries_v2 | Nueva tabla `entries` + migra predictions/specials de user_id a entry_id |
+| 010 | recreate_views_with_entries | Recrea las views con la nueva estructura entry_id |
+| 011 | disable_pg_graphql | Desactiva extensión pg_graphql (limpia warnings) |
+| 012 | lock_down_security_definer_functions | Restringe EXECUTE en funciones SECURITY DEFINER |
+| 013 | match_schedule | Carga aproximada de fechas en kickoff_at + setea lock_at |
+| 014 | add_stadium_column | `alter table matches add column stadium` |
+| 015 | official_schedule_and_stadiums | Sobrescribe ~50 partidos con datos oficiales (FIFA + medios) |
+| 016 | add_iso_code | `alter table teams add column iso_code` + carga 48 ISO codes |
+| 017 | official_full_schedule_fifa | Actualiza los 104 partidos con horario + estadio desde API oficial FIFA (season 285023) |
+
+## Convenciones
+
+- Numeración secuencial 3 dígitos. NO reutilizar números.
+- Nombres en `snake_case` describiendo el cambio.
+- Todo DDL es idempotente (`if not exists`, `if exists`) cuando es razonable.
+- Nunca editar migraciones aplicadas. Crear una nueva con el cambio.

@@ -235,7 +235,7 @@ function MatchesTab({ initialMatches, teams }: { initialMatches: Match[]; teams:
                   value={m.status}
                   onChange={(e) => update(m.id, { status: e.target.value as Match['status'] })}
                   onBlur={() => save(m)}
-                  className="input text-xs"
+                  className="input text-xs [color-scheme:dark] bg-[#080b22] text-white"
                 >
                   <option value="scheduled">Programado</option>
                   <option value="live">En vivo</option>
@@ -271,7 +271,7 @@ function MatchesTab({ initialMatches, teams }: { initialMatches: Match[]; teams:
                     value={m.home_team_id ?? ''}
                     onChange={(e) => update(m.id, { home_team_id: e.target.value ? Number(e.target.value) : null })}
                     onBlur={() => save(m)}
-                    className="input flex-1 text-sm"
+                    className="input flex-1 text-sm [color-scheme:dark] bg-[#080b22] text-white"
                   >
                     <option value="">— Equipo local — ({m.home_team_label})</option>
                     {teams.map((t) => (
@@ -282,7 +282,7 @@ function MatchesTab({ initialMatches, teams }: { initialMatches: Match[]; teams:
                     value={m.away_team_id ?? ''}
                     onChange={(e) => update(m.id, { away_team_id: e.target.value ? Number(e.target.value) : null })}
                     onBlur={() => save(m)}
-                    className="input flex-1 text-sm"
+                    className="input flex-1 text-sm [color-scheme:dark] bg-[#080b22] text-white"
                   >
                     <option value="">— Equipo visitante — ({m.away_team_label})</option>
                     {teams.map((t) => (
@@ -328,7 +328,7 @@ function MatchesTab({ initialMatches, teams }: { initialMatches: Match[]; teams:
                     value={m.shootout_winner_team_id ?? ''}
                     onChange={(e) => update(m.id, { shootout_winner_team_id: e.target.value ? Number(e.target.value) : null })}
                     onBlur={() => save(m)}
-                    className="input text-sm"
+                    className="input text-sm [color-scheme:dark] bg-[#080b22] text-white"
                   >
                     <option value="">—</option>
                     {m.home_team_id && <option value={m.home_team_id}>{teamById[m.home_team_id]?.name}</option>}
@@ -592,7 +592,7 @@ function ParticipantsTab({
                   <select
                     value={p.role}
                     onChange={(e) => setRole(p, e.target.value as 'admin' | 'participant')}
-                    className="input text-xs"
+                    className="input text-xs [color-scheme:dark] bg-[#080b22] text-white"
                   >
                     <option value="participant">Participante</option>
                     <option value="admin">Admin</option>
@@ -738,7 +738,7 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
               <select
                 value={(s[f.key] as number) ?? ''}
                 onChange={(e) => update(f.key, (e.target.value ? Number(e.target.value) : null) as Settings[typeof f.key])}
-                className="input flex-1"
+                className="input flex-1 [color-scheme:dark] bg-[#080b22] text-white"
               >
                 <option value="">— sin definir —</option>
                 {teams.map((t) => (

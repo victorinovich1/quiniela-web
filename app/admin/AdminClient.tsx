@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import PageHeader from '@/components/PageHeader'
 import Flag from '@/components/Flag'
 import type { Team, Match, Profile, Invitation, Settings, Phase, Entry } from '@/lib/types'
 import { PHASE_LABELS, KO_PHASES, GROUP_CODES } from '@/lib/types'
@@ -43,7 +44,11 @@ export default function AdminClient({
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold uppercase tracking-tight text-white mb-4">Panel de administración</h1>
+      <PageHeader
+        label="Administrador"
+        title="Panel de administración"
+        subtitle="Gestiona equipos, resultados, invitaciones y participantes"
+      />
 
       <div className="flex gap-1 mb-6 border-b border-white/15 overflow-x-auto">
         {tabs.map((t) => (
@@ -447,7 +452,7 @@ function InvitationsTab({ initialInvitations }: { initialInvitations: Invitation
                   {i.used_by ? (
                     <span className="text-xs bg-white/10 px-2 py-1 rounded">Usada</span>
                   ) : (
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Disponible</span>
+                    <span className="text-xs bg-fifaGreen/20 text-fifaGreen px-2 py-1 rounded">Disponible</span>
                   )}
                 </td>
                 <td className="py-2 text-right">

@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import PageHeader from '@/components/PageHeader'
 import type { LeaderboardRow } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -28,11 +29,11 @@ export default async function LeaderboardPage() {
 
   return (
     <div className="pb-24">
-      <div className="text-center mb-6">
-        <span className="label-up">Clasificación general</span>
-        <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-white mt-1">Ranking</h1>
-        <p className="text-xs text-white/40 mt-1 uppercase tracking-wider">Actualizado: {updatedAt}</p>
-      </div>
+      <PageHeader
+        label="Clasificación general"
+        title="Ranking"
+        subtitle={`Actualizado: ${updatedAt}`}
+      />
 
       {error && (
         <div className="bg-danger/15 border border-danger/40 text-danger rounded-lg p-3 mb-4 text-sm">

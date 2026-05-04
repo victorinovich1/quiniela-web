@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import PageHeader from '@/components/PageHeader'
 import type { User } from '@supabase/supabase-js'
 import type { Profile } from '@/lib/types'
 
@@ -78,8 +79,12 @@ export default function ProfileClient({
   }
 
   return (
-    <div className="max-w-2xl mx-auto py-6 px-4 space-y-6">
-      <h1 className="text-2xl font-extrabold uppercase tracking-tight text-white">Mi perfil</h1>
+    <div className="space-y-6">
+      <PageHeader
+        label="Tu cuenta"
+        title="Mi perfil"
+        subtitle="Gestiona tu información personal y seguridad"
+      />
 
       {/* Información de cuenta */}
       <div className="card p-4 space-y-4">
@@ -116,8 +121,8 @@ export default function ProfileClient({
           <div
             className={`text-sm p-3 rounded ${
               profileMsg.type === 'success'
-                ? 'bg-green-500/20 text-green-400'
-                : 'bg-red-500/20 text-red-400'
+                ? 'bg-fifaGreen/20 text-fifaGreen'
+                : 'bg-danger/20 text-danger'
             }`}
           >
             {profileMsg.text}
@@ -164,8 +169,8 @@ export default function ProfileClient({
           <div
             className={`text-sm p-3 rounded ${
               passwordMsg.type === 'success'
-                ? 'bg-green-500/20 text-green-400'
-                : 'bg-red-500/20 text-red-400'
+                ? 'bg-fifaGreen/20 text-fifaGreen'
+                : 'bg-danger/20 text-danger'
             }`}
           >
             {passwordMsg.text}

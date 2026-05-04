@@ -117,6 +117,90 @@ Códigos ISO especiales:
 - Escocia: `gb-sct`
 - Resto: ISO 3166 alpha-2 lowercase
 
+### Encabezados de página (PageHeader)
+
+**Componente unificado:** `<PageHeader />` en `components/PageHeader.tsx`.
+
+Todas las páginas principales deben usar este componente para mantener consistencia visual.
+
+**Props:**
+- `title` (requerido): Título principal de la página
+- `label` (opcional): Label superior en estilo `label-up` (ej: "Clasificación general")
+- `subtitle` (opcional): Texto descriptivo debajo del título
+- `action` (opcional): Elemento React (botón, link) que se muestra debajo del subtítulo
+
+**Ejemplo de uso:**
+```tsx
+import PageHeader from '@/components/PageHeader'
+
+<PageHeader
+  label="Clasificación general"
+  title="Ranking"
+  subtitle="Actualizado: 14:32"
+/>
+
+// Con acción
+<PageHeader
+  label="Tus participaciones"
+  title="Mis jugadas"
+  subtitle="Cada jugada compite por separado"
+  action={<button className="btn btn-primary">+ Nueva jugada</button>}
+/>
+```
+
+**Páginas que usan PageHeader:**
+- `/leaderboard` — Ranking
+- `/entries` — Mis jugadas
+- `/profile` — Mi perfil
+- `/admin` — Panel de administración
+
+**Páginas con estructura especial:**
+- `/predictions` — Usa selector de jugada + tabs (no PageHeader)
+
+### Estructura de página
+
+Todas las páginas siguen este patrón:
+
+```tsx
+// Server component (page.tsx)
+export default async function MyPage() {
+  // 1. Auth check
+  const user = await getUser()
+  if (!user) redirect('/login')
+  
+  // 2. Cargar datos server-side
+  const data = await supabase.from(...)...
+  
+  // 3. Pasar a client component
+  return <MyPageClient data={data} />
+}
+
+// Client component (MyPageClient.tsx)
+'use client'
+
+import PageHeader from '@/components/PageHeader'
+
+export default function MyPageClient({ data }: Props) {
+  // Estado local, handlers, etc.
+  
+  return (
+    <div>
+      <PageHeader title="Mi página" />
+      {/* Contenido */}
+    </div>
+  )
+}
+```
+
+**Contenedor base:**
+El `layout.tsx` ya define el contenedor principal con `max-w-5xl mx-auto px-4 py-6`.
+No añadas contenedores adicionales a menos que necesites un ancho específico menor (ej: formularios con `max-w-2xl`).
+
+**Espaciado:**
+- Entre secciones: `space-y-6` o `mb-6`
+- Entre elementos pequeños: `gap-3`, `gap-2`
+- Padding de cards: `p-4` (desktop) o `p-3` (mobile con `sm:p-4`)
+
 ## Reglas de código
 
 ### Imports

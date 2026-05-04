@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import PageHeader from '@/components/PageHeader'
 import type { Entry } from '@/lib/types'
 
 export default function EntriesClient({
@@ -55,13 +56,11 @@ export default function EntriesClient({
 
   return (
     <div>
-      <div className="text-center mb-6">
-        <span className="label-up">Tus participaciones</span>
-        <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-white mt-1">Mis jugadas</h1>
-        <p className="text-sm text-white/60 mt-2 max-w-md mx-auto">
-          Puedes tener varias jugadas con alias distintos. Cada una compite por separado y paga su cuota.
-        </p>
-      </div>
+      <PageHeader
+        label="Tus participaciones"
+        title="Mis jugadas"
+        subtitle="Puedes tener varias jugadas con alias distintos. Cada una compite por separado y paga su cuota."
+      />
 
       {entries.length === 0 ? (
         <div className="card text-center py-10 mb-6">

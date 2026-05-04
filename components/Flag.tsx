@@ -21,6 +21,7 @@ export default function Flag({
         className={`inline-block bg-white/15 rounded-sm ${className}`}
         style={{ width: size * 1.33, height: size }}
         aria-hidden="true"
+        title={team ? `${team.name} - sin iso_code` : 'sin equipo'}
       />
     )
   }
@@ -33,6 +34,7 @@ export default function Flag({
       className={`inline-block rounded-sm shadow-sm object-cover ${className}`}
       style={{ width: size * 1.33, height: size }}
       loading="lazy"
+      title={`${team.name} (${team.iso_code})`}
     />
   )
 }

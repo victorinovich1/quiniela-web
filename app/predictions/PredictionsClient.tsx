@@ -520,19 +520,19 @@ function FifaMatchRow({
 
   return (
     <div className="card p-3">
-      <div className="grid grid-cols-[68px_1fr_auto_1fr_80px] sm:grid-cols-[80px_1fr_auto_1fr_100px] items-center gap-2 sm:gap-3">
+      <div className="grid grid-cols-[60px_1fr_auto_1fr_1px] sm:grid-cols-[80px_1fr_auto_1fr_100px] items-center gap-2 sm:gap-3">
         <div className="min-w-0">
-          <div className="text-white font-extrabold text-sm sm:text-base leading-tight">{timeStr}</div>
-          <div className="text-[9px] sm:text-[10px] font-bold text-white/40 uppercase tracking-wider">{tzShort} {dayStr && `· ${dayStr}`}</div>
+          <div className="text-white font-extrabold text-xs sm:text-base leading-tight">{timeStr}</div>
+          <div className="text-[9px] sm:text-[10px] font-bold text-white/40 uppercase tracking-wider hidden sm:block">{tzShort} {dayStr && `· ${dayStr}`}</div>
         </div>
 
         {homeTeam ? (
           <div className="bg-white rounded-full px-2 py-1 sm:px-3 sm:py-1.5 inline-flex items-center gap-1.5 sm:gap-2 min-w-0 justify-end flex-row-reverse">
             <Flag team={homeTeam} size={14} />
-            <span className="text-[10px] sm:text-xs font-extrabold text-slate-900 uppercase tracking-tight truncate">{homeLabel}</span>
+            <span className="text-xs sm:text-xs font-extrabold text-slate-900 uppercase tracking-tight truncate">{homeLabel}</span>
           </div>
         ) : (
-          <div className="bg-white/10 rounded-full px-3 py-1.5 text-[10px] sm:text-xs text-white/50 font-bold uppercase truncate text-right">
+          <div className="bg-white/10 rounded-full px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-xs text-white/50 font-bold uppercase truncate text-right">
             {homeLabel}
           </div>
         )}
@@ -556,15 +556,15 @@ function FifaMatchRow({
         {awayTeam ? (
           <div className="bg-white rounded-full px-2 py-1 sm:px-3 sm:py-1.5 inline-flex items-center gap-1.5 sm:gap-2 min-w-0">
             <Flag team={awayTeam} size={14} />
-            <span className="text-[10px] sm:text-xs font-extrabold text-slate-900 uppercase tracking-tight truncate">{awayLabel}</span>
+            <span className="text-xs sm:text-xs font-extrabold text-slate-900 uppercase tracking-tight truncate">{awayLabel}</span>
           </div>
         ) : (
-          <div className="bg-white/10 rounded-full px-3 py-1.5 text-[10px] sm:text-xs text-white/50 font-bold uppercase truncate">
+          <div className="bg-white/10 rounded-full px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-xs text-white/50 font-bold uppercase truncate">
             {awayLabel}
           </div>
         )}
 
-        <div className="text-right min-w-0">
+        <div className="hidden md:block text-right min-w-0">
           {cityShort && (
             <div className="text-[9px] sm:text-[10px] font-extrabold text-white uppercase truncate">{cityShort}</div>
           )}

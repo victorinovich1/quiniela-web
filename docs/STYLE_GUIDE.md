@@ -91,8 +91,9 @@ Cápsula verde con la letra del grupo + 4 pills de equipos:
 
 ### Patrón "fila de partido FIFA"
 
-5 columnas: hora · equipo local · score · equipo visitante · ciudad.
+Componente clave: `FifaMatchRow` en `app/predictions/PredictionsClient.tsx`.
 
+**Estructura desktop (5 columnas):**
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │  21:00  | [🇲🇽 MÉXICO] | [2]−[1] | [🇿🇦 SUDÁFRICA] |  CDMX        │
@@ -100,7 +101,48 @@ Cápsula verde con la letra del grupo + 4 pills de equipos:
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-Ver `app/predictions/PredictionsClient.tsx` → función `FifaMatchRow`.
+**Grid responsivo:**
+- **Móvil:** `grid-cols-[60px_1fr_auto_1fr_1px]` — Estadio oculto, más espacio para equipos
+- **Desktop:** `grid-cols-[80px_1fr_auto_1fr_100px]` — Todas las columnas visibles
+
+**Reglas de visibilidad:**
+
+| Elemento | Móvil | Desktop | Clase |
+|----------|-------|---------|-------|
+| Hora (HH:MM) | ✅ Visible (text-xs) | ✅ Visible (text-base) | - |
+| Zona horaria | ❌ Oculto | ✅ Visible | `hidden sm:block` |
+| Fecha (día/mes) | ❌ Oculto | ✅ Visible | `hidden sm:block` |
+| Equipo local (bandera + nombre) | ✅ Visible (text-xs) | ✅ Visible (text-xs) | - |
+| Marcador (inputs) | ✅ Visible (36x36px) | ✅ Visible (44x44px) | `w-9 h-9 sm:w-11 sm:h-11` |
+| Equipo visitante (bandera + nombre) | ✅ Visible (text-xs) | ✅ Visible (text-xs) | - |
+| Estadio/Ciudad | ❌ Oculto | ✅ Visible | `hidden md:block` |
+
+**Pills de equipo:**
+```tsx
+// Equipo con datos (team real)
+<div className="bg-white rounded-full px-2 py-1 sm:px-3 sm:py-1.5 inline-flex items-center gap-1.5 sm:gap-2 min-w-0">
+  <Flag team={homeTeam} size={14} />
+  <span className="text-xs font-extrabold text-slate-900 uppercase tracking-tight truncate">
+    {homeLabel}
+  </span>
+</div>
+
+// Equipo por definir (placeholder)
+<div className="bg-white/10 rounded-full px-2 py-1 sm:px-3 sm:py-1.5 text-xs text-white/50 font-bold uppercase truncate">
+  {homeLabel}
+</div>
+```
+
+**Truncamiento:**
+- Los nombres de equipos usan `truncate` para no romper el layout
+- En móvil, el espacio es limitado pero los nombres SIEMPRE son visibles
+- Prioridad: bandera → nombre → estadio (oculto en móvil)
+
+**Inputs de marcador:**
+- Móvil: `36x36px` (`w-9 h-9`)
+- Desktop: `44x44px` (`w-11 h-11`)
+- Clase base: `score-input` (definida en `globals.css`)
+- Siempre con `inputMode="numeric"` para teclado numérico en móvil
 
 ### Banderas
 

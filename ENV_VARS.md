@@ -12,6 +12,7 @@ Variables de entorno requeridas para sincronización API:
 
 ## Seguridad Cron
 - CRON_SECRET (obligatoria - token secreto para autorizar llamadas al endpoint /api/cron/sync-results)
+- VERCEL_AUTOMATION_BYPASS_SECRET (opcional - para bypass de protección en Vercel Preview)
 
 ## Endpoint usado
 https://api.football-data.org/v4/competitions/WC/matches?season=2026

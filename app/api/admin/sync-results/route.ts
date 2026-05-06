@@ -27,8 +27,10 @@ export async function POST(request: NextRequest) {
   const host = request.headers.get('host') || 'localhost:3000'
   const baseUrl = `${protocol}://${host}`
   const cronSecret = process.env.CRON_SECRET
+  const vercelBypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
 
   console.log('[admin/sync-results] CRON_SECRET presente:', !!cronSecret)
+  console.log('[admin/sync-results] Vercel bypass presente:', !!vercelBypass)
   console.log('[admin/sync-results] Llamando a:', `${baseUrl}/api/cron/sync-results`)
 
   if (!cronSecret) {
@@ -36,20 +38,35 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${cronSecret}`,
+    }
+    
+    // Bypass de protección de Vercel Preview
+    if (vercelBypass) {
+      headers['x-vercel-protection-bypass'] = vercelBypass
+    }
+
+    console.log('[admin/sync-results] Headers enviados:', Object.keys(headers))
+
     const res = await fetch(`${baseUrl}/api/cron/sync-results`, {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${cronSecret}`,
-      },
+      headers,
       cache: 'no-store',
     })
 
     if (!res.ok) {
       const errorText = await res.text()
       console.error('[admin/sync-results] Error response:', res.status, errorText.slice(0, 500))
+      
+      let errorMsg = `Error del servidor (${res.status}). Revisa los logs de Vercel.`
+      if (res.status === 401) {
+        errorMsg = 'Error 401: La llave CRON_SECRET no coincide o Vercel bloqueó la conexión'
+      }
+      
       return NextResponse.json({ 
         ok: false, 
-        error: `Error del servidor (${res.status}). Revisa los logs de Vercel.`,
+        error: errorMsg,
       }, { status: res.status })
     }
 

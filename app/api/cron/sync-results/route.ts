@@ -64,11 +64,24 @@ function buildFixtureUrl(
 
 function assertCronAuthorized(request: NextRequest): string | null {
   const secret = process.env.CRON_SECRET
-  if (!secret) return null
-
   const authHeader = request.headers.get('authorization')
-  if (authHeader === `Bearer ${secret}`) return null
+  const sentSecret = authHeader?.replace('Bearer ', '')
+  
+  console.log('[Sync] Comparando: Enviado(' + (sentSecret ? sentSecret.substring(0, 10) + '...' : 'NULL') + ') vs Esperado(' + (secret ? secret.substring(0, 10) + '...' : 'NULL') + ')')
+  console.log('[Sync] Header completo recibido:', authHeader ? authHeader.substring(0, 30) + '...' : 'NULL')
+  console.log('[Sync] Headers disponibles:', Array.from(request.headers.keys()).join(', '))
+  
+  if (!secret) {
+    console.log('[Sync] CRON_SECRET no configurado en servidor')
+    return null
+  }
 
+  if (authHeader === `Bearer ${secret}`) {
+    console.log('[Sync] Autorización exitosa')
+    return null
+  }
+
+  console.error('[Sync] Autorización FALLIDA')
   return 'Unauthorized cron call'
 }
 

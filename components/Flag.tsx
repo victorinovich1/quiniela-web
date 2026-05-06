@@ -18,11 +18,16 @@ export default function Flag({
   if (!team?.iso_code) {
     return (
       <span
-        className={`inline-block bg-white/15 rounded-sm ${className}`}
+        className={`inline-flex items-center justify-center bg-white/10 border border-white/20 rounded-sm ${className}`}
         style={{ width: size * 1.33, height: size }}
         aria-hidden="true"
-        title={team ? `${team.name} - sin iso_code` : 'sin equipo'}
-      />
+        title={team ? `${team.name}` : 'sin equipo'}
+      >
+        <svg width={size * 0.6} height={size * 0.6} viewBox="0 0 24 24" fill="none" className="opacity-40">
+          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M4 22v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </span>
     )
   }
   return (
@@ -34,6 +39,16 @@ export default function Flag({
       className={`inline-block rounded-sm shadow-sm object-cover ${className}`}
       style={{ width: size * 1.33, height: size }}
       loading="lazy"
+      onError={(e) => {
+        const target = e.currentTarget
+        target.style.display = 'none'
+        const fallback = document.createElement('span')
+        fallback.className = `inline-flex items-center justify-center bg-white/10 border border-white/20 rounded-sm ${className}`
+        fallback.style.width = `${size * 1.33}px`
+        fallback.style.height = `${size}px`
+        fallback.innerHTML = `<svg width="${size * 0.6}" height="${size * 0.6}" viewBox="0 0 24 24" fill="none" class="opacity-40"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 22v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+        target.parentNode?.insertBefore(fallback, target)
+      }}
       title={`${team.name} (${team.iso_code})`}
     />
   )

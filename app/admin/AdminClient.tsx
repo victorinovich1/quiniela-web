@@ -616,6 +616,54 @@ function ParticipantsTab({
     }
   }
 
+  async function deleteUser(p: Profile) {
+    if (isManager) {
+      setMsg('Los managers no pueden eliminar usuarios')
+      setTimeout(() => setMsg(null), 2000)
+      return
+    }
+
+    const userEntries = entriesByUser[p.id] || []
+    const entryText = userEntries.length > 0 
+      ? ` y sus ${userEntries.length} jugada${userEntries.length > 1 ? 's' : ''}`
+      : ''
+    
+    if (!confirm(`¿Eliminar permanentemente a ${p.display_name || p.email}${entryText}? Esta acción no se puede deshacer.`)) return
+    
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.rpc('admin_delete_user', { target_user_id: p.id })
+      
+      if (error) throw error
+      
+      setProfiles(profiles.filter((x) => x.id !== p.id))
+      setEntries(entries.filter((e) => e.user_id !== p.id))
+      setMsg(`✅ Usuario ${p.display_name || p.email} eliminado`)
+      setTimeout(() => setMsg(null), 3000)
+    } catch (err) {
+      setMsg(`Error: ${err instanceof Error ? err.message : 'No se pudo eliminar el usuario'}`)
+      setTimeout(() => setMsg(null), 3000)
+    }
+  }
+
+  async function deleteEntry(e: Entry) {
+    if (!confirm(`¿Eliminar la jugada "${e.alias}"? Esta acción no se puede deshacer.`)) return
+    
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.from('entries').delete().eq('id', e.id)
+      
+      if (error) throw error
+      
+      setEntries(entries.filter((x) => x.id !== e.id))
+      setMsg(`✅ Jugada "${e.alias}" eliminada`)
+      setTimeout(() => setMsg(null), 2000)
+    } catch (err) {
+      setMsg(`Error: ${err instanceof Error ? err.message : 'No se pudo eliminar la jugada'}`)
+      setTimeout(() => setMsg(null), 3000)
+    }
+  }
+
   const totalEntries = entries.length
   const paidEntries = entries.filter((e) => e.paid).length
 
@@ -657,6 +705,16 @@ function ParticipantsTab({
                       </svg>
                     )}
                   </button>
+                  <button
+                    onClick={() => deleteUser(p)}
+                    disabled={isManager}
+                    className="p-2 rounded hover:bg-danger/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    title="Eliminar usuario y todas sus jugadas"
+                  >
+                    <svg className="h-4 w-4 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
                   <select
                     value={p.role}
                     onChange={(e) => setRole(p, e.target.value as Role)}
@@ -677,17 +735,28 @@ function ParticipantsTab({
                   {userEntries.map((e) => (
                     <div key={e.id} className="flex items-center justify-between text-sm py-1">
                       <span>{e.alias}</span>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={e.paid}
-                          onChange={() => toggleEntryPaid(e)}
-                          className="w-4 h-4"
-                        />
-                        <span className={`text-xs ${e.paid ? 'text-success' : 'text-white/60'}`}>
-                          {e.paid ? 'Pagado' : 'Pendiente'}
-                        </span>
-                      </label>
+                      <div className="flex items-center gap-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={e.paid}
+                            onChange={() => toggleEntryPaid(e)}
+                            className="w-4 h-4"
+                          />
+                          <span className={`text-xs ${e.paid ? 'text-success' : 'text-white/60'}`}>
+                            {e.paid ? 'Pagado' : 'Pendiente'}
+                          </span>
+                        </label>
+                        <button
+                          onClick={() => deleteEntry(e)}
+                          className="p-1 rounded hover:bg-danger/20 transition-colors"
+                          title="Eliminar esta jugada"
+                        >
+                          <svg className="h-3.5 w-3.5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

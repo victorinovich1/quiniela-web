@@ -18,5 +18,11 @@ export default async function ProfilePage() {
     .eq('id', user.id)
     .single()
 
-  return <ProfileClient user={user} profile={profile} />
+  const { data: settings } = await supabase
+    .from('settings')
+    .select('lock_at')
+    .eq('id', 1)
+    .single()
+
+  return <ProfileClient user={user} profile={profile} lockAt={settings?.lock_at || null} />
 }

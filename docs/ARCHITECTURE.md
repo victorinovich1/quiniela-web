@@ -83,6 +83,17 @@
 2. La view recalcula puntos cada vez que se consulta (no hay cache)
 3. Punto fuerte: los puntos siempre reflejan el estado actual (resultados + scoring config)
 
+### Gestionar perfil
+1. `/profile` permite al usuario gestionar su cuenta:
+   - Cambiar nombre de pantalla (display_name)
+   - Cambiar contraseña
+   - Ver información de la cuenta (rol, fecha de creación)
+2. **Zona de Peligro** al final de la página:
+   - Botón "Eliminar mi cuenta" (permanente, borra todas las jugadas y pronósticos)
+   - **Solo permitido antes de `lock_at`** — una vez iniciado el torneo, el botón se deshabilita
+   - Tras confirmación doble, llama a RPC `delete_user_self()` que valida permisos y elimina en cascada
+   - Cierra sesión automáticamente y redirige a la landing page
+
 ### Gestionar jugadas (entries)
 1. `/entries` muestra todas las jugadas (participaciones) del usuario
 2. Cada jugada tiene:
@@ -141,6 +152,8 @@ El panel `/admin` ofrece control completo del sistema al rol `admin`:
   - **manager**: Acceso restringido (solo Invitaciones y Participantes, sin permisos de edición)
   - **participant**: Usuario normal sin acceso al panel de administración
 - **Enviar correos de recuperación de contraseña**: Botón de "sobre" junto a cada usuario permite enviar email de reset password directamente (útil cuando Resend está en plan free y solo envía a email verificado)
+- **Eliminar usuarios**: Botón de papelera roja elimina permanentemente al usuario y todas sus jugadas (en cascada). No requiere que el torneo haya iniciado.
+- **Eliminar jugadas individuales**: Botón de papelera en cada jugada permite eliminar una entry específica sin borrar al usuario
 
 ### Configuración del Sistema
 - Establecer fecha/hora de cierre de pronósticos (`lock_at`)
@@ -211,6 +224,32 @@ invitations (códigos para registro)
 ```
 
 Detalle completo del schema: `DATABASE.md`.
+
+## Funciones RPC de eliminación
+
+El sistema incluye funciones `SECURITY DEFINER` para eliminación segura de usuarios:
+
+### `delete_user_self()`
+- **Propósito**: Permite que un usuario autenticado elimine su propia cuenta
+- **Restricción**: Solo funciona si `not predictions_locked()` (antes del inicio del torneo)
+- **Cascada**: Elimina automáticamente profile, entries, predictions y special_predictions
+- **Uso**: Llamada desde `/profile` → "Zona de Peligro" → Botón "Eliminar mi cuenta"
+- **Seguridad**: SECURITY DEFINER con validaciones estrictas de `auth.uid()` y `predictions_locked()`
+
+### `admin_delete_user(target_user_id uuid)`
+- **Propósito**: Permite que un administrador elimine cualquier usuario
+- **Restricción**: Valida que el caller sea admin vía `is_admin()`
+- **Cascada**: Igual que delete_user_self — elimina todo en cascada desde auth.users
+- **Uso**: Llamada desde `/admin` → Participantes → Botón de papelera roja junto a cada usuario
+- **Seguridad**: SECURITY DEFINER con validación de rol admin
+
+**Foreign Keys con ON DELETE CASCADE:**
+- `profiles.id → auth.users(id)`
+- `entries.user_id → auth.users(id)`
+- `predictions.entry_id → entries(id)`
+- `special_predictions.entry_id → entries(id)`
+
+Al eliminar un usuario de `auth.users`, PostgreSQL ejecuta la cascada automáticamente y elimina todas las filas relacionadas en orden correcto.
 
 ## Cálculo de puntos (views)
 

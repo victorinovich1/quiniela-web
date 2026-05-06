@@ -9,11 +9,15 @@ import type { Profile } from '@/lib/types'
 export default function ProfileClient({
   user,
   profile,
+  lockAt,
 }: {
   user: User
   profile: Profile | null
+  lockAt: string | null
 }) {
   const [displayName, setDisplayName] = useState(profile?.display_name || '')
+  const [deletingAccount, setDeletingAccount] = useState(false)
+  const podiumLocked = lockAt ? Date.now() > new Date(lockAt).getTime() : false
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -203,6 +207,47 @@ export default function ProfileClient({
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Zona de Peligro */}
+      <div className="card p-4 space-y-4 border-2 border-danger/30">
+        <h2 className="font-extrabold uppercase tracking-tight text-danger text-lg">Zona de Peligro</h2>
+        <p className="text-sm text-white/70">
+          Eliminar tu cuenta es una acción permanente. Se borrarán todas tus jugadas y pronósticos.
+        </p>
+        
+        {podiumLocked && (
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-sm text-yellow-400">
+            ⚠️ No puedes eliminar tu cuenta una vez iniciado el mundial
+          </div>
+        )}
+
+        <button
+          onClick={async () => {
+            if (!confirm('¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.')) return
+            if (!confirm('¿Realmente quieres continuar? Se borrarán todas tus jugadas y pronósticos de forma permanente.')) return
+            
+            setDeletingAccount(true)
+            const supabase = createClient()
+            
+            try {
+              const { error } = await supabase.rpc('delete_user_self')
+              
+              if (error) throw error
+              
+              // Cerrar sesión y redirigir
+              await supabase.auth.signOut()
+              window.location.href = '/'
+            } catch (err) {
+              alert(err instanceof Error ? err.message : 'Error al eliminar la cuenta')
+              setDeletingAccount(false)
+            }
+          }}
+          disabled={podiumLocked || deletingAccount}
+          className="btn bg-danger/20 border-danger text-danger hover:bg-danger hover:text-white disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto"
+        >
+          {deletingAccount ? 'Eliminando cuenta...' : 'Eliminar mi cuenta'}
+        </button>
       </div>
     </div>
   )

@@ -42,14 +42,14 @@ export default async function HomePage() {
 
   // Usuario invitado: Landing completa
   return (
-    <div className="bg-navy-deepest">
-      {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <div className="-mx-4 sm:-mx-6 lg:-mx-8 -my-6 bg-navy-deepest">
+      {/* Hero Section - Full Width */}
+      <section className="relative min-h-screen w-full flex items-center justify-center overflow-hidden">
         {/* Background Image con overlay */}
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 z-0 w-full">
           <div 
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: 'url(/images/landing/hero.jpg)' }}
+            className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: 'url(/images/landing/hero.png)' }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-navy-deepest/80 via-navy-deepest/60 to-navy-deepest" />
         </div>
@@ -109,25 +109,25 @@ export default async function HomePage() {
                 num: 1, 
                 title: 'Registrate', 
                 desc: 'Usa tu código de invitación', 
-                img: '/images/landing/paso1.jpg' 
+                img: '/images/landing/paso1.png' 
               },
               { 
                 num: 2, 
                 title: 'Crea tu quiniela', 
                 desc: 'Dale un nombre creativo', 
-                img: '/images/landing/paso2.jpg' 
+                img: '/images/landing/paso2.png' 
               },
               { 
                 num: 3, 
                 title: 'Pronostica', 
                 desc: 'Llena todos los marcadores', 
-                img: '/images/landing/paso3.jpg' 
+                img: '/images/landing/paso3.png' 
               },
               { 
                 num: 4, 
                 title: 'Compite', 
                 desc: 'Sube en el ranking en vivo', 
-                img: '/images/landing/paso4.jpg' 
+                img: '/images/landing/paso4.png' 
               },
             ].map((paso) => (
               <div 
@@ -308,7 +308,7 @@ export default async function HomePage() {
             <div className="relative aspect-square rounded-2xl overflow-hidden">
               <div 
                 className="absolute inset-0 bg-cover bg-center"
-                style={{ backgroundImage: 'url(/images/landing/estadio.jpg)' }}
+                style={{ backgroundImage: 'url(/images/landing/estadio.png)' }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-navy-deepest/80 to-transparent" />
             </div>
@@ -354,7 +354,7 @@ export default async function HomePage() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="mb-6">
             <img 
-              src="/images/landing/trofeo.jpg" 
+              src="/images/landing/trofeo.png" 
               alt="Copa Mundial FIFA" 
               className="w-20 h-20 mx-auto object-contain opacity-80 grayscale hover:grayscale-0 transition-all duration-300"
             />

@@ -804,6 +804,29 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
     setS((curr) => (curr ? { ...curr, [key]: value } : curr))
   }
 
+  async function toggleApiSync(enabled: boolean) {
+    if (!s) return
+    // Actualizar estado local inmediatamente para feedback visual
+    setS((curr) => (curr ? { ...curr, api_sync_enabled: enabled } : curr))
+    
+    // Persistir en BD
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('settings')
+      .update({ api_sync_enabled: enabled })
+      .eq('id', 1)
+    
+    if (error) {
+      // Revertir estado local si falla
+      setS((curr) => (curr ? { ...curr, api_sync_enabled: !enabled } : curr))
+      setMsg(`Error al cambiar sincronización: ${error.message}`)
+      setTimeout(() => setMsg(null), 3000)
+    } else {
+      setMsg(`Sincronización ${enabled ? 'activada' : 'pausada'}`)
+      setTimeout(() => setMsg(null), 2000)
+    }
+  }
+
   async function syncResults() {
     setSyncing(true)
     setSyncMsg(null)
@@ -909,7 +932,7 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
             <input
               type="checkbox"
               checked={s.api_sync_enabled}
-              onChange={(e) => update('api_sync_enabled', e.target.checked)}
+              onChange={(e) => toggleApiSync(e.target.checked)}
               className="w-5 h-5 rounded bg-white/10 border-white/20 text-fifaGreen focus:ring-fifaGreen"
             />
             <span className="text-sm font-medium">Sincronización Automática con FIFA</span>

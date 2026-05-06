@@ -151,24 +151,43 @@ Todos los cambios en configuración y resultados actualizan el ranking automáti
 
 ## Bloqueo de pronósticos
 
-**Bloqueo global (`lock_at`):**
-- `settings.lock_at` marca la fecha/hora de cierre global.
-- Función `predictions_locked()` retorna `lock_at < now()`.
-- Deshabilita creación/edición de entries y predicciones especiales.
+El sistema implementa un **bloqueo dual** para máxima flexibilidad:
 
-**Bloqueo por partido (15 minutos antes):**
-- Función `can_predict_match(match_id)` retorna true solo si faltan más de 15 min para el kickoff.
-- RLS de `predictions` usa esta función para bloquear INSERT/UPDATE de cada partido individualmente.
-- Permite pronosticar partidos futuros incluso si otros ya comenzaron.
+### 1. Bloqueo Global (`settings.lock_at`)
+Afecta solo a:
+- **Predicciones especiales (podio)**: Los 4 selectores (campeón, subcampeón, 3º, 4º) se bloquean al llegar a `lock_at`
+- **Borrado de jugadas (entries)**: No se pueden eliminar entries después de `lock_at`
 
-**Bloqueo de borrado de entries:**
-- No se pueden borrar jugadas (entries) una vez que el mundial comenzó.
-- Función `tournament_started()` detecta si ya hay al menos un partido con kickoff en el pasado.
-- Solo admin puede borrar entries después del inicio.
+**Implementación:**
+- Función SQL `predictions_locked()` retorna `lock_at < now()`
+- RLS de `special_predictions`: bloquea UPDATE si `predictions_locked() = true`
+- RLS de `entries`: bloquea DELETE si `predictions_locked() = true`
+- Frontend: Calcula `podiumLocked` y deshabilita selectores del podio
+- UI muestra advertencia: "⚠️ El podio se bloquea definitivamente al iniciar el mundial"
+
+### 2. Bloqueo por Partido (15 minutos antes de kickoff)
+Afecta solo a:
+- **Marcadores individuales de cada partido**: Cada partido se bloquea 15 min antes de su `kickoff_at`
+
+**Implementación:**
+- Función `isMatchLocked(match, globalLocked)` en frontend retorna:
+  - `true` si `Date.now() >= (kickoff - 15 min)` 
+  - O si `globalLocked = true` (fallback legacy)
+- Inputs de score se deshabilitan individualmente cuando `isMatchLocked = true`
+- Permite pronosticar partidos futuros incluso si otros ya comenzaron
+- RLS valida que no haya pasado el `lock_at` global (protección adicional)
 
 **Bloqueo dinámico de eliminatorias:**
-- En UI, los inputs de score de eliminatorias están deshabilitados si los equipos aún no se definen (`home_team_id` o `away_team_id` NULL).
-- Muestra mensaje "Esperando rivales..." hasta que se completen las rondas previas.
+- En UI, los inputs de score de eliminatorias están deshabilitados si los equipos aún no se definen (`home_team_id` o `away_team_id` NULL)
+- Muestra mensaje "Esperando rivales..." o pill opaco hasta que se completen las rondas previas
+- Admin puede asignar equipos manualmente en la pestaña Resultados cuando se definan los clasificados
+
+**Resumen:**
+| Elemento | Bloqueado por | Momento del bloqueo |
+|----------|--------------|---------------------|
+| Podio (campeón, subcampeón, 3º, 4º) | `lock_at` global | Al iniciar el primer partido |
+| Borrado de jugadas (entries) | `lock_at` global | Al iniciar el primer partido |
+| Marcadores de partidos individuales | `kickoff_at - 15 min` | Por partido, 15 min antes |
 
 ## Modelo de datos clave
 

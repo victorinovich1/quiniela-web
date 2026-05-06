@@ -115,6 +115,11 @@ export default function PredictionsClient({
     return () => clearInterval(i)
   }, [lockAt])
 
+  const podiumLocked = useMemo(() => {
+    if (!lockAt) return false
+    return Date.now() > new Date(lockAt).getTime()
+  }, [lockAt])
+
   const teamsById = useMemo(() => {
     const m: Record<number, Team> = {}
     for (const t of teams) m[t.id] = t
@@ -209,7 +214,7 @@ export default function PredictionsClient({
 
       {!locked && countdown && (
         <div className="bg-fifaGreen/10 border border-fifaGreen/30 rounded-xl p-3 mb-4 flex items-center justify-between">
-          <span className="label-up text-fifaGreen">Tiempo para guardar</span>
+          <span className="label-up text-fifaGreen">Bloqueo de podio y borrado de quinielas en</span>
           <span className="font-mono font-extrabold text-white text-lg">{countdown}</span>
         </div>
       )}
@@ -260,7 +265,7 @@ export default function PredictionsClient({
       )}
 
       {tab === 'especiales' && (
-        <EspecialesTab teams={teams} state={specialState} setState={setSpecialState} locked={locked} />
+        <EspecialesTab teams={teams} state={specialState} setState={setSpecialState} locked={podiumLocked} lockAt={lockAt} />
       )}
 
       <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-navy-deepest/95 backdrop-blur-md border-t border-white/10 p-3 z-40">
@@ -783,12 +788,13 @@ function FifaMatchRow({
 // ESPECIALES
 // ============================================================
 function EspecialesTab({
-  teams, state, setState, locked,
+  teams, state, setState, locked, lockAt,
 }: {
   teams: Team[]
   state: SpecialState
   setState: (updater: (s: SpecialState) => SpecialState) => void
   locked: boolean
+  lockAt: string | null
 }) {
   const teamOptions = teams.slice().sort((a, b) => a.name.localeCompare(b.name))
 
@@ -816,6 +822,18 @@ function EspecialesTab({
         <h2 className="text-2xl font-black uppercase tracking-tight text-white">Predicciones especiales</h2>
         <p className="label-up mt-1">Vale más puntos al final del torneo</p>
       </div>
+
+      {locked && lockAt && (
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-center">
+          <p className="text-yellow-400 text-sm font-medium">
+            ⚠️ El podio se bloquea definitivamente al iniciar el mundial
+          </p>
+          <p className="text-white/60 text-xs mt-1">
+            Fecha de bloqueo: {new Date(lockAt).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' })}
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {teamSelect('Campeón', 'champion_team_id')}
         {teamSelect('Subcampeón', 'runner_up_team_id')}

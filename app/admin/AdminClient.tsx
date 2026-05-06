@@ -915,9 +915,9 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
       </div>
 
       <div className="card p-4">
-        <h3 className="font-extrabold uppercase tracking-tight text-white mb-3">Cierre de pronósticos</h3>
+        <h3 className="font-extrabold uppercase tracking-tight text-white mb-3">Cierre Global (Podio y Borrado de Jugadas)</h3>
         <label className="block text-sm text-white/70 mb-1">
-          Fecha y hora del primer partido (los pronósticos se bloquean al llegar este momento)
+          Fecha y hora del primer partido. Al llegar este momento se bloquean las predicciones especiales (podio) y el borrado de jugadas. Los marcadores de partidos individuales se bloquean 15 minutos antes de cada inicio.
         </label>
         <input
           type="datetime-local"

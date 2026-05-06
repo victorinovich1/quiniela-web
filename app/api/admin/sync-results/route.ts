@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   const supabase = await createServerClient()
   
   // Verificar que el usuario es admin
@@ -23,10 +23,13 @@ export async function POST() {
   }
 
   // Determinar URL base para llamar al endpoint de sync
-  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http'
-  const host = process.env.VERCEL_URL || 'localhost:3000'
+  const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https'
+  const host = request.headers.get('host') || 'localhost:3000'
   const baseUrl = `${protocol}://${host}`
   const cronSecret = process.env.CRON_SECRET
+
+  console.log('[admin/sync-results] CRON_SECRET presente:', !!cronSecret)
+  console.log('[admin/sync-results] Llamando a:', `${baseUrl}/api/cron/sync-results`)
 
   if (!cronSecret) {
     return NextResponse.json({ ok: false, error: 'CRON_SECRET no configurado' }, { status: 500 })
@@ -41,12 +44,29 @@ export async function POST() {
       cache: 'no-store',
     })
 
-    const data = await res.json()
+    if (!res.ok) {
+      const errorText = await res.text()
+      console.error('[admin/sync-results] Error response:', res.status, errorText.slice(0, 500))
+      return NextResponse.json({ 
+        ok: false, 
+        error: `Error del servidor (${res.status}). Revisa los logs de Vercel.`,
+      }, { status: res.status })
+    }
+
+    let data
+    try {
+      data = await res.json()
+    } catch (parseErr) {
+      console.error('[admin/sync-results] Error parsing JSON:', parseErr)
+      return NextResponse.json({ 
+        ok: false, 
+        error: 'Respuesta no es JSON válido',
+      }, { status: 502 })
+    }
 
     // Actualizar last_sync en settings
-    const supabaseService = createServerClient()
     if (data.ok) {
-      await supabaseService
+      await supabase
         .from('settings')
         .update({ 
           last_sync_at: new Date().toISOString(),
@@ -60,7 +80,7 @@ export async function POST() {
         details: data,
       })
     } else {
-      await supabaseService
+      await supabase
         .from('settings')
         .update({ 
           last_sync_error: data.error || 'Error desconocido',
@@ -71,9 +91,9 @@ export async function POST() {
     }
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : 'Error al sincronizar'
+    console.error('[admin/sync-results] Exception:', e)
     
-    const supabaseService = await createServerClient()
-    await supabaseService
+    await supabase
       .from('settings')
       .update({ last_sync_error: errorMsg })
       .eq('id', 1)

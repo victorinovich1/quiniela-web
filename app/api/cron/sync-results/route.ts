@@ -73,8 +73,11 @@ function assertCronAuthorized(request: NextRequest): string | null {
 }
 
 export async function GET(request: NextRequest) {
+  console.log('[cron/sync-results] Iniciando sincronización')
+  
   const unauthorizedReason = assertCronAuthorized(request)
   if (unauthorizedReason) {
+    console.error('[cron/sync-results] No autorizado:', unauthorizedReason)
     return NextResponse.json({ ok: false, error: unauthorizedReason }, { status: 401 })
   }
 
@@ -83,6 +86,14 @@ export async function GET(request: NextRequest) {
   const footballDataKey = process.env.FOOTBALL_DATA_API_KEY
   const competitionCode = process.env.FOOTBALL_DATA_COMPETITION_CODE ?? 'WC'
   const season = process.env.FOOTBALL_DATA_SEASON ?? '2026'
+
+  console.log('[cron/sync-results] Vars:', {
+    hasSupabaseUrl: !!supabaseUrl,
+    hasServiceRole: !!serviceRole,
+    hasFootballDataKey: !!footballDataKey,
+    competitionCode,
+    season,
+  })
 
   if (!supabaseUrl || !serviceRole) {
     return NextResponse.json(
@@ -132,6 +143,8 @@ export async function GET(request: NextRequest) {
   }
 
     const fixtureUrl = buildFixtureUrl(competitionCode, season)
+    console.log('[cron/sync-results] Llamando a football-data API:', fixtureUrl)
+    
     const upstreamRes = await fetch(fixtureUrl, {
       headers: {
         'X-Auth-Token': footballDataKey,
@@ -139,8 +152,11 @@ export async function GET(request: NextRequest) {
       cache: 'no-store',
     })
 
+    console.log('[cron/sync-results] Respuesta API:', upstreamRes.status, upstreamRes.statusText)
+
     if (!upstreamRes.ok) {
       const txt = await upstreamRes.text()
+      console.error('[cron/sync-results] Error de API:', txt.slice(0, 500))
       return NextResponse.json(
         {
           ok: false,

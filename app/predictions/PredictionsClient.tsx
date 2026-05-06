@@ -71,6 +71,8 @@ export default function PredictionsClient({
   const [savedAt, setSavedAt] = useState<Date | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [countdown, setCountdown] = useState<string>('')
+  const [autoSaving, setAutoSaving] = useState(false)
+  const [autoSaveMsg, setAutoSaveMsg] = useState<string | null>(null)
 
   const activeEntry = entries.find((e) => e.id === activeEntryId) || entries[0]
 
@@ -126,6 +128,40 @@ export default function PredictionsClient({
     return m
   }, [teams])
 
+  async function handleAutoSave(matchId: number, homeScore: number | null, awayScore: number | null) {
+    // Solo guardar si ambos valores son válidos
+    if (homeScore === null || awayScore === null) return
+    
+    // Verificar que el partido no esté bloqueado
+    const match = matches.find(m => m.id === matchId)
+    if (!match || isMatchLocked(match, locked)) return
+    
+    setAutoSaving(true)
+    setAutoSaveMsg(null)
+    
+    try {
+      const supabase = createClient()
+      const { error: predErr } = await supabase.from('predictions').upsert({
+        entry_id: activeEntryId,
+        match_id: matchId,
+        home_score: homeScore,
+        away_score: awayScore,
+        ko_winner_team_id: null, // Se maneja por separado
+      }, { onConflict: 'entry_id,match_id' })
+      
+      if (predErr) throw predErr
+      
+      setAutoSaveMsg('✅ Guardado')
+      setTimeout(() => setAutoSaveMsg(null), 3000)
+    } catch (e) {
+      const errorMsg = e instanceof Error ? e.message : 'Error al guardar'
+      setAutoSaveMsg(`❌ ${errorMsg}`)
+      setTimeout(() => setAutoSaveMsg(null), 5000)
+    } finally {
+      setAutoSaving(false)
+    }
+  }
+
   function setScore(matchId: number, key: 'home' | 'away', value: string) {
     if (locked) return
     setPreds((prev) => {
@@ -133,6 +169,12 @@ export default function PredictionsClient({
       const num = value === '' ? null : Math.max(0, Math.min(99, Number(value)))
       const next = { ...cur, [key]: Number.isNaN(num as number) ? null : num }
       if (next.home !== null && next.away !== null && next.home !== next.away) next.ko = null
+      
+      // Auto-guardar cuando ambos valores estén completos
+      if (next.home !== null && next.away !== null) {
+        handleAutoSave(matchId, next.home, next.away)
+      }
+      
       return { ...prev, [matchId]: next }
     })
   }
@@ -273,13 +315,15 @@ export default function PredictionsClient({
       <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-navy-deepest/95 backdrop-blur-md border-t border-white/10 p-3 z-40">
         <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
           <div className="text-xs uppercase tracking-wider truncate">
-            {error ? <span className="text-danger">{error}</span>
+            {autoSaving ? <span className="text-blue-400">🔄 Guardando...</span>
+            : autoSaveMsg ? <span className={autoSaveMsg.startsWith('✅') ? 'text-fifaGreen font-bold' : 'text-danger'}>{autoSaveMsg}</span>
+            : error ? <span className="text-danger">{error}</span>
             : savedAt ? <span className="text-fifaGreen font-bold">✓ Guardado · {savedAt.toLocaleTimeString('es-ES')}</span>
             : locked ? <span className="text-white/40">Bloqueado</span>
-            : <span className="text-white/40">Guarda tus cambios</span>}
+            : <span className="text-white/40">Los cambios se guardan automáticamente</span>}
           </div>
-          <button onClick={handleSave} disabled={saving || locked} className="btn btn-primary whitespace-nowrap">
-            {saving ? 'Guardando...' : 'Guardar'}
+          <button onClick={handleSave} disabled={saving || locked} className="btn btn-outline whitespace-nowrap text-xs">
+            {saving ? 'Guardando...' : 'Guardar todo'}
           </button>
         </div>
       </div>

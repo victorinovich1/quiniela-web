@@ -101,20 +101,21 @@ export async function GET(request: NextRequest) {
     auth: { persistSession: false, autoRefreshToken: false },
   })
 
-  const [{ data: teams, error: teamsErr }, { data: matches, error: matchesErr }] = await Promise.all([
-    supabase.from('teams').select('id, code'),
-    supabase.from('matches').select('id, match_number, home_team_id, away_team_id, status'),
-  ])
+  try {
+    const [{ data: teams, error: teamsErr }, { data: matches, error: matchesErr }] = await Promise.all([
+      supabase.from('teams').select('id, code'),
+      supabase.from('matches').select('id, match_number, home_team_id, away_team_id, status'),
+    ])
 
-  if (teamsErr || matchesErr || !teams || !matches) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: teamsErr?.message || matchesErr?.message || 'Could not load teams/matches',
-      },
-      { status: 500 }
-    )
-  }
+    if (teamsErr || matchesErr || !teams || !matches) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: teamsErr?.message || matchesErr?.message || 'Could not load teams/matches',
+        },
+        { status: 500 }
+      )
+    }
 
   const teamByCode = new Map<string, number>()
   for (const t of teams as TeamRow[]) {
@@ -130,126 +131,163 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const fixtureUrl = buildFixtureUrl(competitionCode, season)
-  const upstreamRes = await fetch(fixtureUrl, {
-    headers: {
-      'X-Auth-Token': footballDataKey,
-    },
-    cache: 'no-store',
-  })
-
-  if (!upstreamRes.ok) {
-    const txt = await upstreamRes.text()
-    return NextResponse.json(
-      {
-        ok: false,
-        error: `football-data error ${upstreamRes.status}`,
-        details: txt.slice(0, 500),
+    const fixtureUrl = buildFixtureUrl(competitionCode, season)
+    const upstreamRes = await fetch(fixtureUrl, {
+      headers: {
+        'X-Auth-Token': footballDataKey,
       },
-      { status: 502 }
-    )
-  }
+      cache: 'no-store',
+    })
 
-  const payload = (await upstreamRes.json()) as { matches?: FdMatch[] }
-  const externalMatches = payload.matches ?? []
-
-  let updated = 0
-  let skippedNoTeams = 0
-  let skippedNoMapping = 0
-  let skippedUnknownCode = 0
-  const sampleUnmapped: Array<{ home: string; away: string; status: string | null | undefined }> = []
-
-  for (const fm of externalMatches) {
-    const homeCode = fm.homeTeam?.tla?.toUpperCase()
-    const awayCode = fm.awayTeam?.tla?.toUpperCase()
-    if (!homeCode || !awayCode) {
-      skippedNoTeams += 1
-      continue
-    }
-
-    const extHomeId = teamByCode.get(homeCode)
-    const extAwayId = teamByCode.get(awayCode)
-    if (!extHomeId || !extAwayId) {
-      skippedUnknownCode += 1
-      continue
-    }
-
-    let mapped = matchByTeams.get(`${extHomeId}-${extAwayId}`)
-    let swapped = false
-    if (!mapped) {
-      mapped = matchByTeams.get(`${extAwayId}-${extHomeId}`)
-      swapped = !!mapped
-    }
-
-    if (!mapped) {
-      skippedNoMapping += 1
-      if (sampleUnmapped.length < 10) {
-        sampleUnmapped.push({ home: homeCode, away: awayCode, status: fm.status })
-      }
-      continue
-    }
-
-    const rawHome = parseScore(fm.score?.fullTime?.home)
-    const rawAway = parseScore(fm.score?.fullTime?.away)
-    const homeScore = swapped ? rawAway : rawHome
-    const awayScore = swapped ? rawHome : rawAway
-
-    let shootoutWinner: number | null = null
-    if (fm.score?.duration === 'PENALTY_SHOOTOUT') {
-      if (fm.score.winner === 'HOME_TEAM') shootoutWinner = extHomeId
-      if (fm.score.winner === 'AWAY_TEAM') shootoutWinner = extAwayId
-    }
-
-    // Actualiza scores, status y stadium desde la API
-    // Si la API marca el partido como FINISHED, el status pasa a 'finished' automáticamente
-    // y las views de puntos (entry_scores, etc.) recalculan los puntajes
-    const updatePatch = {
-      home_score: homeScore,
-      away_score: awayScore,
-      shootout_winner_team_id: shootoutWinner,
-      status: mapStatus(fm.status), // scheduled | live | finished
-      stadium: fm.venue ?? null,
-    }
-
-    const { error: updateErr } = await supabase
-      .from('matches')
-      .update(updatePatch)
-      .eq('id', mapped.id)
-
-    if (updateErr) {
+    if (!upstreamRes.ok) {
+      const txt = await upstreamRes.text()
       return NextResponse.json(
         {
           ok: false,
-          error: `Failed updating match ${mapped.match_number}: ${updateErr.message}`,
+          error: `football-data API error ${upstreamRes.status}`,
+          details: txt.slice(0, 500),
         },
-        { status: 500 }
+        { status: 502 }
       )
     }
 
-    updated += 1
-  }
+    let payload: { matches?: FdMatch[] }
+    try {
+      payload = await upstreamRes.json()
+    } catch (parseErr) {
+      const txt = await upstreamRes.text()
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'API devolvió respuesta no-JSON (posiblemente HTML)',
+          details: txt.slice(0, 500),
+        },
+        { status: 502 }
+      )
+    }
 
-  // Actualizar timestamp de última sincronización exitosa
-  await supabase
-    .from('settings')
-    .update({ 
-      last_sync_at: new Date().toISOString(),
-      last_sync_error: null,
+    const externalMatches = payload.matches ?? []
+
+    let updated = 0
+    let skippedNoTeams = 0
+    let skippedNoMapping = 0
+    let skippedUnknownCode = 0
+    const sampleUnmapped: Array<{ home: string; away: string; status: string | null | undefined }> = []
+
+    for (const fm of externalMatches) {
+      const homeCode = fm.homeTeam?.tla?.toUpperCase()
+      const awayCode = fm.awayTeam?.tla?.toUpperCase()
+      if (!homeCode || !awayCode) {
+        skippedNoTeams += 1
+        continue
+      }
+
+      const extHomeId = teamByCode.get(homeCode)
+      const extAwayId = teamByCode.get(awayCode)
+      if (!extHomeId || !extAwayId) {
+        skippedUnknownCode += 1
+        continue
+      }
+
+      let mapped = matchByTeams.get(`${extHomeId}-${extAwayId}`)
+      let swapped = false
+      if (!mapped) {
+        mapped = matchByTeams.get(`${extAwayId}-${extHomeId}`)
+        swapped = !!mapped
+      }
+
+      if (!mapped) {
+        skippedNoMapping += 1
+        if (sampleUnmapped.length < 10) {
+          sampleUnmapped.push({ home: homeCode, away: awayCode, status: fm.status })
+        }
+        continue
+      }
+
+      const rawHome = parseScore(fm.score?.fullTime?.home)
+      const rawAway = parseScore(fm.score?.fullTime?.away)
+      const homeScore = swapped ? rawAway : rawHome
+      const awayScore = swapped ? rawHome : rawAway
+
+      let shootoutWinner: number | null = null
+      if (fm.score?.duration === 'PENALTY_SHOOTOUT') {
+        if (fm.score.winner === 'HOME_TEAM') shootoutWinner = extHomeId
+        if (fm.score.winner === 'AWAY_TEAM') shootoutWinner = extAwayId
+      }
+
+      // Actualiza scores, status y stadium desde la API
+      // Si la API marca el partido como FINISHED, el status pasa a 'finished' automáticamente
+      // y las views de puntos (entry_scores, etc.) recalculan los puntajes
+      const updatePatch = {
+        home_score: homeScore,
+        away_score: awayScore,
+        shootout_winner_team_id: shootoutWinner,
+        status: mapStatus(fm.status), // scheduled | live | finished
+        stadium: fm.venue ?? null,
+      }
+
+      const { error: updateErr } = await supabase
+        .from('matches')
+        .update(updatePatch)
+        .eq('id', mapped.id)
+
+      if (updateErr) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: `Failed updating match ${mapped.match_number}: ${updateErr.message}`,
+          },
+          { status: 500 }
+        )
+      }
+
+      updated += 1
+    }
+
+    // Actualizar timestamp de última sincronización exitosa
+    await supabase
+      .from('settings')
+      .update({ 
+        last_sync_at: new Date().toISOString(),
+        last_sync_error: null,
+      })
+      .eq('id', 1)
+
+    return NextResponse.json({
+      ok: true,
+      source: 'football-data.org',
+      competitionCode,
+      season,
+      upstreamCount: externalMatches.length,
+      updated,
+      skippedNoTeams,
+      skippedUnknownCode,
+      skippedNoMapping,
+      sampleUnmapped,
+      at: new Date().toISOString(),
     })
-    .eq('id', 1)
+  } catch (error) {
+    // Captura cualquier error inesperado y devuelve JSON, nunca HTML
+    const errorMsg = error instanceof Error ? error.message : 'Error desconocido en sincronización'
+    
+    // Intentar actualizar error en BD
+    try {
+      await supabase
+        .from('settings')
+        .update({ last_sync_error: errorMsg })
+        .eq('id', 1)
+    } catch {
+      // Ignorar error al guardar error
+    }
 
-  return NextResponse.json({
-    ok: true,
-    source: 'football-data.org',
-    competitionCode,
-    season,
-    upstreamCount: externalMatches.length,
-    updated,
-    skippedNoTeams,
-    skippedUnknownCode,
-    skippedNoMapping,
-    sampleUnmapped,
-    at: new Date().toISOString(),
-  })
+    return NextResponse.json(
+      {
+        ok: false,
+        error: errorMsg,
+        stack: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : undefined) : undefined,
+      },
+      { status: 500 }
+    )
+  }
 }
 

@@ -699,7 +699,21 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
     const supabase = createClient()
     try {
       const res = await fetch('/api/admin/sync-results', { method: 'POST' })
-      const data = await res.json()
+      
+      // Verificar res.ok ANTES de parsear JSON para evitar 'Unexpected token <'
+      if (!res.ok) {
+        const errorText = await res.text()
+        setSyncError(`Error HTTP ${res.status}: ${errorText.slice(0, 200)}`)
+        return
+      }
+
+      let data
+      try {
+        data = await res.json()
+      } catch (parseErr) {
+        setSyncError('Respuesta del servidor no es JSON válido')
+        return
+      }
       
       if (data.ok) {
         setSyncMsg(`Sincronización completada: ${data.updated} partidos actualizados`)

@@ -26,7 +26,7 @@ export default async function RootLayout({
       .select('role')
       .eq('id', user.id)
       .maybeSingle()
-    isAdmin = profile?.role === 'admin'
+    isAdmin = ['admin', 'manager'].includes(profile?.role ?? '')
   }
 
   return (

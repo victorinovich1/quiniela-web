@@ -213,9 +213,11 @@ export default function PredictionsClient({
       )}
 
       {!locked && countdown && (
-        <div className="bg-fifaGreen/10 border border-fifaGreen/30 rounded-xl p-3 mb-4 flex items-center justify-between">
-          <span className="label-up text-fifaGreen">Bloqueo de podio y borrado de quinielas en</span>
-          <span className="font-mono font-extrabold text-white text-lg">{countdown}</span>
+        <div className="bg-fifaGreen/10 border border-fifaGreen/30 rounded-xl p-3 mb-4">
+          <div className="text-center">
+            <p className="text-fifaGreen text-xs font-bold uppercase tracking-wider mb-2">El mundial de México, Estados Unidos y Canadá 2026 inicia en:</p>
+            <p className="font-mono font-extrabold text-white text-2xl tabular-nums">{countdown}</p>
+          </div>
         </div>
       )}
 
@@ -822,6 +824,14 @@ function EspecialesTab({
         <h2 className="text-2xl font-black uppercase tracking-tight text-white">Predicciones especiales</h2>
         <p className="label-up mt-1">Vale más puntos al final del torneo</p>
       </div>
+
+      {!locked && (
+        <div className="bg-fifaGreen/10 border border-fifaGreen/30 rounded-lg p-4 text-center">
+          <p className="text-fifaGreen text-sm font-semibold">
+            🏆 Recuerda llenar tu podio antes del inicio del torneo. Una vez que comience el Mundial, estas opciones se bloquearán definitivamente.
+          </p>
+        </div>
+      )}
 
       {locked && lockAt && (
         <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-center">

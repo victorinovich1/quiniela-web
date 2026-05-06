@@ -25,18 +25,11 @@ type SpecialState = {
   runner_up_team_id: number | null
   third_team_id: number | null
   fourth_team_id: number | null
-  top_scorer: string
-  mvp: string
-  best_goalkeeper: string
-  revelation_team_id: number | null
-  disappointment_team_id: number | null
 }
 
 function emptySpecial(): SpecialState {
   return {
     champion_team_id: null, runner_up_team_id: null, third_team_id: null, fourth_team_id: null,
-    top_scorer: '', mvp: '', best_goalkeeper: '',
-    revelation_team_id: null, disappointment_team_id: null,
   }
 }
 
@@ -84,11 +77,6 @@ export default function PredictionsClient({
       runner_up_team_id: special.runner_up_team_id,
       third_team_id: special.third_team_id,
       fourth_team_id: special.fourth_team_id,
-      top_scorer: special.top_scorer ?? '',
-      mvp: special.mvp ?? '',
-      best_goalkeeper: special.best_goalkeeper ?? '',
-      revelation_team_id: special.revelation_team_id,
-      disappointment_team_id: special.disappointment_team_id,
     }
   })
 
@@ -155,11 +143,6 @@ export default function PredictionsClient({
         runner_up_team_id: specialState.runner_up_team_id,
         third_team_id: specialState.third_team_id,
         fourth_team_id: specialState.fourth_team_id,
-        top_scorer: specialState.top_scorer || null,
-        mvp: specialState.mvp || null,
-        best_goalkeeper: specialState.best_goalkeeper || null,
-        revelation_team_id: specialState.revelation_team_id,
-        disappointment_team_id: specialState.disappointment_team_id,
       }, { onConflict: 'entry_id' })
       if (specErr) throw specErr
       setSavedAt(new Date())
@@ -645,11 +628,6 @@ function EspecialesTab({
         {teamSelect('Subcampeón', 'runner_up_team_id')}
         {teamSelect('Tercer lugar', 'third_team_id')}
         {teamSelect('Cuarto lugar', 'fourth_team_id')}
-        {textInput('Goleador del torneo', 'top_scorer')}
-        {textInput('Mejor jugador (MVP)', 'mvp')}
-        {textInput('Mejor portero', 'best_goalkeeper')}
-        {teamSelect('Equipo revelación', 'revelation_team_id')}
-        {teamSelect('Equipo decepción', 'disappointment_team_id')}
       </div>
     </div>
   )

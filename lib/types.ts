@@ -61,11 +61,6 @@ export interface SpecialPrediction {
   runner_up_team_id: number | null
   third_team_id: number | null
   fourth_team_id: number | null
-  top_scorer: string | null
-  mvp: string | null
-  best_goalkeeper: string | null
-  revelation_team_id: number | null
-  disappointment_team_id: number | null
 }
 
 export interface Settings {
@@ -82,20 +77,10 @@ export interface Settings {
   pt_runner_up: number
   pt_third: number
   pt_fourth: number
-  pt_top_scorer: number
-  pt_mvp: number
-  pt_goalkeeper: number
-  pt_revelation: number
-  pt_disappointment: number
   champion_team_id: number | null
   runner_up_team_id: number | null
   third_team_id: number | null
   fourth_team_id: number | null
-  top_scorer: string | null
-  mvp: string | null
-  best_goalkeeper: string | null
-  revelation_team_id: number | null
-  disappointment_team_id: number | null
 }
 
 export interface Invitation {

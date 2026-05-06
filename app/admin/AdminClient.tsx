@@ -690,11 +690,6 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
     { key: 'pt_runner_up', label: 'Acertar Subcampeón' },
     { key: 'pt_third', label: 'Acertar Tercer lugar' },
     { key: 'pt_fourth', label: 'Acertar Cuarto lugar' },
-    { key: 'pt_top_scorer', label: 'Acertar Goleador' },
-    { key: 'pt_mvp', label: 'Acertar MVP' },
-    { key: 'pt_goalkeeper', label: 'Acertar Mejor portero' },
-    { key: 'pt_revelation', label: 'Acertar Revelación' },
-    { key: 'pt_disappointment', label: 'Acertar Decepción' },
   ]
 
   const teamSelectFields: { key: keyof Settings; label: string }[] = [
@@ -702,14 +697,6 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
     { key: 'runner_up_team_id', label: 'Subcampeón' },
     { key: 'third_team_id', label: 'Tercer lugar' },
     { key: 'fourth_team_id', label: 'Cuarto lugar' },
-    { key: 'revelation_team_id', label: 'Equipo revelación' },
-    { key: 'disappointment_team_id', label: 'Equipo decepción' },
-  ]
-
-  const textFields: { key: keyof Settings; label: string }[] = [
-    { key: 'top_scorer', label: 'Goleador del torneo' },
-    { key: 'mvp', label: 'Mejor jugador (MVP)' },
-    { key: 'best_goalkeeper', label: 'Mejor portero' },
   ]
 
   return (
@@ -766,18 +753,6 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
               </select>
-            </div>
-          ))}
-          {textFields.map((f) => (
-            <div key={f.key as string} className="flex items-center gap-2">
-              <label className="flex-1 text-sm">{f.label}</label>
-              <input
-                type="text"
-                value={(s[f.key] as string) ?? ''}
-                onChange={(e) => update(f.key, (e.target.value || null) as Settings[typeof f.key])}
-                className="input flex-1"
-                placeholder="Nombre del jugador"
-              />
             </div>
           ))}
         </div>

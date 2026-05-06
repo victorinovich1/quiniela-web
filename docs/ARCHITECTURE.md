@@ -144,8 +144,8 @@ El panel `/admin` ofrece control completo del sistema al rol `admin`:
 
 ### Configuración del Sistema
 - Establecer fecha/hora de cierre de pronósticos (`lock_at`)
-- Configurar sistema de puntos (16 categorías editables)
-- Cargar resultados especiales al final del torneo (campeón, goleador, MVP, etc.)
+- Configurar sistema de puntos (12 categorías editables)
+- Cargar resultados especiales al final del torneo (campeón, subcampeón, tercer y cuarto lugar)
 
 Todos los cambios en configuración y resultados actualizan el ranking automáticamente gracias a las views calculadas en tiempo real.
 

@@ -109,11 +109,6 @@ Una fila por entry con todas sus predicciones especiales. PK = `entry_id`.
 | `runner_up_team_id` | int → teams | |
 | `third_team_id` | int → teams | |
 | `fourth_team_id` | int → teams | |
-| `top_scorer` | text | Nombre del jugador (texto libre) |
-| `mvp` | text | |
-| `best_goalkeeper` | text | |
-| `revelation_team_id` | int → teams | |
-| `disappointment_team_id` | int → teams | |
 | `updated_at` | timestamptz | |
 
 ### `settings`

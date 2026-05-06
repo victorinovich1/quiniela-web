@@ -229,6 +229,15 @@ export async function GET(request: NextRequest) {
     updated += 1
   }
 
+  // Actualizar timestamp de última sincronización exitosa
+  await supabase
+    .from('settings')
+    .update({ 
+      last_sync_at: new Date().toISOString(),
+      last_sync_error: null,
+    })
+    .eq('id', 1)
+
   return NextResponse.json({
     ok: true,
     source: 'football-data.org',

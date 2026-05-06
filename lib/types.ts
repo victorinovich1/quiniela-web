@@ -81,6 +81,8 @@ export interface Settings {
   runner_up_team_id: number | null
   third_team_id: number | null
   fourth_team_id: number | null
+  last_sync_at: string | null
+  last_sync_error: string | null
 }
 
 export interface Invitation {

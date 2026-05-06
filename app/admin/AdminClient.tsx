@@ -681,12 +681,43 @@ function ParticipantsTab({
 function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | null; teams: Team[] }) {
   const [s, setS] = useState<Settings | null>(initialSettings)
   const [saving, setSaving] = useState(false)
+  const [syncing, setSyncing] = useState(false)
+  const [syncMsg, setSyncMsg] = useState<string | null>(null)
+  const [syncError, setSyncError] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
 
   if (!s) return <div>No hay configuración cargada.</div>
 
   function update<K extends keyof Settings>(key: K, value: Settings[K]) {
     setS((curr) => (curr ? { ...curr, [key]: value } : curr))
+  }
+
+  async function syncResults() {
+    setSyncing(true)
+    setSyncMsg(null)
+    setSyncError(null)
+    const supabase = createClient()
+    try {
+      const res = await fetch('/api/admin/sync-results', { method: 'POST' })
+      const data = await res.json()
+      
+      if (data.ok) {
+        setSyncMsg(`Sincronización completada: ${data.updated} partidos actualizados`)
+        // Recargar settings para obtener last_sync_at actualizado
+        const { data: updatedSettings } = await supabase.from('settings').select('*').eq('id', 1).single()
+        if (updatedSettings) setS(updatedSettings)
+      } else {
+        setSyncError(data.error || 'Error en sincronización')
+      }
+    } catch (e) {
+      setSyncError(e instanceof Error ? e.message : 'Error de red')
+    } finally {
+      setSyncing(false)
+      setTimeout(() => {
+        setSyncMsg(null)
+        setSyncError(null)
+      }, 5000)
+    }
   }
 
   async function save() {
@@ -729,6 +760,52 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
         Configura la fecha de cierre de pronósticos, los puntajes y los resultados especiales (al final del torneo).
       </p>
       {msg && <div className="text-sm text-success">{msg}</div>}
+
+      {/* Sincronización API */}
+      <div className="card p-4 bg-fifaGreen/5 border border-fifaGreen/20">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-extrabold uppercase tracking-tight text-fifaGreen">Sincronización API</h3>
+          <button 
+            onClick={syncResults} 
+            disabled={syncing}
+            className="btn btn-primary flex items-center gap-2"
+          >
+            <span className={syncing ? 'animate-spin' : ''}>🔄</span>
+            {syncing ? 'Sincronizando...' : 'Sincronizar Resultados (API)'}
+          </button>
+        </div>
+        
+        <div className="space-y-2 text-sm">
+          {s.last_sync_at && (
+            <div className="text-white/70">
+              Última sincronización oficial: <span className="text-white font-medium">
+                {new Date(s.last_sync_at).toLocaleString('es-ES', {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                })}
+              </span>
+            </div>
+          )}
+          {!s.last_sync_at && (
+            <div className="text-white/50">Aún no se ha realizado ninguna sincronización</div>
+          )}
+          {s.last_sync_error && (
+            <div className="text-red-400 bg-red-500/10 border border-red-500/20 rounded px-3 py-2">
+              ⚠️ Error en última sincronización: {s.last_sync_error}
+            </div>
+          )}
+          {syncMsg && (
+            <div className="text-green-400 bg-green-500/10 border border-green-500/20 rounded px-3 py-2">
+              ✅ {syncMsg}
+            </div>
+          )}
+          {syncError && (
+            <div className="text-red-400 bg-red-500/10 border border-red-500/20 rounded px-3 py-2">
+              ❌ {syncError}
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="card p-4">
         <h3 className="font-extrabold uppercase tracking-tight text-white mb-3">Cierre de pronósticos</h3>

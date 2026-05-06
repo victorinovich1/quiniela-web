@@ -200,11 +200,14 @@ export async function GET(request: NextRequest) {
       if (fm.score.winner === 'AWAY_TEAM') shootoutWinner = extAwayId
     }
 
+    // Actualiza scores, status y stadium desde la API
+    // Si la API marca el partido como FINISHED, el status pasa a 'finished' automáticamente
+    // y las views de puntos (entry_scores, etc.) recalculan los puntajes
     const updatePatch = {
       home_score: homeScore,
       away_score: awayScore,
       shootout_winner_team_id: shootoutWinner,
-      status: mapStatus(fm.status),
+      status: mapStatus(fm.status), // scheduled | live | finished
       stadium: fm.venue ?? null,
     }
 

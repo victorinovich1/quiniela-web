@@ -33,6 +33,24 @@ function emptySpecial(): SpecialState {
   }
 }
 
+// Verifica si un partido está bloqueado: 15 min antes de kickoff o bloqueo global
+function isMatchLocked(match: Match, globalLocked: boolean): boolean {
+  if (globalLocked) return true
+  if (!match.kickoff_at) return false
+  const kickoff = new Date(match.kickoff_at).getTime()
+  const now = Date.now()
+  return now >= (kickoff - 15 * 60 * 1000) // 15 minutos antes
+}
+
+// Verifica si un partido debe mostrar "EN VIVO" visual: pasaron >5 min de kickoff pero status='scheduled'
+function shouldShowLiveIndicator(match: Match): boolean {
+  if (match.status !== 'scheduled') return false
+  if (!match.kickoff_at) return false
+  const kickoff = new Date(match.kickoff_at).getTime()
+  const now = Date.now()
+  return now >= (kickoff + 5 * 60 * 1000) // 5 minutos después
+}
+
 export default function PredictionsClient({
   entries, activeEntryId, teams, matches, predictions, special, lockAt, locked,
 }: {
@@ -549,6 +567,8 @@ function CompactMatchRow({
 
   const kickoff = match.kickoff_at ? new Date(match.kickoff_at) : null
   const timeStr = kickoff ? kickoff.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '--:--'
+  const matchLocked = isMatchLocked(match, locked)
+  const showLive = shouldShowLiveIndicator(match)
 
   return (
     <div className="card p-2 hover:bg-white/5 transition-colors">
@@ -558,9 +578,13 @@ function CompactMatchRow({
           M{match.match_number}
         </div>
 
-        {/* Time */}
-        <div className="text-[11px] font-bold text-white/60 w-12">
-          {timeStr}
+        {/* Time or Live indicator */}
+        <div className="text-[11px] font-bold w-12">
+          {showLive ? (
+            <span className="text-red-500 animate-pulse">VIVO</span>
+          ) : (
+            <span className="text-white/60">{timeStr}</span>
+          )}
         </div>
 
         {/* Home team */}
@@ -584,7 +608,7 @@ function CompactMatchRow({
             inputMode="numeric"
             value={p.home ?? ''}
             onChange={(e) => setScore(match.id, 'home', e.target.value)}
-            disabled={locked}
+            disabled={matchLocked}
             className="score-input w-8 h-8 text-sm"
             aria-label={`Goles ${homeLabel}`}
           />
@@ -596,7 +620,7 @@ function CompactMatchRow({
             inputMode="numeric"
             value={p.away ?? ''}
             onChange={(e) => setScore(match.id, 'away', e.target.value)}
-            disabled={locked}
+            disabled={matchLocked}
             className="score-input w-8 h-8 text-sm"
             aria-label={`Goles ${awayLabel}`}
           />
@@ -641,7 +665,9 @@ function FifaMatchRow({
 
   const isKnockout = match.phase !== 'group'
   const teamsNotDefined = !match.home_team_id || !match.away_team_id
-  const disableInputs = locked || (isKnockout && teamsNotDefined)
+  const matchLocked = isMatchLocked(match, locked)
+  const disableInputs = matchLocked || (isKnockout && teamsNotDefined)
+  const showLive = shouldShowLiveIndicator(match)
 
   const showKoSelect = showKoWinner && p.home !== null && p.away !== null && p.home === p.away
 
@@ -671,7 +697,13 @@ function FifaMatchRow({
     <div className="card p-3">
       <div className="grid grid-cols-[60px_1fr_auto_1fr_1px] sm:grid-cols-[80px_1fr_auto_1fr_100px] items-center gap-2 sm:gap-3">
         <div className="min-w-0">
-          <div className="text-white font-extrabold text-xs sm:text-base leading-tight">{timeStr}</div>
+          <div className="text-white font-extrabold text-xs sm:text-base leading-tight">
+            {showLive ? (
+              <span className="text-red-500 animate-pulse">EN VIVO</span>
+            ) : (
+              timeStr
+            )}
+          </div>
           <div className="text-[9px] sm:text-[10px] font-bold text-white/40 uppercase tracking-wider hidden sm:block">{tzShort} {dayStr && `· ${dayStr}`}</div>
         </div>
 

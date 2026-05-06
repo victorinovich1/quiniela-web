@@ -215,6 +215,165 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* El Manual del Jugador */}
+      <section className="py-20 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tight text-white mb-4">
+              El manual del jugador
+            </h2>
+            <p className="text-lg text-white/60 max-w-2xl mx-auto">
+              Las reglas son simples, pero las conoce solo quien las lee
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Fair Play */}
+            <div className="group bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-fifaGreen/50 transition-all duration-300 hover:-translate-y-1">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-fifaGreen/20 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-fifaGreen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-black uppercase text-white mb-2">Fair Play</h3>
+                  <p className="text-white/70 text-sm">
+                    Bloqueo 15 minutos antes del pitazo inicial. No vale arrepentirse cuando el partido ya empezó.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Doble Filo */}
+            <div className="group bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-fifaGreen/50 transition-all duration-300 hover:-translate-y-1">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-fifaGreen/20 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-fifaGreen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-black uppercase text-white mb-2">Doble Filo</h3>
+                  <p className="text-white/70 text-sm">
+                    Sumas puntos por marcador exacto o solo por ganador. Mientras más preciso, más puntos.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Podio Sagrado */}
+            <div className="group bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-fifaGreen/50 transition-all duration-300 hover:-translate-y-1">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gold/20 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-black uppercase text-white mb-2">Podio Sagrado</h3>
+                  <p className="text-white/70 text-sm">
+                    Elegí tu Top 4 antes de que ruede la primera bola. Vale mucho más que cualquier partido.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Multi-Vida */}
+            <div className="group bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-fifaGreen/50 transition-all duration-300 hover:-translate-y-1">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-fifaGreen/20 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-fifaGreen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-black uppercase text-white mb-2">Multi-Vida</h3>
+                  <p className="text-white/70 text-sm">
+                    ¿Una sola oportunidad? No. Crea las quinielas que quieras con distintas estrategias.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Seguridad y Confianza */}
+      <section className="py-20 px-4 bg-white/5">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Imagen */}
+            <div className="relative aspect-square rounded-2xl overflow-hidden">
+              <div 
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: 'url(/images/landing/estadio.jpg)' }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-navy-deepest/80 to-transparent" />
+            </div>
+
+            {/* Contenido */}
+            <div>
+              <div className="inline-block bg-fifaGreen/15 border border-fifaGreen/40 px-3 py-1 rounded-full mb-4">
+                <span className="text-fifaGreen text-xs font-bold uppercase tracking-wider">Grupo cerrado</span>
+              </div>
+              
+              <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-white mb-6">
+                Solo por invitación
+              </h2>
+              
+              <div className="space-y-4 text-white/70">
+                <p className="text-lg">
+                  Esta no es una quiniela pública. Es un grupo selecto donde todos se conocen.
+                </p>
+                <p>
+                  Necesitas un <span className="text-fifaGreen font-bold">código de activación</span> que solo el administrador puede generar. Sin código, no hay acceso.
+                </p>
+                <p>
+                  Tus datos están protegidos y solo compites con gente de confianza.
+                </p>
+              </div>
+
+              <div className="mt-8 flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl">
+                <svg className="w-6 h-6 text-fifaGreen flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <div className="text-sm">
+                  <div className="font-bold text-white">100% privado y seguro</div>
+                  <div className="text-white/60">Sin compartir datos con terceros</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-16 px-4 border-t border-white/10">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="mb-6">
+            <img 
+              src="/images/landing/trofeo.jpg" 
+              alt="Copa Mundial FIFA" 
+              className="w-20 h-20 mx-auto object-contain opacity-80 grayscale hover:grayscale-0 transition-all duration-300"
+            />
+          </div>
+          
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <span className="text-fifaGreen font-black text-xl tracking-tight">QUINIELA</span>
+            <span className="text-white/80 font-extrabold text-xl tracking-tight">2026</span>
+          </div>
+
+          <p className="text-white/40 text-sm mb-6">
+            Viví el Mundial a tu manera
+          </p>
+
+          <div className="text-white/30 text-xs">
+            © 2026 Quiniela Pro. Todos los derechos reservados.
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

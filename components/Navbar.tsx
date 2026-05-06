@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function Navbar({
@@ -13,6 +14,20 @@ export default function Navbar({
 }) {
   const router = useRouter()
   const pathname = usePathname()
+  const [scrolled, setScrolled] = useState(false)
+  const isHomePage = pathname === '/' && !isAuthed
+
+  useEffect(() => {
+    if (!isHomePage) return
+
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50)
+    }
+
+    handleScroll()
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [isHomePage])
 
   async function handleLogout() {
     const supabase = createClient()
@@ -30,8 +45,16 @@ export default function Navbar({
     }`
   }
 
+  const navbarClass = isHomePage
+    ? `sticky top-0 z-40 transition-all duration-300 ${
+        scrolled 
+          ? 'backdrop-blur-md bg-navy-deepest/95 border-b border-white/10 shadow-lg' 
+          : 'bg-transparent'
+      }`
+    : 'sticky top-0 z-40 backdrop-blur-md bg-navy-deepest/80 border-b border-white/10'
+
   return (
-    <nav className="sticky top-0 z-40 backdrop-blur-md bg-navy-deepest/80 border-b border-white/10">
+    <nav className={navbarClass}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
           <Link href={isAuthed ? '/predictions' : '/'} className="flex items-center gap-2">

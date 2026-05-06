@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import PageHeader from '@/components/PageHeader'
 import Flag from '@/components/Flag'
-import type { Team, Match, Profile, Invitation, Settings, Phase, Entry } from '@/lib/types'
+import type { Team, Match, Profile, Invitation, Settings, Phase, Entry, Role } from '@/lib/types'
 import { PHASE_LABELS, KO_PHASES, GROUP_CODES } from '@/lib/types'
 
 type Tab = 'teams' | 'matches' | 'invitations' | 'participants' | 'settings'
@@ -18,6 +18,7 @@ function toLocalDateTimeInput(iso: string): string {
 }
 
 export default function AdminClient({
+  userRole,
   teams: initialTeams,
   matches: initialMatches,
   profiles: initialProfiles,
@@ -25,6 +26,7 @@ export default function AdminClient({
   settings: initialSettings,
   entries: initialEntries,
 }: {
+  userRole: Role
   teams: Team[]
   matches: Match[]
   profiles: Profile[]
@@ -32,15 +34,20 @@ export default function AdminClient({
   settings: Settings | null
   entries: Entry[]
 }) {
-  const [tab, setTab] = useState<Tab>('teams')
+  const isManager = userRole === 'manager'
+  const [tab, setTab] = useState<Tab>(isManager ? 'invitations' : 'teams')
 
-  const tabs: { key: Tab; label: string }[] = [
+  const allTabs: { key: Tab; label: string }[] = [
     { key: 'teams', label: 'Equipos' },
     { key: 'matches', label: 'Resultados' },
     { key: 'invitations', label: 'Invitaciones' },
     { key: 'participants', label: 'Participantes' },
     { key: 'settings', label: 'Configuración' },
   ]
+
+  const tabs = isManager
+    ? allTabs.filter((t) => ['invitations', 'participants'].includes(t.key))
+    : allTabs
 
   return (
     <div>
@@ -66,11 +73,11 @@ export default function AdminClient({
         ))}
       </div>
 
-      {tab === 'teams' && <TeamsTab initialTeams={initialTeams} />}
-      {tab === 'matches' && <MatchesTab initialMatches={initialMatches} teams={initialTeams} />}
+      {tab === 'teams' && !isManager && <TeamsTab initialTeams={initialTeams} />}
+      {tab === 'matches' && !isManager && <MatchesTab initialMatches={initialMatches} teams={initialTeams} />}
       {tab === 'invitations' && <InvitationsTab initialInvitations={initialInvitations} />}
-      {tab === 'participants' && <ParticipantsTab initialProfiles={initialProfiles} initialEntries={initialEntries} />}
-      {tab === 'settings' && <SettingsTab initialSettings={initialSettings} teams={initialTeams} />}
+      {tab === 'participants' && <ParticipantsTab initialProfiles={initialProfiles} initialEntries={initialEntries} isManager={isManager} />}
+      {tab === 'settings' && !isManager && <SettingsTab initialSettings={initialSettings} teams={initialTeams} />}
     </div>
   )
 }
@@ -477,9 +484,11 @@ function InvitationsTab({ initialInvitations }: { initialInvitations: Invitation
 function ParticipantsTab({
   initialProfiles,
   initialEntries,
+  isManager,
 }: {
   initialProfiles: Profile[]
   initialEntries: Entry[]
+  isManager: boolean
 }) {
   const [profiles, setProfiles] = useState(initialProfiles)
   const [entries, setEntries] = useState(initialEntries)
@@ -506,12 +515,22 @@ function ParticipantsTab({
     }
   }
 
-  async function setRole(p: Profile, role: 'admin' | 'participant') {
+  async function setRole(p: Profile, role: Role) {
+    if (isManager) {
+      setMsg('Los managers no pueden cambiar roles')
+      setTimeout(() => setMsg(null), 2000)
+      return
+    }
     if (!confirm(`¿Cambiar rol de ${p.display_name || p.email} a ${role}?`)) return
     const supabase = createClient()
     const { error } = await supabase.from('profiles').update({ role }).eq('id', p.id)
-    if (!error) {
+    if (error) {
+      setMsg(`Error: ${error.message}`)
+      setTimeout(() => setMsg(null), 2000)
+    } else {
       setProfiles(profiles.map((x) => (x.id === p.id ? { ...x, role } : x)))
+      setMsg(`Rol actualizado a ${role}`)
+      setTimeout(() => setMsg(null), 1500)
     }
   }
 
@@ -591,10 +610,12 @@ function ParticipantsTab({
                   </button>
                   <select
                     value={p.role}
-                    onChange={(e) => setRole(p, e.target.value as 'admin' | 'participant')}
-                    className="input text-xs [color-scheme:dark] bg-[#080b22] text-white"
+                    onChange={(e) => setRole(p, e.target.value as Role)}
+                    disabled={isManager}
+                    className="input text-xs [color-scheme:dark] bg-[#080b22] text-white disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="participant">Participante</option>
+                    <option value="manager">Manager</option>
                     <option value="admin">Admin</option>
                   </select>
                 </div>

@@ -17,7 +17,7 @@ export default async function AdminPage() {
     .select('role')
     .eq('id', user.id)
     .maybeSingle()
-  if (profile?.role !== 'admin') redirect('/predictions')
+  if (!profile?.role || !['admin', 'manager'].includes(profile.role)) redirect('/predictions')
 
   const [
     { data: teams },
@@ -37,6 +37,7 @@ export default async function AdminPage() {
 
   return (
     <AdminClient
+      userRole={profile.role}
       teams={(teams ?? []) as Team[]}
       matches={(matches ?? []) as Match[]}
       profiles={(profiles ?? []) as Profile[]}

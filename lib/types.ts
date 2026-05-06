@@ -1,6 +1,6 @@
 export type Phase = 'group' | 'r32' | 'r16' | 'qf' | 'sf' | 'third' | 'final'
 export type MatchStatus = 'scheduled' | 'live' | 'finished'
-export type Role = 'participant' | 'admin'
+export type Role = 'participant' | 'admin' | 'manager'
 
 export interface Profile {
   id: string

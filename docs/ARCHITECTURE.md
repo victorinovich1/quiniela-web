@@ -136,7 +136,10 @@ El panel `/admin` ofrece control completo del sistema al rol `admin`:
 ### Gestión de Participantes
 - Ver todas las jugadas (entries) de cada usuario
 - Marcar jugadas como pagadas/pendientes
-- Cambiar roles (admin/participant)
+- Cambiar roles (admin/manager/participant)
+  - **admin**: Acceso completo al panel de administración
+  - **manager**: Acceso restringido (solo Invitaciones y Participantes, sin permisos de edición)
+  - **participant**: Usuario normal sin acceso al panel de administración
 - **Enviar correos de recuperación de contraseña**: Botón de "sobre" junto a cada usuario permite enviar email de reset password directamente (útil cuando Resend está en plan free y solo envía a email verificado)
 
 ### Configuración del Sistema

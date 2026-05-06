@@ -263,7 +263,7 @@ export default function PredictionsClient({
 }
 
 // ============================================================
-// GRUPOS — vista compacta tipo FIFA, un grupo por pantalla
+// GRUPOS — doble columna desktop, sidebar sticky con standings
 // ============================================================
 function GruposTab({
   activeGroup, setActiveGroup, teams, matches, preds, setScore, locked, teamsById,
@@ -277,6 +277,8 @@ function GruposTab({
   locked: boolean
   teamsById: Record<number, Team>
 }) {
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  
   const groupTeams = teams
     .filter((t) => t.group_code === activeGroup)
     .sort((a, b) => (a.position_in_group ?? 0) - (b.position_in_group ?? 0))
@@ -289,7 +291,6 @@ function GruposTab({
       return ta - tb || a.match_number - b.match_number
     })
 
-  // Group matches by date (for matchday separators)
   const matchdays: { label: string; matches: Match[] }[] = []
   for (const m of groupMatches) {
     if (!m.kickoff_at) continue
@@ -307,10 +308,11 @@ function GruposTab({
 
   return (
     <div>
-      <div className="flex flex-wrap gap-1 mb-5">
+      {/* Selector de grupos */}
+      <div className="flex flex-wrap gap-1 mb-4">
         {GROUP_CODES.map((g) => (
           <button key={g} onClick={() => setActiveGroup(g)}
-            className={`min-w-[40px] h-10 rounded-lg font-extrabold transition-all ${
+            className={`min-w-[36px] h-9 rounded-lg font-extrabold text-sm transition-all ${
               activeGroup === g
                 ? 'bg-fifaGreen text-navy-deepest scale-105'
                 : 'bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10'
@@ -320,82 +322,154 @@ function GruposTab({
         ))}
       </div>
 
-      <div className="bg-fifaGreen/10 border border-fifaGreen/30 rounded-2xl p-4 mb-5 relative overflow-hidden">
-        <div className="flex items-center gap-3 sm:gap-4">
-          <div className="bg-fifaGreen rounded-lg px-3 py-2 sm:px-4 sm:py-3 flex flex-col items-center flex-shrink-0">
-            <span className="text-[9px] sm:text-[10px] font-bold text-navy-deepest tracking-widest leading-none">GRUPO</span>
-            <span className="text-2xl sm:text-3xl font-black text-navy-deepest leading-none mt-0.5">{activeGroup}</span>
-          </div>
-          <div className="grid grid-cols-2 gap-1.5 flex-1 min-w-0">
-            {groupTeams.map((t) => (
-              <div key={t.id} className="bg-white rounded-full px-2.5 py-1 sm:px-3 sm:py-1.5 inline-flex items-center gap-1.5 sm:gap-2 min-w-0">
-                <Flag team={t} size={14} />
-                <span className="text-[10px] sm:text-xs font-extrabold text-slate-900 uppercase tracking-tight truncate">{t.name}</span>
+      {/* Layout doble columna en desktop */}
+      <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-6">
+        {/* Columna izquierda: Partidos */}
+        <div>
+          {/* Header móvil colapsable */}
+          <div className="lg:hidden mb-3">
+            <button
+              onClick={() => setCollapsed(c => ({ ...c, [activeGroup]: !c[activeGroup] }))}
+              className="w-full bg-fifaGreen/10 border border-fifaGreen/30 rounded-xl p-3 flex items-center justify-between"
+            >
+              <div className="flex items-center gap-2">
+                <div className="bg-fifaGreen rounded px-2 py-1 text-navy-deepest font-black text-lg">{activeGroup}</div>
+                <div className="text-xs text-white/70">
+                  {groupTeams.map(t => t.name).join(' · ')}
+                </div>
               </div>
-            ))}
+              <svg className={`w-4 h-4 transition-transform ${collapsed[activeGroup] ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
+
+          {(!collapsed[activeGroup] || window.innerWidth >= 1024) && (
+            <>
+              {matchdays.map((md, idx) => (
+                <div key={md.label} className="mb-4">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2 px-1">
+                    J{idx + 1} · {md.label.toUpperCase()}
+                  </div>
+                  <div className="space-y-1.5">
+                    {md.matches.map((m) => (
+                      <CompactMatchRow key={m.id} match={m} preds={preds} setScore={setScore}
+                        locked={locked} teamsById={teamsById} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+
+        {/* Columna derecha: Info del grupo + Tabla (sticky en desktop) */}
+        <div className="hidden lg:block">
+          <div className="sticky top-20 space-y-4">
+            {/* Info del grupo */}
+            <div className="bg-fifaGreen/10 border border-fifaGreen/30 rounded-xl p-3">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="bg-fifaGreen rounded-lg px-3 py-2 flex flex-col items-center">
+                  <span className="text-[9px] font-bold text-navy-deepest tracking-widest">GRUPO</span>
+                  <span className="text-2xl font-black text-navy-deepest leading-none">{activeGroup}</span>
+                </div>
+                <div className="flex-1 text-xs font-bold text-white/80 uppercase">
+                  {groupTeams.length} equipos · {groupMatches.length} partidos
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {groupTeams.map((t) => (
+                  <div key={t.id} className="bg-white rounded-full px-2 py-1 flex items-center gap-1.5 min-w-0">
+                    <Flag team={t} size={12} />
+                    <span className="text-[10px] font-extrabold text-slate-900 uppercase truncate">{t.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Tabla de posiciones */}
+            <div className="card p-3">
+              <div className="text-xs font-bold uppercase tracking-wider text-fifaGreen mb-2">Tabla en Vivo</div>
+              <table className="w-full text-xs">
+                <thead className="text-[9px] uppercase tracking-wider text-white/40">
+                  <tr>
+                    <th className="text-left py-1.5 pl-1">#</th>
+                    <th className="text-left py-1.5">Equipo</th>
+                    <th className="text-center py-1.5 w-7">PJ</th>
+                    <th className="text-center py-1.5 w-7">DG</th>
+                    <th className="text-center py-1.5 w-8">PTS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {standings.map((s, i) => {
+                    const t = groupTeams.find((tt) => tt.id === s.team_id)
+                    const top2 = i < 2
+                    return (
+                      <tr key={s.team_id} className="border-t border-white/5">
+                        <td className="py-1.5 pl-1">
+                          <span className={`text-xs font-extrabold ${top2 ? 'text-fifaGreen' : 'text-white/40'}`}>
+                            {i + 1}
+                          </span>
+                        </td>
+                        <td className="py-1.5">
+                          <div className="flex items-center gap-1.5">
+                            {t && <Flag team={t} size={12} />}
+                            <span className="text-[10px] font-bold text-white uppercase truncate">{s.team_name}</span>
+                          </div>
+                        </td>
+                        <td className="text-center text-white/60 text-[11px]">{s.pj}</td>
+                        <td className="text-center text-white/70 text-[11px]">{s.dg > 0 ? '+' : ''}{s.dg}</td>
+                        <td className="text-center font-extrabold text-white">{s.pts}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
 
-      {matchdays.map((md, idx) => (
-        <div key={md.label}>
-          <div className="divider-with-label">
-            <span>Jornada {idx + 1} · {md.label.toUpperCase()}</span>
-          </div>
-          <div className="space-y-2">
-            {md.matches.map((m) => (
-              <FifaMatchRow key={m.id} match={m} preds={preds} setScore={setScore}
-                locked={locked} teamsById={teamsById} />
-            ))}
-          </div>
+      {/* Tabla móvil (al final) */}
+      <div className="lg:hidden mt-6">
+        <div className="text-xs font-bold uppercase tracking-wider text-fifaGreen mb-2 px-1">Tabla en Vivo</div>
+        <div className="card p-3">
+          <table className="w-full text-xs">
+            <thead className="text-[9px] uppercase tracking-wider text-white/40">
+              <tr>
+                <th className="text-left py-1.5 pl-1">#</th>
+                <th className="text-left py-1.5">Equipo</th>
+                <th className="text-center py-1.5 w-7">PJ</th>
+                <th className="text-center py-1.5 w-7">DG</th>
+                <th className="text-center py-1.5 w-8">PTS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {standings.map((s, i) => {
+                const t = groupTeams.find((tt) => tt.id === s.team_id)
+                const top2 = i < 2
+                return (
+                  <tr key={s.team_id} className="border-t border-white/5">
+                    <td className="py-1.5 pl-1">
+                      <span className={`text-xs font-extrabold ${top2 ? 'text-fifaGreen' : 'text-white/40'}`}>
+                        {i + 1}
+                      </span>
+                    </td>
+                    <td className="py-1.5">
+                      <div className="flex items-center gap-1.5">
+                        {t && <Flag team={t} size={12} />}
+                        <span className="text-[10px] font-bold text-white uppercase truncate">{s.team_name}</span>
+                      </div>
+                    </td>
+                    <td className="text-center text-white/60 text-[11px]">{s.pj}</td>
+                    <td className="text-center text-white/70 text-[11px]">{s.dg > 0 ? '+' : ''}{s.dg}</td>
+                    <td className="text-center font-extrabold text-white">{s.pts}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
-      ))}
-
-      <div className="divider-with-label mt-8">
-        <span>Tabla Grupo {activeGroup}</span>
-      </div>
-      <div className="card p-3">
-        <table className="w-full text-sm">
-          <thead className="text-[10px] uppercase tracking-wider text-white/40">
-            <tr>
-              <th className="text-left py-2 pl-1">#</th>
-              <th className="text-left py-2">Equipo</th>
-              <th className="text-center py-2 w-8">PJ</th>
-              <th className="text-center py-2 w-8">G</th>
-              <th className="text-center py-2 w-8">E</th>
-              <th className="text-center py-2 w-8">P</th>
-              <th className="text-center py-2 w-10">DG</th>
-              <th className="text-center py-2 w-10">PTS</th>
-            </tr>
-          </thead>
-          <tbody>
-            {standings.map((s, i) => {
-              const t = groupTeams.find((tt) => tt.id === s.team_id)
-              const top2 = i < 2
-              return (
-                <tr key={s.team_id} className="border-t border-white/5">
-                  <td className="py-2 pl-1">
-                    <span className={`text-xs font-extrabold ${top2 ? 'text-fifaGreen' : 'text-white/40'}`}>
-                      {i + 1}
-                    </span>
-                  </td>
-                  <td className="py-2">
-                    <div className="flex items-center gap-2">
-                      {t && <Flag team={t} size={14} />}
-                      <span className="text-xs font-bold text-white uppercase truncate">{s.team_name}</span>
-                    </div>
-                  </td>
-                  <td className="text-center text-white/60">{s.pj}</td>
-                  <td className="text-center text-white/80">{s.pg}</td>
-                  <td className="text-center text-white/80">{s.pe}</td>
-                  <td className="text-center text-white/80">{s.pp}</td>
-                  <td className="text-center text-white/80">{s.dg}</td>
-                  <td className="text-center font-extrabold text-white">{s.pts}</td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
       </div>
     </div>
   )
@@ -456,7 +530,96 @@ function EliminatoriasTab({
 }
 
 // ============================================================
-// FILA DE PARTIDO — diseño FIFA con pills, hora izquierda, ciudad derecha
+// FILA DE PARTIDO COMPACTA — con M# y padding reducido
+// ============================================================
+function CompactMatchRow({
+  match, preds, setScore, locked, teamsById,
+}: {
+  match: Match
+  preds: PredMap
+  setScore: (matchId: number, key: 'home' | 'away', value: string) => void
+  locked: boolean
+  teamsById: Record<number, Team>
+}) {
+  const p = preds[match.id] ?? { home: null, away: null, ko: null }
+  const homeTeam = match.home_team_id ? teamsById[match.home_team_id] : null
+  const awayTeam = match.away_team_id ? teamsById[match.away_team_id] : null
+  const homeLabel = homeTeam?.name || match.home_team_label || 'TBD'
+  const awayLabel = awayTeam?.name || match.away_team_label || 'TBD'
+
+  const kickoff = match.kickoff_at ? new Date(match.kickoff_at) : null
+  const timeStr = kickoff ? kickoff.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '--:--'
+
+  return (
+    <div className="card p-2 hover:bg-white/5 transition-colors">
+      <div className="flex items-center gap-2">
+        {/* Match number */}
+        <div className="text-[10px] font-black text-white/40 w-7 text-center">
+          M{match.match_number}
+        </div>
+
+        {/* Time */}
+        <div className="text-[11px] font-bold text-white/60 w-12">
+          {timeStr}
+        </div>
+
+        {/* Home team */}
+        <div className="flex-1 min-w-0 flex items-center justify-end gap-1.5">
+          {homeTeam ? (
+            <>
+              <span className="text-[11px] font-bold text-white uppercase truncate text-right">{homeLabel}</span>
+              <Flag team={homeTeam} size={12} />
+            </>
+          ) : (
+            <span className="text-[11px] font-bold text-white/40 uppercase truncate text-right">{homeLabel}</span>
+          )}
+        </div>
+
+        {/* Scores */}
+        <div className="flex items-center gap-1">
+          <input
+            type="number"
+            min={0}
+            max={99}
+            inputMode="numeric"
+            value={p.home ?? ''}
+            onChange={(e) => setScore(match.id, 'home', e.target.value)}
+            disabled={locked}
+            className="score-input w-8 h-8 text-sm"
+            aria-label={`Goles ${homeLabel}`}
+          />
+          <span className="text-white/30 text-xs">−</span>
+          <input
+            type="number"
+            min={0}
+            max={99}
+            inputMode="numeric"
+            value={p.away ?? ''}
+            onChange={(e) => setScore(match.id, 'away', e.target.value)}
+            disabled={locked}
+            className="score-input w-8 h-8 text-sm"
+            aria-label={`Goles ${awayLabel}`}
+          />
+        </div>
+
+        {/* Away team */}
+        <div className="flex-1 min-w-0 flex items-center gap-1.5">
+          {awayTeam ? (
+            <>
+              <Flag team={awayTeam} size={12} />
+              <span className="text-[11px] font-bold text-white uppercase truncate">{awayLabel}</span>
+            </>
+          ) : (
+            <span className="text-[11px] font-bold text-white/40 uppercase truncate">{awayLabel}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================
+// FILA DE PARTIDO ELIMINATORIAS — diseño FIFA
 // ============================================================
 function FifaMatchRow({
   match, preds, setScore, locked, teamsById, showKoWinner, setKoWinner, teamsForKo,
@@ -476,7 +639,6 @@ function FifaMatchRow({
   const homeLabel = homeTeam?.name || match.home_team_label || 'Por definir'
   const awayLabel = awayTeam?.name || match.away_team_label || 'Por definir'
 
-  // Deshabilitar inputs si es eliminatoria y faltan equipos
   const isKnockout = match.phase !== 'group'
   const teamsNotDefined = !match.home_team_id || !match.away_team_id
   const disableInputs = locked || (isKnockout && teamsNotDefined)
@@ -500,7 +662,6 @@ function FifaMatchRow({
   const tzShort = kickoff ? kickoff.toLocaleTimeString('es-ES', { timeZoneName: 'short' }).split(' ').pop() : ''
   const dayStr = kickoff ? kickoff.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase() : ''
 
-  // Compact stadium info
   const stadium = match.stadium || ''
   const stadiumParts = stadium.split(',').map((s) => s.trim())
   const cityShort = stadiumParts[1] || stadiumParts[0] || ''

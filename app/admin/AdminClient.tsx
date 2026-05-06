@@ -712,8 +712,6 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
   const [msg, setMsg] = useState<string | null>(null)
   const [recentSyncs, setRecentSyncs] = useState<Match[]>([])
 
-  if (!s) return <div>No hay configuración cargada.</div>
-
   async function loadRecentSyncs() {
     const supabase = createClient()
     const { data } = await supabase
@@ -726,8 +724,12 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
   }
 
   useEffect(() => {
-    loadRecentSyncs()
-  }, [])
+    if (s) {
+      loadRecentSyncs()
+    }
+  }, [s])
+
+  if (!s) return <div>No hay configuración cargada.</div>
 
   function update<K extends keyof Settings>(key: K, value: Settings[K]) {
     setS((curr) => (curr ? { ...curr, [key]: value } : curr))

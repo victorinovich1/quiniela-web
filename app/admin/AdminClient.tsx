@@ -149,14 +149,18 @@ function MatchesTab({ initialMatches, teams }: { initialMatches: Match[]; teams:
   const [matches, setMatches] = useState(initialMatches)
   const [phase, setPhase] = useState<Phase>('group')
   const [groupFilter, setGroupFilter] = useState<string>('A')
+  const [matchSearch, setMatchSearch] = useState<string>('')
   const [savingId, setSavingId] = useState<number | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
 
   const teamById = useMemo(() => Object.fromEntries(teams.map((t) => [t.id, t])), [teams])
 
-  const filtered = matches.filter((m) =>
-    phase === 'group' ? m.group_code === groupFilter : m.phase === phase
-  )
+  const filtered = matches.filter((m) => {
+    const phaseMatch = phase === 'group' ? m.group_code === groupFilter : m.phase === phase
+    if (!phaseMatch) return false
+    if (!matchSearch) return true
+    return m.match_number.toString().includes(matchSearch)
+  })
 
   function update(id: number, patch: Partial<Match>) {
     setMatches((curr) => curr.map((m) => (m.id === id ? { ...m, ...patch } : m)))
@@ -192,6 +196,26 @@ function MatchesTab({ initialMatches, teams }: { initialMatches: Match[]; teams:
         Captura los marcadores oficiales tras cada partido. Marca como &quot;finalizado&quot; para que cuente en el ranking.
       </p>
       {msg && <div className="mb-3 text-sm text-success">{msg}</div>}
+
+      {/* Búsqueda por # de partido */}
+      <div className="mb-3 flex items-center gap-2">
+        <label className="text-sm text-white/70">Buscar partido:</label>
+        <input
+          type="text"
+          placeholder="ej: 73"
+          value={matchSearch}
+          onChange={(e) => setMatchSearch(e.target.value)}
+          className="input text-sm w-24"
+        />
+        {matchSearch && (
+          <button
+            onClick={() => setMatchSearch('')}
+            className="text-xs text-white/60 hover:text-white"
+          >
+            Limpiar
+          </button>
+        )}
+      </div>
 
       <div className="flex gap-1 mb-3 overflow-x-auto">
         <button

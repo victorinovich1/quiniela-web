@@ -121,6 +121,8 @@ export async function GET(request: NextRequest) {
     teamByCode.set(t.code.toUpperCase(), t.id)
   }
 
+  // NOTA: Solo sincroniza partidos que YA tienen ambos equipos asignados
+  // Para eliminatorias con equipos NULL, el admin debe asignarlos primero manualmente
   const matchByTeams = new Map<string, MatchRow>()
   for (const m of matches as MatchRow[]) {
     if (m.home_team_id && m.away_team_id) {

@@ -49,7 +49,7 @@ export default async function HomePage() {
         <div className="absolute inset-0 z-0 w-full">
           <div 
             className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: 'url(/images/landing/hero.png)' }}
+            style={{ backgroundImage: 'url(/images/landing/hero.jpg)' }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-navy-deepest/80 via-navy-deepest/60 to-navy-deepest" />
         </div>
@@ -61,7 +61,7 @@ export default async function HomePage() {
           </div>
 
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tight mb-6 leading-none">
-            <span className="text-white">VIVÍ EL MUNDIAL</span>
+            <span className="text-white">VIVE EL MUNDIAL</span>
             <br />
             <span className="bg-gradient-to-r from-fifaGreen via-fifaGreen-light to-gold bg-clip-text text-transparent">
               A TU MANERA
@@ -308,7 +308,7 @@ export default async function HomePage() {
             <div className="relative aspect-square rounded-2xl overflow-hidden">
               <div 
                 className="absolute inset-0 bg-cover bg-center"
-                style={{ backgroundImage: 'url(/images/landing/estadio.png)' }}
+                style={{ backgroundImage: 'url(/images/landing/estadio.jpg)' }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-navy-deepest/80 to-transparent" />
             </div>
@@ -365,8 +365,8 @@ export default async function HomePage() {
             <span className="text-white/80 font-extrabold text-xl tracking-tight">2026</span>
           </div>
 
-          <p className="text-white/40 text-sm mb-6">
-            Viví el Mundial a tu manera
+          <p className="text-white/40 text-sm mb-6 font-bold uppercase tracking-wider">
+            VIVE EL MUNDIAL A TU MANERA
           </p>
 
           <div className="text-white/30 text-xs">

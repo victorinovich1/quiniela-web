@@ -341,6 +341,59 @@ import Link from 'next/link'
 <Link href="/predictions">Pronósticos</Link>
 ```
 
+### Landing Page - Hero Full-Width
+
+**Caso especial:** La landing page (`app/page.tsx`) requiere un Hero de ancho completo (edge-to-edge) que rompe con el contenedor estándar del layout.
+
+**Técnica implementada:**
+```tsx
+// Usuario invitado: Landing completa
+return (
+  <div className="-mx-4 sm:-mx-6 lg:-mx-8 -my-6 bg-navy-deepest">
+    {/* Hero Section - Full Width */}
+    <section className="relative min-h-screen w-full flex items-center justify-center overflow-hidden">
+      {/* Background Image con overlay */}
+      <div className="absolute inset-0 z-0 w-full">
+        <div 
+          className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: 'url(/images/landing/hero.jpg)' }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-navy-deepest/80 via-navy-deepest/60 to-navy-deepest" />
+      </div>
+      
+      {/* Content */}
+      <div className="relative z-10 text-center max-w-4xl px-4 py-20">
+        {/* ... */}
+      </div>
+    </section>
+    
+    {/* Resto de secciones con padding normal */}
+    <section className="py-20 px-4">
+      <div className="max-w-7xl mx-auto">
+        {/* ... */}
+      </div>
+    </section>
+  </div>
+)
+```
+
+**Explicación:**
+1. **Wrapper con márgenes negativos:** `-mx-4 sm:-mx-6 lg:-mx-8 -my-6` cancela el padding del `<main>` del layout, permitiendo que el Hero llegue a los bordes de la pantalla
+2. **Hero con `w-full`:** Asegura que el Hero ocupe todo el ancho disponible (100vw)
+3. **Background con `object-cover`:** Imagen de fondo se estira sin deformarse usando `bg-cover bg-center`
+4. **Content centrado:** El contenido del Hero mantiene un `max-w-4xl` para legibilidad, pero el fondo es edge-to-edge
+5. **Secciones siguientes:** Usan `px-4` para respetar márgenes laterales y `max-w-7xl mx-auto` para centrarse
+
+**Imágenes de la landing:**
+- `hero.jpg` — Hero principal (usar `.jpg` para fondos grandes)
+- `estadio.jpg` — Sección seguridad (usar `.jpg` para fondos grandes)
+- `paso1.png`, `paso2.png`, `paso3.png`, `paso4.png` — Cards de pasos (usar `.png` para elementos con transparencia o alta definición)
+- `trofeo.png` — Footer (usar `.png` para logos/iconos)
+
+**Textos oficiales:**
+- Hero: "VIVE EL MUNDIAL A TU MANERA" (dos líneas con `<br />`)
+- Footer: "VIVE EL MUNDIAL A TU MANERA" (mayúsculas con `font-bold uppercase tracking-wider`)
+
 **Espaciado:**
 - Entre secciones: `space-y-6` o `mb-6`
 - Entre elementos pequeños: `gap-3`, `gap-2`

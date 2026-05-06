@@ -15,6 +15,7 @@ type MatchRow = {
   home_team_id: number | null
   away_team_id: number | null
   status: MatchStatus
+  manual_override: boolean
 }
 
 type FdTeam = {
@@ -126,9 +127,25 @@ export async function GET(request: NextRequest) {
   })
 
   try {
+    // Verificar interruptor maestro
+    const { data: settings } = await supabase
+      .from('settings')
+      .select('api_sync_enabled')
+      .eq('id', 1)
+      .single()
+
+    if (!settings?.api_sync_enabled) {
+      console.log('[cron/sync-results] Sincronización deshabilitada por settings.api_sync_enabled')
+      return NextResponse.json({
+        ok: true,
+        message: 'Sincronización deshabilitada por configuración',
+        updated: 0,
+      })
+    }
+
     const [{ data: teams, error: teamsErr }, { data: matches, error: matchesErr }] = await Promise.all([
       supabase.from('teams').select('id, code'),
-      supabase.from('matches').select('id, match_number, home_team_id, away_team_id, status'),
+      supabase.from('matches').select('id, match_number, home_team_id, away_team_id, status, manual_override'),
     ])
 
     if (teamsErr || matchesErr || !teams || !matches) {
@@ -233,6 +250,12 @@ export async function GET(request: NextRequest) {
         continue
       }
 
+      // No actualizar si el Admin fijó el resultado manualmente
+      if (mapped.manual_override) {
+        console.log(`[cron/sync-results] Partido M${mapped.match_number} tiene manual_override, omitiendo`)
+        continue
+      }
+
       const rawHome = parseScore(fm.score?.fullTime?.home)
       const rawAway = parseScore(fm.score?.fullTime?.away)
       const homeScore = swapped ? rawAway : rawHome
@@ -253,6 +276,7 @@ export async function GET(request: NextRequest) {
         shootout_winner_team_id: shootoutWinner,
         status: mapStatus(fm.status), // scheduled | live | finished
         stadium: fm.venue ?? null,
+        last_synced_at: new Date().toISOString(),
       }
 
       const { error: updateErr } = await supabase

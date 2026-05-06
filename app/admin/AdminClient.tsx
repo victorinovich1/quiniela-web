@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import PageHeader from '@/components/PageHeader'
 import Flag from '@/components/Flag'
@@ -183,6 +183,7 @@ function MatchesTab({ initialMatches, teams }: { initialMatches: Match[]; teams:
         status: m.status,
         kickoff_at: m.kickoff_at,
         stadium: m.stadium,
+        manual_override: m.manual_override,
       })
       .eq('id', m.id)
     setSavingId(null)
@@ -367,6 +368,30 @@ function MatchesTab({ initialMatches, teams }: { initialMatches: Match[]; teams:
                   </select>
                 </div>
               )}
+
+              {/* Control manual override */}
+              <div className="mt-2 flex items-center gap-2 text-xs">
+                <label className="flex items-center gap-1.5 cursor-pointer text-white/60 hover:text-white">
+                  <input
+                    type="checkbox"
+                    checked={m.manual_override}
+                    onChange={(e) => update(m.id, { manual_override: e.target.checked })}
+                    onBlur={() => save(m)}
+                    className="w-4 h-4 rounded bg-white/10 border-white/20"
+                  />
+                  <span>🔒 Fijar resultado (Ignorar API)</span>
+                </label>
+                {m.last_synced_at && (
+                  <span className="text-white/40 ml-auto">
+                    Última sync: {new Date(m.last_synced_at).toLocaleString('es-ES', { 
+                      day: 'numeric', 
+                      month: 'short', 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </span>
+                )}
+              </div>
             </div>
           )
         })}
@@ -685,8 +710,24 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
   const [syncMsg, setSyncMsg] = useState<string | null>(null)
   const [syncError, setSyncError] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
+  const [recentSyncs, setRecentSyncs] = useState<Match[]>([])
 
   if (!s) return <div>No hay configuración cargada.</div>
+
+  async function loadRecentSyncs() {
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('matches')
+      .select('id, match_number, home_score, away_score, status, last_synced_at')
+      .not('last_synced_at', 'is', null)
+      .order('last_synced_at', { ascending: false })
+      .limit(5)
+    if (data) setRecentSyncs(data as Match[])
+  }
+
+  useEffect(() => {
+    loadRecentSyncs()
+  }, [])
 
   function update<K extends keyof Settings>(key: K, value: Settings[K]) {
     setS((curr) => (curr ? { ...curr, [key]: value } : curr))
@@ -720,6 +761,8 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
         // Recargar settings para obtener last_sync_at actualizado
         const { data: updatedSettings } = await supabase.from('settings').select('*').eq('id', 1).single()
         if (updatedSettings) setS(updatedSettings)
+        // Recargar partidos recientes
+        await loadRecentSyncs()
       } else {
         setSyncError(data.error || 'Error en sincronización')
       }
@@ -789,6 +832,22 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
           </button>
         </div>
         
+        {/* Interruptor maestro */}
+        <div className="mb-4 flex items-center gap-3 p-3 bg-white/5 rounded">
+          <label className="flex items-center gap-2 cursor-pointer flex-1">
+            <input
+              type="checkbox"
+              checked={s.api_sync_enabled}
+              onChange={(e) => update('api_sync_enabled', e.target.checked)}
+              className="w-5 h-5 rounded bg-white/10 border-white/20 text-fifaGreen focus:ring-fifaGreen"
+            />
+            <span className="text-sm font-medium">Sincronización Automática con FIFA</span>
+          </label>
+          <span className={`text-xs px-2 py-1 rounded ${s.api_sync_enabled ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+            {s.api_sync_enabled ? 'ACTIVA' : 'PAUSADA'}
+          </span>
+        </div>
+
         <div className="space-y-2 text-sm">
           {s.last_sync_at && (
             <div className="text-white/70">
@@ -819,6 +878,38 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
             </div>
           )}
         </div>
+
+        {/* Últimos 5 partidos sincronizados */}
+        {recentSyncs.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-white/10">
+            <h4 className="text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Últimos partidos sincronizados</h4>
+            <div className="space-y-1">
+              {recentSyncs.map((m) => (
+                <div key={m.id} className="flex items-center justify-between text-xs bg-white/5 rounded px-2 py-1.5">
+                  <span className="text-white/60">M{m.match_number}</span>
+                  <span className="font-mono text-white">
+                    {m.home_score ?? '-'} - {m.away_score ?? '-'}
+                  </span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${
+                    m.status === 'finished' ? 'bg-green-500/20 text-green-400' :
+                    m.status === 'live' ? 'bg-yellow-500/20 text-yellow-400' :
+                    'bg-white/10 text-white/40'
+                  }`}>
+                    {m.status === 'finished' ? 'FIN' : m.status === 'live' ? 'VIVO' : 'PROG'}
+                  </span>
+                  <span className="text-white/40">
+                    {m.last_synced_at && new Date(m.last_synced_at).toLocaleString('es-ES', {
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="card p-4">

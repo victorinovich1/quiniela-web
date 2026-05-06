@@ -37,6 +37,8 @@ export interface Match {
   shootout_winner_team_id: number | null
   status: MatchStatus
   stadium: string | null
+  manual_override: boolean
+  last_synced_at: string | null
 }
 
 export interface Entry {
@@ -83,6 +85,7 @@ export interface Settings {
   fourth_team_id: number | null
   last_sync_at: string | null
   last_sync_error: string | null
+  api_sync_enabled: boolean
 }
 
 export interface Invitation {

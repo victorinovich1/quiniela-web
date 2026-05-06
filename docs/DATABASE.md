@@ -214,8 +214,13 @@ Setea `new.updated_at = now()`. Usado en triggers BEFORE UPDATE.
 ### Escritura solo del propio Y antes del lock
 - `predictions`, `special_predictions`, `entries`: insert/update/delete solo permitidos si la entry pertenece al usuario actual (`exists(select 1 from entries where id=entry_id and user_id=auth.uid())`) Y `not predictions_locked()`.
 
-### Admin tiene acceso total
-- Todas las tablas: policy `for all using (is_admin()) with check (is_admin())`.
+### Admin y Manager
+- **is_admin()**: Devuelve true para roles 'admin' y 'manager'. Permite acceso de lectura a `profiles` e `invitations`, y escritura en `invitations`.
+- **is_super_admin()**: Devuelve true solo para rol 'admin'. Permite escritura total en `teams`, `matches`, `settings`, `entries`, `predictions`, `special_predictions`.
+- Managers pueden:
+  - SELECT: `profiles`, `invitations`
+  - INSERT/UPDATE/DELETE: `invitations`
+- Solo admins pueden modificar: resultados, equipos, configuración, entries de usuarios.
 
 ## Re-ejecutar todas las migraciones (recovery)
 

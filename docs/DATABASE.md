@@ -184,6 +184,14 @@ Acceso: solo `authenticated`.
 True si `settings.lock_at < now()`. Sin params.
 Acceso: `authenticated`, `anon`.
 
+### `can_predict_match(p_match_id int) returns bool`
+True si faltan más de 15 minutos para el kickoff del partido. Permite pronosticar hasta 15 min antes del inicio.
+Acceso: `authenticated`.
+
+### `tournament_started() returns bool`
+True si ya hay al menos un partido con `kickoff_at` en el pasado. Usado para bloquear borrado de entries.
+Acceso: `authenticated`.
+
 ### `redeem_invite(p_code text) returns bool`
 Marca un código como usado por el usuario actual. Valida disponibilidad, expiración, y email match.
 Security definer. Acceso: solo `authenticated`.
@@ -207,7 +215,9 @@ Setea `new.updated_at = now()`. Usado en triggers BEFORE UPDATE.
 - `predictions`, `special_predictions`: solo lees las tuyas, EXCEPTO si `predictions_locked() = true` (entonces todo el mundo ve los pronósticos de todos — es público después del cierre).
 
 ### Escritura solo del propio Y antes del lock
-- `predictions`, `special_predictions`, `entries`: insert/update/delete solo permitidos si la entry pertenece al usuario actual (`exists(select 1 from entries where id=entry_id and user_id=auth.uid())`) Y `not predictions_locked()`.
+- `predictions`: INSERT/UPDATE solo si la entry pertenece al usuario (`exists(select 1 from entries where id=entry_id and user_id=auth.uid())`) Y `can_predict_match(match_id)` (más de 15 min antes del kickoff).
+- `special_predictions`: INSERT/UPDATE solo si la entry es propia Y `not predictions_locked()`.
+- `entries`: INSERT/UPDATE solo si es propia Y `not predictions_locked()`. DELETE solo si es propia Y `not tournament_started()`.
 
 ### Admin y Manager
 - **is_admin()**: Devuelve true para roles 'admin' y 'manager'. Permite acceso de lectura a `profiles` e `invitations`, y escritura en `invitations`.

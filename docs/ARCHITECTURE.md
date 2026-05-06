@@ -149,12 +149,26 @@ El panel `/admin` ofrece control completo del sistema al rol `admin`:
 
 Todos los cambios en configuración y resultados actualizan el ranking automáticamente gracias a las views calculadas en tiempo real.
 
-## Bloqueo de pronósticos (lock_at)
+## Bloqueo de pronósticos
 
-- `settings.lock_at` (timestamptz) marca cuándo se cierran los pronósticos.
+**Bloqueo global (`lock_at`):**
+- `settings.lock_at` marca la fecha/hora de cierre global.
 - Función `predictions_locked()` retorna `lock_at < now()`.
-- RLS de `predictions`, `special_predictions`, y `entries` bloquea inserts/updates cuando `predictions_locked() = true`.
-- El frontend también deshabilita inputs cuando `locked = true` para UX.
+- Deshabilita creación/edición de entries y predicciones especiales.
+
+**Bloqueo por partido (15 minutos antes):**
+- Función `can_predict_match(match_id)` retorna true solo si faltan más de 15 min para el kickoff.
+- RLS de `predictions` usa esta función para bloquear INSERT/UPDATE de cada partido individualmente.
+- Permite pronosticar partidos futuros incluso si otros ya comenzaron.
+
+**Bloqueo de borrado de entries:**
+- No se pueden borrar jugadas (entries) una vez que el mundial comenzó.
+- Función `tournament_started()` detecta si ya hay al menos un partido con kickoff en el pasado.
+- Solo admin puede borrar entries después del inicio.
+
+**Bloqueo dinámico de eliminatorias:**
+- En UI, los inputs de score de eliminatorias están deshabilitados si los equipos aún no se definen (`home_team_id` o `away_team_id` NULL).
+- Muestra mensaje "Esperando rivales..." hasta que se completen las rondas previas.
 
 ## Modelo de datos clave
 

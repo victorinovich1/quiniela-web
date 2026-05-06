@@ -179,7 +179,7 @@ export default function PredictionsClient({
             <span className="label-up">Jugada</span>{' '}
             <span className="font-bold text-white uppercase">{activeEntry?.alias}</span>
           </span>
-          <Link href="/entries" className="text-xs text-fifaGreen hover:text-fifaGreen-light font-bold uppercase tracking-wider">+ Nueva</Link>
+          <Link href="/entries" className="text-xs text-fifaGreen hover:text-fifaGreen-light font-bold uppercase tracking-wider" title="Crear una nueva participación">+ Quiniela</Link>
         </div>
       )}
 
@@ -476,6 +476,11 @@ function FifaMatchRow({
   const homeLabel = homeTeam?.name || match.home_team_label || 'Por definir'
   const awayLabel = awayTeam?.name || match.away_team_label || 'Por definir'
 
+  // Deshabilitar inputs si es eliminatoria y faltan equipos
+  const isKnockout = match.phase !== 'group'
+  const teamsNotDefined = !match.home_team_id || !match.away_team_id
+  const disableInputs = locked || (isKnockout && teamsNotDefined)
+
   const showKoSelect = showKoWinner && p.home !== null && p.away !== null && p.home === p.away
 
   let koOptions: { id: number; name: string }[] = []
@@ -524,14 +529,14 @@ function FifaMatchRow({
           <input type="number" min={0} max={99} inputMode="numeric"
             value={p.home ?? ''}
             onChange={(e) => setScore(match.id, 'home', e.target.value)}
-            disabled={locked}
+            disabled={disableInputs}
             className="score-input w-9 h-9 sm:w-11 sm:h-11 text-base sm:text-lg"
             aria-label={`Goles ${homeLabel}`} />
           <span className="text-white/30 text-xs">−</span>
           <input type="number" min={0} max={99} inputMode="numeric"
             value={p.away ?? ''}
             onChange={(e) => setScore(match.id, 'away', e.target.value)}
-            disabled={locked}
+            disabled={disableInputs}
             className="score-input w-9 h-9 sm:w-11 sm:h-11 text-base sm:text-lg"
             aria-label={`Goles ${awayLabel}`} />
         </div>
@@ -556,6 +561,12 @@ function FifaMatchRow({
           )}
         </div>
       </div>
+
+      {isKnockout && teamsNotDefined && (
+        <div className="mt-2 text-xs text-white/50 text-center italic">
+          Esperando rivales...
+        </div>
+      )}
 
       {showKoSelect && setKoWinner && (
         <div className="mt-2 flex items-center gap-2 text-xs">

@@ -617,17 +617,6 @@ function EspecialesTab({
     )
   }
 
-  function textInput(label: string, field: 'top_scorer' | 'mvp' | 'best_goalkeeper') {
-    return (
-      <div>
-        <label className="label-up block mb-1.5">{label}</label>
-        <input type="text" value={state[field]}
-          onChange={(e) => setState((s) => ({ ...s, [field]: e.target.value }))}
-          disabled={locked} className="input" placeholder="Nombre del jugador" />
-      </div>
-    )
-  }
-
   return (
     <div className="card p-5 space-y-5">
       <div className="text-center">

@@ -72,9 +72,6 @@ export interface Settings {
   pt_winner_group: number
   pt_exact_ko: number
   pt_winner_ko: number
-  pt_round_of_16: number
-  pt_quarters: number
-  pt_semis: number
   pt_champion: number
   pt_runner_up: number
   pt_third: number

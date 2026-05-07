@@ -69,7 +69,7 @@ export default async function HomePage() {
           </h1>
 
           <p className="text-lg md:text-xl text-white/80 mb-12 max-w-2xl mx-auto">
-            Crea tu quiniela, competí con amigos y demostrá quién sabe más de fútbol
+            Crea tu quiniela, compite con amigos y demuestra quién sabe más de fútbol
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -274,7 +274,7 @@ export default async function HomePage() {
                 <div className="flex-1">
                   <h3 className="text-xl font-black uppercase text-white mb-2">Podio Sagrado</h3>
                   <p className="text-white/70 text-sm">
-                    Elegí tu Top 4 antes de que ruede la primera bola. Vale mucho más que cualquier partido.
+                    Elige tu Top 4 antes de que ruede la primera bola. Vale mucho más que cualquier partido.
                   </p>
                 </div>
               </div>

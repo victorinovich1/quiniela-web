@@ -76,7 +76,7 @@ export default async function RulesPage() {
             {/* Eliminatorias */}
             <div className="bg-white/5 rounded-xl p-4 border border-white/10">
               <h3 className="text-sm font-bold uppercase tracking-wider text-fifaGreen mb-3">
-                Eliminatorias (32avos → Final)
+                Eliminatorias (16avos → Final)
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="bg-navy-dark/60 rounded-lg p-3">
@@ -226,7 +226,7 @@ export default async function RulesPage() {
               </p>
               <div className="bg-white/5 border border-white/10 rounded-lg p-4 space-y-3">
                 <p className="text-white/80 text-sm leading-relaxed">
-                  Los partidos de eliminatorias (32avos, 16avos, cuartos, semis y final) se habilitan 
+                  Los partidos de eliminatorias (16avos, octavos, cuartos, semis y final) se habilitan 
                   <span className="text-fifaGreen font-bold"> conforme la FIFA defina los rivales reales</span> tras finalizar la fase de grupos.
                 </p>
                 <p className="text-white/80 text-sm leading-relaxed">
@@ -245,7 +245,7 @@ export default async function RulesPage() {
         {/* Nota Final */}
         <div className="bg-fifaGreen/10 border border-fifaGreen/30 rounded-xl p-4">
           <p className="text-white/80 text-sm text-center">
-            <span className="font-bold text-fifaGreen">Recordá:</span> Los valores de puntos pueden cambiar si el administrador los ajusta. 
+            <span className="font-bold text-fifaGreen">Recuerda:</span> Los valores de puntos pueden cambiar si el administrador los ajusta. 
             Esta página siempre muestra los valores actuales de la configuración.
           </p>
         </div>

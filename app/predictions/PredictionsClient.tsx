@@ -33,9 +33,10 @@ function emptySpecial(): SpecialState {
   }
 }
 
-// Verifica si un partido está bloqueado: 15 min antes de kickoff o bloqueo global
+// Verifica si un partido está bloqueado: status no scheduled, tiempo, o bloqueo global
 function isMatchLocked(match: Match, globalLocked: boolean): boolean {
   if (globalLocked) return true
+  if (match.status !== 'scheduled') return true // Bloqueado si ya está en juego o terminado
   if (!match.kickoff_at) return false
   const kickoff = new Date(match.kickoff_at).getTime()
   const now = Date.now()
@@ -371,7 +372,8 @@ export default function PredictionsClient({
                       inputMode="numeric"
                       value={preds[m.id]?.home ?? ''}
                       onChange={(e) => setScore(m.id, 'home', e.target.value)}
-                      className="score-input w-10 h-8 text-sm"
+                      disabled={isMatchLocked(m, locked)}
+                      className={`score-input w-10 h-8 text-sm ${isMatchLocked(m, locked) ? 'opacity-50 cursor-not-allowed' : ''}`}
                       placeholder="-"
                     />
                   </div>
@@ -389,7 +391,8 @@ export default function PredictionsClient({
                       inputMode="numeric"
                       value={preds[m.id]?.away ?? ''}
                       onChange={(e) => setScore(m.id, 'away', e.target.value)}
-                      className="score-input w-10 h-8 text-sm"
+                      disabled={isMatchLocked(m, locked)}
+                      className={`score-input w-10 h-8 text-sm ${isMatchLocked(m, locked) ? 'opacity-50 cursor-not-allowed' : ''}`}
                       placeholder="-"
                     />
                   </div>
@@ -791,7 +794,7 @@ function CompactMatchRow({
             value={p.home ?? ''}
             onChange={(e) => setScore(match.id, 'home', e.target.value)}
             disabled={matchLocked}
-            className="score-input w-8 h-8 text-sm"
+            className={`score-input w-8 h-8 text-sm ${matchLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
             aria-label={`Goles ${homeLabel}`}
           />
           <span className="text-white/30 text-xs">−</span>
@@ -803,9 +806,14 @@ function CompactMatchRow({
             value={p.away ?? ''}
             onChange={(e) => setScore(match.id, 'away', e.target.value)}
             disabled={matchLocked}
-            className="score-input w-8 h-8 text-sm"
+            className={`score-input w-8 h-8 text-sm ${matchLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
             aria-label={`Goles ${awayLabel}`}
           />
+          {matchLocked && match.status !== 'scheduled' && (
+            <svg className="w-3 h-3 text-white/40 ml-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+            </svg>
+          )}
         </div>
 
         {/* Away team */}
@@ -905,15 +913,20 @@ function FifaMatchRow({
             value={p.home ?? ''}
             onChange={(e) => setScore(match.id, 'home', e.target.value)}
             disabled={disableInputs}
-            className="score-input w-9 h-9 sm:w-11 sm:h-11 text-base sm:text-lg"
+            className={`score-input w-9 h-9 sm:w-11 sm:h-11 text-base sm:text-lg ${disableInputs ? 'opacity-50 cursor-not-allowed' : ''}`}
             aria-label={`Goles ${homeLabel}`} />
           <span className="text-white/30 text-xs">−</span>
           <input type="number" min={0} max={99} inputMode="numeric"
             value={p.away ?? ''}
             onChange={(e) => setScore(match.id, 'away', e.target.value)}
             disabled={disableInputs}
-            className="score-input w-9 h-9 sm:w-11 sm:h-11 text-base sm:text-lg"
+            className={`score-input w-9 h-9 sm:w-11 sm:h-11 text-base sm:text-lg ${disableInputs ? 'opacity-50 cursor-not-allowed' : ''}`}
             aria-label={`Goles ${awayLabel}`} />
+          {matchLocked && match.status !== 'scheduled' && (
+            <svg className="w-3 h-3 text-white/40 ml-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+            </svg>
+          )}
         </div>
 
         {awayTeam ? (

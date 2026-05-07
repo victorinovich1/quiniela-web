@@ -311,6 +311,84 @@ export default async function RulesPage() {
           </div>
         </div>
 
+        {/* Sistema de Penales */}
+        <div className="card">
+          <div className="flex items-start gap-4 mb-6">
+            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
+              <div className="text-2xl">🎯</div>
+            </div>
+            <div className="flex-1">
+              <h2 className="text-2xl font-black uppercase tracking-tight text-white mb-2">
+                Penales en Eliminatorias
+              </h2>
+              <p className="text-white/60 text-sm">
+                Cómo funcionan los desempates cuando hay empate en eliminatorias
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            {/* Imagen (arriba en móvil, izquierda en desktop) */}
+            <div className="lg:order-1">
+              <img 
+                src="/images/rules/rules-penales.jpg" 
+                alt="Sistema de Penales" 
+                className="w-full rounded-2xl border border-white/10 shadow-lg shadow-black/20 object-cover"
+              />
+            </div>
+
+            {/* Contenido (abajo en móvil, derecha en desktop) */}
+            <div className="lg:order-2 space-y-4">
+              <div className="bg-white/5 border border-white/10 rounded-lg p-4 space-y-3">
+                <p className="text-white/80 text-sm leading-relaxed">
+                  Si pronosticas un empate en eliminatorias (ej. 1-1, 2-2, 0-0), 
+                  <span className="text-yellow-400 font-bold"> deberás elegir obligatoriamente quién avanza de ronda</span>.
+                </p>
+                <p className="text-white/80 text-sm leading-relaxed">
+                  Si cambias el marcador a victoria directa (ej. 2-1), el selector de &quot;quién avanza&quot; desaparece automáticamente.
+                </p>
+              </div>
+
+              <div className="bg-navy-dark/60 border border-yellow-500/30 rounded-lg p-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-yellow-400 mb-3">
+                  ¿Cómo se otorgan los puntos?
+                </h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-start gap-2">
+                    <span className="text-fifaGreen font-bold flex-shrink-0">•</span>
+                    <p className="text-white/80">
+                      <span className="font-bold text-fifaGreen">Marcador Exacto ({config?.pt_exact_ko ?? 0} pts)</span>: 
+                      Si aciertas el marcador tras los 120 minutos, sin importar quién ganó en penales.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-yellow-400 font-bold flex-shrink-0">•</span>
+                    <p className="text-white/80">
+                      <span className="font-bold text-yellow-400">Ganador Correcto ({config?.pt_winner_ko ?? 0} pts)</span>:
+                      Si predices victoria directa y aciertas quién gana (120&apos; o penales), 
+                      O si predices empate y aciertas quién avanza en penales.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+                <p className="text-white/60 text-xs">
+                  💡 <span className="font-bold text-yellow-400">Ejemplo:</span> Argentina 3-3 Francia (penales: Argentina).
+                  <br />
+                  • Predices 3-3 + Argentina → <span className="text-fifaGreen font-bold">{config?.pt_exact_ko ?? 0} pts</span> (marcador exacto)
+                  <br />
+                  • Predices 2-2 + Argentina → <span className="text-yellow-400 font-bold">{config?.pt_winner_ko ?? 0} pts</span> (ganador en penales)
+                  <br />
+                  • Predices 2-1 Argentina → <span className="text-yellow-400 font-bold">{config?.pt_winner_ko ?? 0} pts</span> (ganador correcto)
+                  <br />
+                  • Predices 2-2 + Francia → <span className="text-white/40 font-bold">0 pts</span> (ganador incorrecto)
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Nota Final */}
         <div className="bg-fifaGreen/10 border border-fifaGreen/30 rounded-xl p-4">
           <p className="text-white/80 text-sm text-center">

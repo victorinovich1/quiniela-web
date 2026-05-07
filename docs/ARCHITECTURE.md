@@ -261,6 +261,58 @@ Tres views con `security_invoker = true`:
 
 El sistema de puntos es **configurable** desde el panel admin (`settings.pt_*` columnas). Cambiar valores ahí actualiza el ranking automáticamente.
 
+### Sistema de Desempate en Eliminatorias (Penales)
+
+En fases eliminatorias (32avos hasta la Final), el sistema maneja desempates por tanda de penales:
+
+#### Flujo de Usuario
+1. **Predicción de empate**: Si el usuario pronostica un empate en eliminatoria (ej. 1-1, 2-2, 0-0):
+   - Aparece selector obligatorio: "¿Quién avanza de ronda?"
+   - Debe elegir un equipo para poder guardar (`predictions.ko_winner_team_id`)
+   
+2. **Cambio de predicción**: Si cambia el marcador a victoria directa (ej. 2-1):
+   - El selector desaparece automáticamente
+   - `ko_winner_team_id` se limpia (porque el ganador es obvio)
+
+#### Flujo de Admin
+1. Cuando un partido de eliminatoria termina en empate:
+   - Ingresa el marcador oficial (ej. 3-3)
+   - Aparece selector "Gana en penales"
+   - Elige el equipo ganador (`matches.shootout_winner_team_id`)
+
+#### Lógica de Puntos
+
+**A) Marcador Exacto (8 puntos en eliminatorias)**:
+- `pred_home == real_home AND pred_away == real_away`
+- Independiente de quién ganó en penales
+- Ejemplo: predijo 1-1, fue 1-1 → 8 puntos (aunque Argentina ganara en penales)
+
+**B) Ganador Correcto (4 puntos en eliminatorias)**:
+- NO hubo marcador exacto, pero:
+  - Usuario predijo victoria (ej. 2-1) y el equipo ganó (ya sea en 120' o penales)
+  - O usuario predijo empate (ej. 1-1), el partido fue empate (ej. 2-2), y acertó quién ganó en penales
+
+**C) Sin puntos**:
+- Marcador incorrecto
+- Ganador incorrecto
+- Falta `shootout_winner_team_id` cuando hubo penales
+
+**Ejemplo completo** (Final del Mundial):
+```
+Partido real: Argentina 3-3 Francia (penales: Argentina)
+
+Usuario A → 3-3 + Argentina: 8 pts (marcador exacto)
+Usuario B → 2-2 + Argentina: 4 pts (ganador en penales)
+Usuario C → 2-1 Argentina: 4 pts (ganador correcto, aunque marcador diferente)
+Usuario D → 2-2 + Francia: 0 pts (ganador incorrecto)
+Usuario E → 1-0 Francia: 0 pts (todo incorrecto)
+```
+
+**Implementación técnica**:
+- View `match_scores` (migración 033, líneas 45-47) evalúa automáticamente
+- RLS permite usuarios leer/escribir `ko_winner_team_id` en sus predictions
+- Solo admin escribe `shootout_winner_team_id` en matches
+
 ## Auth: por qué SSR cookies
 
 Usamos `@supabase/ssr` (no el legacy `@supabase/auth-helpers-nextjs`). La sesión vive en cookies HTTP-only que el server puede leer en server components y middleware. Permite:

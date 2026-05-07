@@ -215,7 +215,7 @@ export default async function RulesPage() {
 
         {/* Cierre Global */}
         <div className="card">
-          <div className="flex items-start gap-4 mb-4">
+          <div className="flex items-start gap-4 mb-6">
             <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gold/20 flex items-center justify-center">
               <ShieldCheck className="w-6 h-6 text-gold" />
             </div>
@@ -223,9 +223,24 @@ export default async function RulesPage() {
               <h2 className="text-2xl font-black uppercase tracking-tight text-white mb-2">
                 Cierre Global
               </h2>
-              <p className="text-white/60 text-sm mb-4">
+              <p className="text-white/60 text-sm">
                 Protección del podio y las quinielas activas
               </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            {/* Imagen (arriba en móvil, izquierda en desktop) */}
+            <div className="lg:order-1">
+              <img 
+                src="/images/rules/rules-cierre.jpg" 
+                alt="Cierre Global" 
+                className="w-full rounded-2xl border border-white/10 shadow-lg shadow-black/20 object-cover"
+              />
+            </div>
+
+            {/* Contenido (abajo en móvil, derecha en desktop) */}
+            <div className="lg:order-2">
               <div className="bg-white/5 border border-white/10 rounded-lg p-4">
                 <p className="text-white/80 text-sm leading-relaxed mb-3">
                   El <span className="text-gold font-bold">podio final</span> (tu Top 4: Campeón, Subcampeón, 3º y 4º) 
@@ -251,7 +266,7 @@ export default async function RulesPage() {
 
         {/* Eliminatorias y Cruces */}
         <div className="card">
-          <div className="flex items-start gap-4 mb-4">
+          <div className="flex items-start gap-4 mb-6">
             <div className="flex-shrink-0 w-12 h-12 rounded-full bg-fifaGreen/20 flex items-center justify-center">
               <ListChecks className="w-6 h-6 text-fifaGreen" />
             </div>
@@ -259,9 +274,24 @@ export default async function RulesPage() {
               <h2 className="text-2xl font-black uppercase tracking-tight text-white mb-2">
                 Fase Eliminatoria
               </h2>
-              <p className="text-white/60 text-sm mb-4">
+              <p className="text-white/60 text-sm">
                 Los cruces se habilitan conforme avanza el torneo
               </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            {/* Imagen (arriba en móvil, derecha en desktop) */}
+            <div className="lg:order-2">
+              <img 
+                src="/images/rules/rules-ko.jpg" 
+                alt="Fase Eliminatoria" 
+                className="w-full rounded-2xl border border-white/10 shadow-lg shadow-black/20 object-cover"
+              />
+            </div>
+
+            {/* Contenido (abajo en móvil, izquierda en desktop) */}
+            <div className="lg:order-1 space-y-4">
               <div className="bg-white/5 border border-white/10 rounded-lg p-4 space-y-3">
                 <p className="text-white/80 text-sm leading-relaxed">
                   Los partidos de eliminatorias (16avos, octavos, cuartos, semis y final) se habilitan 
@@ -270,11 +300,12 @@ export default async function RulesPage() {
                 <p className="text-white/80 text-sm leading-relaxed">
                   Podrás pronosticar cada partido hasta 15 minutos antes de su inicio, siguiendo la regla general de bloqueo.
                 </p>
-                <div className="bg-navy-dark/60 rounded-lg p-3">
-                  <p className="text-white/60 text-xs">
-                    🏆 El administrador sincroniza los resultados y define los cruces manualmente o mediante la API oficial de FIFA.
-                  </p>
-                </div>
+              </div>
+              
+              <div className="bg-navy-dark/60 border border-fifaGreen/30 rounded-lg p-3">
+                <p className="text-white/60 text-xs">
+                  🏆 El administrador sincroniza los resultados y define los cruces manualmente o mediante la API oficial de FIFA.
+                </p>
               </div>
             </div>
           </div>

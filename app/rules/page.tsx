@@ -45,62 +45,76 @@ export default async function RulesPage() {
             </div>
           </div>
 
-          <div className="space-y-6">
-            {/* Fase de Grupos */}
-            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-fifaGreen mb-3">
-                Fase de Grupos
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="bg-navy-dark/60 rounded-lg p-3">
-                  <div className="text-xs text-white/50 uppercase tracking-wider mb-1">
-                    Marcador exacto
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            {/* Imagen (arriba en móvil, derecha en desktop) */}
+            <div className="lg:order-2">
+              <img 
+                src="/images/rules/rules-puntos.jpg" 
+                alt="Sistema de puntos" 
+                className="w-full rounded-2xl border border-white/10 shadow-lg shadow-black/20"
+              />
+            </div>
+
+            {/* Contenido (abajo en móvil, izquierda en desktop) */}
+            <div className="lg:order-1 space-y-6">
+              {/* Fase de Grupos */}
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-fifaGreen mb-3">
+                  Fase de Grupos
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="bg-navy-dark/60 rounded-lg p-3">
+                    <div className="text-xs text-white/50 uppercase tracking-wider mb-1">
+                      Marcador exacto
+                    </div>
+                    <div className="text-3xl font-black text-white">
+                      {config?.pt_exact_group ?? 0}
+                      <span className="text-sm text-white/60 ml-1">pts</span>
+                    </div>
                   </div>
-                  <div className="text-3xl font-black text-white">
-                    {config?.pt_exact_group ?? 0}
-                    <span className="text-sm text-white/60 ml-1">pts</span>
+                  <div className="bg-navy-dark/60 rounded-lg p-3">
+                    <div className="text-xs text-white/50 uppercase tracking-wider mb-1">
+                      Solo ganador
+                    </div>
+                    <div className="text-3xl font-black text-white">
+                      {config?.pt_winner_group ?? 0}
+                      <span className="text-sm text-white/60 ml-1">pts</span>
+                    </div>
                   </div>
                 </div>
-                <div className="bg-navy-dark/60 rounded-lg p-3">
-                  <div className="text-xs text-white/50 uppercase tracking-wider mb-1">
-                    Solo ganador
+              </div>
+
+              {/* Eliminatorias */}
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-fifaGreen mb-3">
+                  Eliminatorias (16avos → Final)
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="bg-navy-dark/60 rounded-lg p-3">
+                    <div className="text-xs text-white/50 uppercase tracking-wider mb-1">
+                      Marcador exacto
+                    </div>
+                    <div className="text-3xl font-black text-white">
+                      {config?.pt_exact_ko ?? 0}
+                      <span className="text-sm text-white/60 ml-1">pts</span>
+                    </div>
                   </div>
-                  <div className="text-3xl font-black text-white">
-                    {config?.pt_winner_group ?? 0}
-                    <span className="text-sm text-white/60 ml-1">pts</span>
+                  <div className="bg-navy-dark/60 rounded-lg p-3">
+                    <div className="text-xs text-white/50 uppercase tracking-wider mb-1">
+                      Solo ganador
+                    </div>
+                    <div className="text-3xl font-black text-white">
+                      {config?.pt_winner_ko ?? 0}
+                      <span className="text-sm text-white/60 ml-1">pts</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Eliminatorias */}
-            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-fifaGreen mb-3">
-                Eliminatorias (16avos → Final)
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="bg-navy-dark/60 rounded-lg p-3">
-                  <div className="text-xs text-white/50 uppercase tracking-wider mb-1">
-                    Marcador exacto
-                  </div>
-                  <div className="text-3xl font-black text-white">
-                    {config?.pt_exact_ko ?? 0}
-                    <span className="text-sm text-white/60 ml-1">pts</span>
-                  </div>
-                </div>
-                <div className="bg-navy-dark/60 rounded-lg p-3">
-                  <div className="text-xs text-white/50 uppercase tracking-wider mb-1">
-                    Solo ganador
-                  </div>
-                  <div className="text-3xl font-black text-white">
-                    {config?.pt_winner_ko ?? 0}
-                    <span className="text-sm text-white/60 ml-1">pts</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Podio Final */}
+          {/* Podio Final */}
+          <div className="mt-6 space-y-4">
             <div className="bg-gradient-to-br from-gold/20 to-fifaGreen/10 rounded-xl p-4 border border-gold/30">
               <h3 className="text-sm font-bold uppercase tracking-wider text-gold mb-3">
                 Podio Final
@@ -144,12 +158,21 @@ export default async function RulesPage() {
                 </div>
               </div>
             </div>
+
+            {/* Banner Podio */}
+            <div className="w-full">
+              <img 
+                src="/images/rules/rules-podio.jpg" 
+                alt="Podio del Mundial" 
+                className="w-full rounded-2xl border border-white/10 shadow-lg shadow-black/20"
+              />
+            </div>
           </div>
         </div>
 
         {/* Regla de los 15 Minutos */}
         <div className="card">
-          <div className="flex items-start gap-4 mb-4">
+          <div className="flex items-start gap-4 mb-6">
             <div className="flex-shrink-0 w-12 h-12 rounded-full bg-fifaGreen/20 flex items-center justify-center">
               <Timer className="w-6 h-6 text-fifaGreen" />
             </div>
@@ -157,9 +180,24 @@ export default async function RulesPage() {
               <h2 className="text-2xl font-black uppercase tracking-tight text-white mb-2">
                 Bloqueo por Partido
               </h2>
-              <p className="text-white/60 text-sm mb-4">
+              <p className="text-white/60 text-sm">
                 Fair play: No vale arrepentirse cuando el partido ya empezó
               </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            {/* Imagen (arriba en móvil, izquierda en desktop) */}
+            <div className="lg:order-1">
+              <img 
+                src="/images/rules/rules-tiempo.jpg" 
+                alt="Regla de los 15 minutos" 
+                className="w-full rounded-2xl border border-white/10 shadow-lg shadow-black/20"
+              />
+            </div>
+
+            {/* Contenido (abajo en móvil, derecha en desktop) */}
+            <div className="lg:order-2">
               <div className="bg-white/5 border border-white/10 rounded-lg p-4">
                 <p className="text-white/80 text-sm leading-relaxed">
                   Cada partido se <span className="text-fifaGreen font-bold">bloquea automáticamente 15 minutos antes de su hora de inicio</span>. 

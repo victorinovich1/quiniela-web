@@ -75,6 +75,7 @@ export default function PredictionsClient({
   const [autoSaving, setAutoSaving] = useState(false)
   const [autoSaveMsg, setAutoSaveMsg] = useState<string | null>(null)
   const [expressCountdowns, setExpressCountdowns] = useState<Record<number, number>>({})
+  const [expressExpanded, setExpressExpanded] = useState(true)
 
   const activeEntry = entries.find((e) => e.id === activeEntryId) || entries[0]
 
@@ -146,6 +147,15 @@ export default function PredictionsClient({
       })
       .slice(0, 4)
   }, [matches, locked])
+
+  // Calcular el kickoff más cercano de los partidos express
+  const nextKickoff = useMemo(() => {
+    if (expressMatches.length === 0) return null
+    const times = expressMatches
+      .map(m => m.kickoff_at ? new Date(m.kickoff_at).getTime() : Infinity)
+      .filter(t => t !== Infinity)
+    return times.length > 0 ? Math.min(...times) : null
+  }, [expressMatches])
 
   // Countdown timer para partidos express
   useEffect(() => {
@@ -325,24 +335,51 @@ export default function PredictionsClient({
 
       {/* PRONÓSTICO EXPRESS */}
       {expressMatches.length > 0 && !locked && (
-        <div className="bg-fifaGreen/5 border border-fifaGreen/20 rounded-xl p-4 mb-5">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-fifaGreen text-lg">⚡</span>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-fifaGreen">
-              Pronóstico Express: Próximos partidos
-            </h3>
+        <div className="bg-fifaGreen/5 border border-fifaGreen/20 rounded-xl p-4 mb-5 transition-all">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-fifaGreen text-lg">⚡</span>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-fifaGreen">
+                Pronóstico Express: Próximos partidos
+              </h3>
+            </div>
+            <button
+              onClick={() => setExpressExpanded(!expressExpanded)}
+              className="text-fifaGreen hover:text-fifaGreen-light transition-transform"
+              aria-label={expressExpanded ? 'Contraer' : 'Expandir'}
+            >
+              <svg
+                className={`w-5 h-5 transition-transform ${expressExpanded ? '' : 'rotate-180'}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+          {expressExpanded && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
             {expressMatches.map((m) => {
               const secondsLeft = expressCountdowns[m.id] ?? 0
               const minutesLeft = Math.floor(secondsLeft / 60)
               const timeLeftColor = minutesLeft < 10 ? 'text-danger' : minutesLeft < 60 ? 'text-yellow-400' : 'text-white/60'
               const shouldPulse = minutesLeft < 10
               const isLockedByStatus = m.status !== 'scheduled'
+              const isNextMatch = m.kickoff_at && nextKickoff ? new Date(m.kickoff_at).getTime() === nextKickoff : false
               
               return (
-              <div key={m.id} className={`bg-navy-deepest/40 border border-white/10 rounded-lg p-2.5 hover:bg-white/5 transition-colors ${isMatchLocked(m, locked) ? 'opacity-60' : ''}`}>
+              <div key={m.id} className={`relative bg-navy-deepest/40 border rounded-lg p-2.5 hover:bg-white/5 transition-all ${
+                isMatchLocked(m, locked) ? 'opacity-60' : ''
+              } ${
+                isNextMatch ? 'border-fifaGreen bg-fifaGreen/10' : 'border-white/10'
+              }`}>
+                {isNextMatch && (
+                  <div className="absolute -top-2 -right-2 bg-fifaGreen text-navy-deepest text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full animate-pulse">
+                    ⚽ PRÓXIMO
+                  </div>
+                )}
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-[10px] font-black text-fifaGreen">M{m.match_number}</span>
                   <span className="text-[11px] font-bold text-white/60">
@@ -402,6 +439,7 @@ export default function PredictionsClient({
             )
             })}
           </div>
+          )}
         </div>
       )}
 

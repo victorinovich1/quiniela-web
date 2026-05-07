@@ -339,9 +339,10 @@ export default function PredictionsClient({
               const minutesLeft = Math.floor(secondsLeft / 60)
               const timeLeftColor = minutesLeft < 10 ? 'text-danger' : minutesLeft < 60 ? 'text-yellow-400' : 'text-white/60'
               const shouldPulse = minutesLeft < 10
+              const isLockedByStatus = m.status !== 'scheduled'
               
               return (
-              <div key={m.id} className="bg-navy-deepest/40 border border-white/10 rounded-lg p-2.5 hover:bg-white/5 transition-colors">
+              <div key={m.id} className={`bg-navy-deepest/40 border border-white/10 rounded-lg p-2.5 hover:bg-white/5 transition-colors ${isMatchLocked(m, locked) ? 'opacity-60' : ''}`}>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-[10px] font-black text-fifaGreen">M{m.match_number}</span>
                   <span className="text-[11px] font-bold text-white/60">
@@ -754,18 +755,21 @@ function CompactMatchRow({
   const timeStr = kickoff ? kickoff.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '--:--'
   const matchLocked = isMatchLocked(match, locked)
   const showLive = shouldShowLiveIndicator(match)
+  const isLockedByStatus = match.status !== 'scheduled'
 
   return (
-    <div className="card p-2 hover:bg-white/5 transition-colors">
+    <div className={`card p-2 hover:bg-white/5 transition-colors ${matchLocked ? 'opacity-60' : ''}`}>
       <div className="flex items-center gap-2">
         {/* Match number */}
         <div className="text-[10px] font-black text-white/40 w-7 text-center">
           M{match.match_number}
         </div>
 
-        {/* Time or Live indicator */}
+        {/* Time or Live/Locked indicator */}
         <div className="text-[11px] font-bold w-12">
-          {showLive ? (
+          {isLockedByStatus ? (
+            <span className="text-white/40 text-[9px] uppercase tracking-wider">Cerrado</span>
+          ) : showLive ? (
             <span className="text-red-500 animate-pulse">VIVO</span>
           ) : (
             <span className="text-white/60">{timeStr}</span>
@@ -858,6 +862,7 @@ function FifaMatchRow({
   const matchLocked = isMatchLocked(match, locked)
   const disableInputs = matchLocked || (isKnockout && teamsNotDefined)
   const showLive = shouldShowLiveIndicator(match)
+  const isLockedByStatus = match.status !== 'scheduled'
 
   const showKoSelect = showKoWinner && p.home !== null && p.away !== null && p.home === p.away
 
@@ -884,11 +889,13 @@ function FifaMatchRow({
   const venueShort = stadiumParts[0] || ''
 
   return (
-    <div className="card p-3">
+    <div className={`card p-3 ${matchLocked ? 'opacity-60' : ''}`}>
       <div className="grid grid-cols-[60px_1fr_auto_1fr_1px] sm:grid-cols-[80px_1fr_auto_1fr_100px] items-center gap-2 sm:gap-3">
         <div className="min-w-0">
           <div className="text-white font-extrabold text-xs sm:text-base leading-tight">
-            {showLive ? (
+            {isLockedByStatus ? (
+              <span className="text-white/40 text-[10px] sm:text-xs uppercase tracking-wider">Cerrado</span>
+            ) : showLive ? (
               <span className="text-red-500 animate-pulse">EN VIVO</span>
             ) : (
               timeStr
@@ -961,8 +968,8 @@ function FifaMatchRow({
           <span className="label-up">Penales:</span>
           <select value={p.ko ?? ''}
             onChange={(e) => setKoWinner(match.id, e.target.value ? Number(e.target.value) : null)}
-            disabled={locked}
-            className="input flex-1 text-xs">
+            disabled={disableInputs}
+            className={`input flex-1 text-xs ${disableInputs ? 'opacity-50 cursor-not-allowed' : ''}`}>
             <option value="" className="bg-navy-deepest">Selecciona ganador</option>
             {koOptions.map((t) => (
               <option key={t.id} value={t.id} className="bg-navy-deepest">{t.name}</option>

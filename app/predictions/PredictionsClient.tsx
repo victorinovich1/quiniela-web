@@ -180,7 +180,7 @@ export default function PredictionsClient({
     return () => clearInterval(interval)
   }, [expressMatches])
 
-  async function handleAutoSave(matchId: number, homeScore: number | null, awayScore: number | null) {
+  async function handleAutoSave(matchId: number, homeScore: number | null, awayScore: number | null, koWinner: number | null = null) {
     // Solo guardar si ambos valores son válidos
     if (homeScore === null || awayScore === null) return
     
@@ -198,7 +198,7 @@ export default function PredictionsClient({
         match_id: matchId,
         home_score: homeScore,
         away_score: awayScore,
-        ko_winner_team_id: null, // Se maneja por separado
+        ko_winner_team_id: koWinner,
       }, { onConflict: 'entry_id,match_id' })
       
       if (predErr) throw predErr
@@ -224,7 +224,7 @@ export default function PredictionsClient({
       
       // Auto-guardar cuando ambos valores estén completos
       if (next.home !== null && next.away !== null) {
-        handleAutoSave(matchId, next.home, next.away)
+        handleAutoSave(matchId, next.home, next.away, next.ko)
       }
       
       return { ...prev, [matchId]: next }
@@ -235,7 +235,14 @@ export default function PredictionsClient({
     if (locked) return
     setPreds((prev) => {
       const cur = prev[matchId] ?? { home: null, away: null, ko: null }
-      return { ...prev, [matchId]: { ...cur, ko: teamId } }
+      const next = { ...cur, ko: teamId }
+      
+      // Auto-guardar si hay marcador completo
+      if (next.home !== null && next.away !== null) {
+        handleAutoSave(matchId, next.home, next.away, teamId)
+      }
+      
+      return { ...prev, [matchId]: next }
     })
   }
 
@@ -434,6 +441,25 @@ export default function PredictionsClient({
                       placeholder="-"
                     />
                   </div>
+                  
+                  {/* Selector de Penales si es eliminatoria y empate */}
+                  {m.phase !== 'group' && preds[m.id]?.home !== null && preds[m.id]?.away !== null && preds[m.id]?.home === preds[m.id]?.away && (
+                    <div className="mt-2 pt-2 border-t border-white/10">
+                      <label className="text-[10px] text-white/60 uppercase tracking-wider mb-1 block">
+                        Penales:
+                      </label>
+                      <select
+                        value={preds[m.id]?.ko ?? ''}
+                        onChange={(e) => setKoWinner(m.id, e.target.value ? Number(e.target.value) : null)}
+                        disabled={isMatchLocked(m, locked)}
+                        className={`input w-full text-xs ${isMatchLocked(m, locked) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <option value="">Selecciona ganador</option>
+                        <option value={m.home_team_id!}>{teamsById[m.home_team_id!]?.name || 'TBD'}</option>
+                        <option value={m.away_team_id!}>{teamsById[m.away_team_id!]?.name || 'TBD'}</option>
+                      </select>
+                    </div>
+                  )}
                 </div>
               </div>
             )

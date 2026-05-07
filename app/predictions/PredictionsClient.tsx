@@ -128,6 +128,23 @@ export default function PredictionsClient({
     return m
   }, [teams])
 
+  // Próximos 4 partidos para Pronóstico Express
+  const expressMatches = useMemo(() => {
+    return matches
+      .filter((m) => 
+        m.status === 'scheduled' && 
+        m.home_team_id !== null && 
+        m.away_team_id !== null &&
+        !isMatchLocked(m, locked)
+      )
+      .sort((a, b) => {
+        const ta = a.kickoff_at ? new Date(a.kickoff_at).getTime() : 0
+        const tb = b.kickoff_at ? new Date(b.kickoff_at).getTime() : 0
+        return ta - tb
+      })
+      .slice(0, 4)
+  }, [matches, locked])
+
   async function handleAutoSave(matchId: number, homeScore: number | null, awayScore: number | null) {
     // Solo guardar si ambos valores son válidos
     if (homeScore === null || awayScore === null) return
@@ -269,6 +286,72 @@ export default function PredictionsClient({
         </svg>
         <span>Horarios en tu hora local <span className="text-white/40 hidden sm:inline">({userTimeZone})</span></span>
       </div>
+
+      {/* PRONÓSTICO EXPRESS */}
+      {expressMatches.length > 0 && !locked && (
+        <div className="bg-fifaGreen/5 border border-fifaGreen/20 rounded-xl p-4 mb-5">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-fifaGreen text-lg">⚡</span>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-fifaGreen">
+              Pronóstico Express: Próximos partidos
+            </h3>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+            {expressMatches.map((m) => (
+              <div key={m.id} className="bg-navy-deepest/40 border border-white/10 rounded-lg p-2.5 hover:bg-white/5 transition-colors">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[10px] font-black text-fifaGreen">M{m.match_number}</span>
+                  <span className="text-[11px] font-bold text-white/60">
+                    {m.kickoff_at ? new Date(m.kickoff_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                  </span>
+                  <span className="text-[9px] text-white/40 uppercase tracking-wider ml-auto">
+                    {m.phase === 'group' ? `Grupo ${m.group_code}` : PHASE_LABELS[m.phase as Phase] || m.phase}
+                  </span>
+                </div>
+                
+                <div className="space-y-2">
+                  {/* Home Team */}
+                  <div className="flex items-center gap-2">
+                    <Flag team={teamsById[m.home_team_id!]} size={14} />
+                    <span className="text-xs font-bold text-white flex-1 truncate">
+                      {teamsById[m.home_team_id!]?.name || 'TBD'}
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={99}
+                      inputMode="numeric"
+                      value={preds[m.id]?.home ?? ''}
+                      onChange={(e) => setScore(m.id, 'home', e.target.value)}
+                      className="score-input w-10 h-8 text-sm"
+                      placeholder="-"
+                    />
+                  </div>
+                  
+                  {/* Away Team */}
+                  <div className="flex items-center gap-2">
+                    <Flag team={teamsById[m.away_team_id!]} size={14} />
+                    <span className="text-xs font-bold text-white flex-1 truncate">
+                      {teamsById[m.away_team_id!]?.name || 'TBD'}
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={99}
+                      inputMode="numeric"
+                      value={preds[m.id]?.away ?? ''}
+                      onChange={(e) => setScore(m.id, 'away', e.target.value)}
+                      className="score-input w-10 h-8 text-sm"
+                      placeholder="-"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-1 bg-white/5 rounded-xl p-1 mb-5 sticky top-14 z-30 backdrop-blur-md">
         {([['grupos','Grupos'],['eliminatorias','Eliminatorias'],['especiales','Especiales']] as [Tab,string][]).map(([key, label]) => (

@@ -73,6 +73,7 @@ export default function PredictionsClient({
   const [countdown, setCountdown] = useState<string>('')
   const [autoSaving, setAutoSaving] = useState(false)
   const [autoSaveMsg, setAutoSaveMsg] = useState<string | null>(null)
+  const [expressCountdowns, setExpressCountdowns] = useState<Record<number, number>>({})
 
   const activeEntry = entries.find((e) => e.id === activeEntryId) || entries[0]
 
@@ -144,6 +145,29 @@ export default function PredictionsClient({
       })
       .slice(0, 4)
   }, [matches, locked])
+
+  // Countdown timer para partidos express
+  useEffect(() => {
+    if (expressMatches.length === 0) return
+
+    function updateCountdowns() {
+      const now = Date.now()
+      const newCountdowns: Record<number, number> = {}
+      
+      for (const match of expressMatches) {
+        if (!match.kickoff_at) continue
+        const lockTime = new Date(match.kickoff_at).getTime() - 15 * 60 * 1000
+        const secondsLeft = Math.max(0, Math.floor((lockTime - now) / 1000))
+        newCountdowns[match.id] = secondsLeft
+      }
+      
+      setExpressCountdowns(newCountdowns)
+    }
+
+    updateCountdowns()
+    const interval = setInterval(updateCountdowns, 1000)
+    return () => clearInterval(interval)
+  }, [expressMatches])
 
   async function handleAutoSave(matchId: number, homeScore: number | null, awayScore: number | null) {
     // Solo guardar si ambos valores son válidos
@@ -239,6 +263,17 @@ export default function PredictionsClient({
     router.push(`/predictions?entry=${id}`)
   }
 
+  function formatTimeLeft(seconds: number): string {
+    if (seconds <= 0) return '00:00'
+    const hours = Math.floor(seconds / 3600)
+    const mins = Math.floor((seconds % 3600) / 60)
+    const secs = seconds % 60
+    if (hours > 0) {
+      return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+    }
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
+
   return (
     <div className="pb-32">
       {entries.length > 1 ? (
@@ -298,7 +333,13 @@ export default function PredictionsClient({
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-            {expressMatches.map((m) => (
+            {expressMatches.map((m) => {
+              const secondsLeft = expressCountdowns[m.id] ?? 0
+              const minutesLeft = Math.floor(secondsLeft / 60)
+              const timeLeftColor = minutesLeft < 10 ? 'text-danger' : minutesLeft < 60 ? 'text-yellow-400' : 'text-white/60'
+              const shouldPulse = minutesLeft < 10
+              
+              return (
               <div key={m.id} className="bg-navy-deepest/40 border border-white/10 rounded-lg p-2.5 hover:bg-white/5 transition-colors">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-[10px] font-black text-fifaGreen">M{m.match_number}</span>
@@ -307,6 +348,12 @@ export default function PredictionsClient({
                   </span>
                   <span className="text-[9px] text-white/40 uppercase tracking-wider ml-auto">
                     {m.phase === 'group' ? `Grupo ${m.group_code}` : PHASE_LABELS[m.phase as Phase] || m.phase}
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-[10px] font-bold font-mono tabular-nums ${timeLeftColor} ${shouldPulse ? 'animate-pulse' : ''}`}>
+                    Cierre: {formatTimeLeft(secondsLeft)}
                   </span>
                 </div>
                 
@@ -348,7 +395,8 @@ export default function PredictionsClient({
                   </div>
                 </div>
               </div>
-            ))}
+            )
+            })}
           </div>
         </div>
       )}

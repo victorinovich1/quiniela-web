@@ -206,6 +206,32 @@ Función trigger ejecutada `after insert on auth.users`. Crea fila en `profiles`
 ### `touch_updated_at()` (trigger)
 Setea `new.updated_at = now()`. Usado en triggers BEFORE UPDATE.
 
+### `admin_delete_user(target_user_id uuid)` y `delete_user_self()`
+Funciones para eliminación de usuarios. `admin_delete_user` permite a admins eliminar cualquier usuario (y sus datos en cascada). `delete_user_self` permite a un usuario eliminarse a sí mismo. Security definer.
+
+## Blindaje de Seguridad (migración 034)
+
+Todas las funciones `SECURITY DEFINER` han sido blindadas contra ataques de path manipulation aplicando el siguiente patrón:
+
+1. **REVOKE ALL** — Limpia permisos previos (PUBLIC, anon, authenticated)
+2. **ALTER FUNCTION ... SET search_path = public** — Corrige el warning "Search Path Mutable" del Security Advisor
+3. **GRANT EXECUTE** — Otorga permisos mínimos necesarios
+
+### Funciones blindadas
+
+| Función | Acceso |
+|---------|--------|
+| `can_predict_match(int)` | authenticated |
+| `tournament_started()` | authenticated |
+| `admin_delete_user(uuid)` | authenticated |
+| `delete_user_self()` | authenticated |
+| `validate_invite(text, text)` | **anon, authenticated** |
+| `is_admin()` | authenticated |
+| `is_super_admin()` | authenticated |
+| `redeem_invite(text)` | authenticated |
+
+**Excepción importante:** `validate_invite` mantiene acceso para usuarios anónimos (`anon`) porque se llama desde la página de registro **antes** de que el usuario esté autenticado. Esta función solo lee datos (no modifica) y es esencial para el flujo de signup con código de invitación.
+
 ## RLS — patrones
 
 ### Lectura pública (todo el mundo)

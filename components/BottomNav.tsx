@@ -17,6 +17,7 @@ export default function BottomNav({
     { href: '/predictions', label: 'Pronósticos', icon: PredIcon },
     { href: '/leaderboard', label: 'Ranking', icon: TrophyIcon },
     { href: '/entries', label: 'Mis jugadas', icon: GridIcon },
+    { href: '/rules', label: 'Reglas', icon: BookIcon },
     { href: '/profile', label: 'Perfil', icon: UserIcon },
   ]
   if (isAdmin) items.push({ href: '/admin', label: 'Admin', icon: GearIcon })
@@ -92,6 +93,15 @@ function UserIcon({ active }: { active: boolean }) {
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
       <circle cx="12" cy="7" r="4" />
+    </svg>
+  )
+}
+
+function BookIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
     </svg>
   )
 }

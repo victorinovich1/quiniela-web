@@ -369,6 +369,15 @@ export default async function HomePage() {
             VIVE EL MUNDIAL A TU MANERA
           </p>
 
+          <div className="mb-4">
+            <Link 
+              href="/rules" 
+              className="text-white/60 hover:text-fifaGreen text-sm font-bold uppercase tracking-wider transition-colors"
+            >
+              Ver Reglamento Completo
+            </Link>
+          </div>
+
           <div className="text-white/30 text-xs">
             © 2026 Quiniela Pro. Todos los derechos reservados.
           </div>

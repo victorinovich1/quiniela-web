@@ -27,13 +27,13 @@ export default async function LeaderboardPage() {
 
   const rows = (data ?? []) as LeaderboardRow[]
   
-  // Partidos de interés: live + últimos 2 finished
+  // Partidos de interés: live + últimos 2 finished (ordenados por kickoff_at DESC)
   const { data: liveMatches } = await supabase
     .from('matches')
     .select('*')
     .eq('status', 'live')
     .not('kickoff_at', 'is', null)
-    .lte('kickoff_at', new Date().toISOString())
+    .gte('kickoff_at', '2000-01-01') // Asegurar que kickoff_at existe
     .order('kickoff_at', { ascending: false })
   
   const { data: finishedMatches } = await supabase
@@ -41,12 +41,20 @@ export default async function LeaderboardPage() {
     .select('*')
     .eq('status', 'finished')
     .not('kickoff_at', 'is', null)
-    .lte('kickoff_at', new Date().toISOString())
+    .gte('kickoff_at', '2000-01-01') // Asegurar que kickoff_at exists
     .order('kickoff_at', { ascending: false })
     .limit(2)
   
   const recentMatches = [...(liveMatches ?? []), ...(finishedMatches ?? [])] as Match[]
   const matchIds = recentMatches.map(m => m.id)
+  
+  // Debug logging (server-side)
+  console.log('[Leaderboard] Recent matches:', {
+    live: liveMatches?.length ?? 0,
+    finished: finishedMatches?.length ?? 0,
+    total: recentMatches.length,
+    matchIds
+  })
   
   // Traer todos los equipos para mostrar banderas
   const { data: teams } = await supabase.from('teams').select('*')
@@ -59,6 +67,8 @@ export default async function LeaderboardPage() {
         .select('entry_id, match_id, home_score, away_score, ko_winner_team_id')
         .in('match_id', matchIds)
     : { data: [] }
+  
+  console.log('[Leaderboard] Predictions fetched:', predictions?.length ?? 0)
   
   const predsByEntry = (predictions ?? []).reduce((acc, p: Prediction) => {
     if (!acc[p.entry_id]) acc[p.entry_id] = {}
@@ -83,6 +93,7 @@ export default async function LeaderboardPage() {
       )}
 
       <div className="card p-2 sm:p-3">
+        {/* Debug: {recentMatches.length} partidos recientes (live: {liveMatches?.length ?? 0}, finished: {finishedMatches?.length ?? 0}) */}
         {rows.length === 0 ? (
           <div className="py-10 text-center text-white/40 uppercase tracking-wider text-sm">
             Aún no hay jugadas registradas

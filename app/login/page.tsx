@@ -40,7 +40,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen w-screen fixed inset-0 -mx-4 sm:-mx-6 lg:-mx-8 -my-6 flex items-center justify-center p-4">
+    <div className="min-h-screen w-screen fixed inset-0 -mx-4 sm:-mx-6 lg:-mx-8 -my-6 flex items-center justify-center lg:justify-end p-4 lg:pr-32">
       {/* Background Image */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"

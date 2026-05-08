@@ -228,7 +228,23 @@ export default function ProfileClient({
           {loadingAvatars ? (
             <div className="text-center py-8 text-white/50">Cargando avatares disponibles...</div>
           ) : (
-            <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+            <>
+              {/* Preview del avatar seleccionado */}
+              {avatarPermId && (
+                <div className="flex justify-center mb-4">
+                  <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-fifaGreen shadow-lg shadow-fifaGreen/30 bg-white/10">
+                    <img
+                      src={AVATAR_PATHS.permanent(avatarPermId)}
+                      alt="Avatar seleccionado"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = AVATAR_PATHS.default
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+              <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
               {permanentAvatars.map((id) => {
                 const isOccupied = occupiedAvatars.has(id)
                 const isSelected = avatarPermId === id
@@ -269,6 +285,7 @@ export default function ProfileClient({
                 )
               })}
             </div>
+            </>
           )}
           <p className="text-xs text-white/50 mt-2">
             Los avatares son únicos. No podrás elegir uno que ya esté en uso por otro participante.

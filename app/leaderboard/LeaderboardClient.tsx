@@ -183,16 +183,22 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                 const medal = idx === 0 ? 'text-gold' : idx < 3 ? 'text-fifaGreen' : 'text-white/40'
                 return (
                   <div key={row?.entry_id ?? idx}
-                    className={`grid items-center gap-2 px-2 py-3 border-b border-white/5 last:border-0 ${
+                    className={`grid items-center gap-2 px-2 py-4 border-b border-white/5 last:border-0 ${
                       isMe ? 'bg-gold/10 rounded-lg' : ''
                     }`}
                     style={{
                       gridTemplateColumns: `36px 1fr 60px 60px 64px ${recentMatches.map(() => '56px').join(' ')}`
                     }}>
                     <div className={`text-base font-extrabold ${medal}`}>{idx + 1}</div>
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0">
                       {/* Avatar */}
-                      <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden border-2 border-white/20 bg-white/10">
+                      <div className={`w-16 h-16 rounded-full flex-shrink-0 overflow-hidden border-2 ${
+                        row?.rank === 1 
+                          ? 'border-gold shadow-lg shadow-gold/50' 
+                          : row?.avatar_temp_id 
+                          ? 'border-yellow-400/60' 
+                          : 'border-white/20'
+                      } bg-white/10`}>
                         <img
                           src={row?.display_avatar ?? AVATAR_PATHS.default}
                           alt={row?.alias ?? 'Avatar'}
@@ -293,7 +299,7 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white/20 bg-white/10 flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/20 bg-white/10 flex-shrink-0">
                           <img
                             src={victim.display_avatar}
                             alt={victim.alias}

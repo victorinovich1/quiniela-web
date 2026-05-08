@@ -35,6 +35,7 @@ O usa Supabase MCP `apply_migration(name, query)` si tienes un agente con acceso
 | 017 | official_full_schedule_fifa | Actualiza los 104 partidos con horario + estadio desde API oficial FIFA (season 285023) |
 | 018 | lock_entries_deletion | RLS política que impide borrar entries después del lock_at |
 | 038 | avatar_war_system | Sistema de avatares: columnas avatar_perm_id (UNIQUE) y avatar_temp_id, trigger auto-limpia castigos al iniciar partido, view leaderboard con display_avatar |
+| 039 | fix_avatar_paths | Corrige rutas de avatares en view leaderboard para usar subcarpetas /permanentes/ y /bromas/ |
 
 ## Convenciones
 

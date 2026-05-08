@@ -17,8 +17,10 @@ interface Props {
 
 export default function LeaderboardClient({ user, rows, recentMatches, teams, predictions, dataError }: Props) {
   const [showPunishModal, setShowPunishModal] = useState(false)
+  const [punishStep, setPunishStep] = useState<1 | 2>(1)
   const [punishing, setPunishing] = useState(false)
   const [selectedVictims, setSelectedVictims] = useState<string[]>([])
+  const [selectedJokeIds, setSelectedJokeIds] = useState<number[]>([])
   const [punishError, setPunishError] = useState<string | null>(null)
 
   const teamsById = teams.reduce((acc, t) => {
@@ -46,9 +48,34 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
   // Usuarios elegibles para castigo (todos excepto el Rey)
   const eligibleVictims = rows.filter(r => r.user_id !== user.id)
 
+  function nextStep() {
+    if (selectedVictims.length === 0) {
+      setPunishError('Selecciona al menos 1 usuario')
+      return
+    }
+    if (selectedVictims.length > 2) {
+      setPunishError('Máximo 2 usuarios')
+      return
+    }
+    setPunishError(null)
+    setPunishStep(2)
+  }
+
+  function selectJoke(jokeId: number) {
+    setSelectedJokeIds(prev => {
+      if (prev.includes(jokeId)) {
+        return prev.filter(id => id !== jokeId)
+      }
+      if (prev.length < selectedVictims.length) {
+        return [...prev, jokeId]
+      }
+      return prev
+    })
+  }
+
   async function handlePunish() {
-    if (selectedVictims.length !== 2) {
-      setPunishError('Debes seleccionar exactamente 2 usuarios')
+    if (selectedJokeIds.length !== selectedVictims.length) {
+      setPunishError(`Selecciona ${selectedVictims.length} avatar${selectedVictims.length > 1 ? 'es' : ''} de castigo`)
       return
     }
 
@@ -58,30 +85,19 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
     try {
       const supabase = createClient()
       
-      // Asignar avatares de broma aleatorios a los 2 seleccionados
-      const victim1 = selectedVictims[0]
-      const victim2 = selectedVictims[1]
-      const jokeId1 = jokeAvatars[Math.floor(Math.random() * jokeAvatars.length)]
-      const jokeId2 = jokeAvatars[Math.floor(Math.random() * jokeAvatars.length)]
+      for (let i = 0; i < selectedVictims.length; i++) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ avatar_temp_id: selectedJokeIds[i] })
+          .eq('id', selectedVictims[i])
 
-      const { error: err1 } = await supabase
-        .from('profiles')
-        .update({ avatar_temp_id: jokeId1 })
-        .eq('id', victim1)
-
-      if (err1) throw err1
-
-      const { error: err2 } = await supabase
-        .from('profiles')
-        .update({ avatar_temp_id: jokeId2 })
-        .eq('id', victim2)
-
-      if (err2) throw err2
+        if (error) throw error
+      }
 
       setShowPunishModal(false)
       setSelectedVictims([])
-      
-      // Recargar página para ver los cambios
+      setSelectedJokeIds([])
+      setPunishStep(1)
       window.location.reload()
     } catch (e) {
       setPunishError(e instanceof Error ? e.message : 'Error al castigar')
@@ -113,30 +129,17 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
         </div>
       )}
 
-      {/* Botón del Rey */}
-      {isKing && (
-        <div className="bg-gradient-to-r from-gold/20 to-yellow-500/10 border-2 border-gold rounded-xl p-4 mb-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h3 className="text-gold font-black uppercase tracking-wider text-sm flex items-center gap-2">
-                <span className="text-2xl">👑</span>
-                TRONO DEL REY
-              </h3>
-              <p className="text-white/60 text-xs mt-1">
-                Como líder del ranking, puedes castigar a 2 usuarios con avatares de broma
-              </p>
-            </div>
+      <div className="card p-2 sm:p-3">
+        {isKing && (
+          <div className="flex justify-end mb-2">
             <button
               onClick={() => setShowPunishModal(true)}
-              className="btn bg-gold hover:bg-gold/80 text-navy-deepest font-black whitespace-nowrap"
+              className="btn btn-sm bg-gold/20 hover:bg-gold/30 border border-gold/40 text-gold font-bold text-xs"
             >
-              👑 CASTIGAR (2)
+              👑 CASTIGAR
             </button>
           </div>
-        </div>
-      )}
-
-      <div className="card p-2 sm:p-3">
+        )}
         {rows.length === 0 ? (
           <div className="py-10 text-center text-white/40 uppercase tracking-wider text-sm">
             {dataError ? 'No se pudieron cargar los datos' : 'Aún no hay jugadas registradas'}
@@ -204,7 +207,6 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-xs sm:text-sm font-bold text-white uppercase tracking-tight truncate">{row?.alias ?? 'Sin nombre'}</span>
                           {isMe && <span className="badge bg-gold text-navy-deepest">Tú</span>}
-                          {row?.rank === 1 && <span className="badge bg-gold text-navy-deepest">👑 REY</span>}
                           {!row?.paid && <span className="badge bg-danger/30 text-danger">Sin pagar</span>}
                           {row?.avatar_temp_id && <span className="badge bg-yellow-500/30 text-yellow-400">🤡 Castigado</span>}
                         </div>
@@ -242,23 +244,25 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
       {/* Modal de Castigo */}
       {showPunishModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-navy-deepest border-2 border-gold rounded-xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto">
+          <div className="bg-navy-deepest border-2 border-gold rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-gold font-black uppercase tracking-wider text-lg flex items-center gap-2">
                 <span className="text-2xl">👑</span>
                 Castigo del Rey
               </h3>
               <button
-                onClick={() => setShowPunishModal(false)}
+                onClick={() => {
+                  setShowPunishModal(false)
+                  setPunishStep(1)
+                  setSelectedVictims([])
+                  setSelectedJokeIds([])
+                  setPunishError(null)
+                }}
                 className="text-white/40 hover:text-white text-2xl"
               >
                 ×
               </button>
             </div>
-
-            <p className="text-white/70 text-sm mb-4">
-              Selecciona 2 usuarios para asignarles avatares de broma. El castigo durará hasta el próximo partido en vivo.
-            </p>
 
             {punishError && (
               <div className="bg-danger/15 border border-danger/40 text-danger rounded-lg p-3 mb-4 text-sm">
@@ -266,65 +270,141 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
               </div>
             )}
 
-            <div className="space-y-2 mb-6 max-h-60 overflow-y-auto">
-              {eligibleVictims.map((victim) => (
-                <button
-                  key={victim.user_id}
-                  onClick={() => toggleVictim(victim.user_id)}
-                  disabled={punishing || (!selectedVictims.includes(victim.user_id) && selectedVictims.length >= 2)}
-                  className={`w-full text-left p-3 rounded-lg border transition-all ${
-                    selectedVictims.includes(victim.user_id)
-                      ? 'bg-gold/20 border-gold'
-                      : 'bg-white/5 border-white/10 hover:bg-white/10'
-                  } ${
-                    punishing || (!selectedVictims.includes(victim.user_id) && selectedVictims.length >= 2)
-                      ? 'opacity-50 cursor-not-allowed'
-                      : 'cursor-pointer'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white/20 bg-white/10 flex-shrink-0">
+            {punishStep === 1 ? (
+              <>
+                <p className="text-white/70 text-sm mb-4">
+                  Paso 1: Selecciona de 1 a 2 usuarios para castigar. El castigo durará hasta el próximo partido en vivo.
+                </p>
+
+                <div className="space-y-2 mb-6 max-h-60 overflow-y-auto">
+                  {eligibleVictims.map((victim) => (
+                    <button
+                      key={victim.user_id}
+                      onClick={() => toggleVictim(victim.user_id)}
+                      disabled={!selectedVictims.includes(victim.user_id) && selectedVictims.length >= 2}
+                      className={`w-full text-left p-3 rounded-lg border transition-all ${
+                        selectedVictims.includes(victim.user_id)
+                          ? 'bg-gold/20 border-gold'
+                          : 'bg-white/5 border-white/10 hover:bg-white/10'
+                      } ${
+                        !selectedVictims.includes(victim.user_id) && selectedVictims.length >= 2
+                          ? 'opacity-50 cursor-not-allowed'
+                          : 'cursor-pointer'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white/20 bg-white/10 flex-shrink-0">
+                          <img
+                            src={victim.display_avatar}
+                            alt={victim.alias}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = AVATAR_PATHS.default
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-white font-bold text-sm truncate">{victim.alias}</div>
+                          <div className="text-white/40 text-xs truncate">{victim.display_name}</div>
+                        </div>
+                        {selectedVictims.includes(victim.user_id) && (
+                          <div className="text-gold text-xl">✓</div>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="text-white/60 text-xs mb-4">
+                  Seleccionados: {selectedVictims.length} / 2
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setShowPunishModal(false)
+                      setPunishStep(1)
+                      setSelectedVictims([])
+                      setPunishError(null)
+                    }}
+                    className="flex-1 btn btn-outline"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={nextStep}
+                    disabled={selectedVictims.length === 0}
+                    className="flex-1 btn bg-gold hover:bg-gold/80 text-navy-deepest font-black"
+                  >
+                    Siguiente →
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-white/70 text-sm mb-4">
+                  Paso 2: Selecciona {selectedVictims.length} avatar{selectedVictims.length > 1 ? 'es' : ''} de castigo.
+                </p>
+
+                <div className="grid grid-cols-5 gap-2 mb-6">
+                  {jokeAvatars.map((jokeId) => (
+                    <button
+                      key={jokeId}
+                      onClick={() => selectJoke(jokeId)}
+                      disabled={!selectedJokeIds.includes(jokeId) && selectedJokeIds.length >= selectedVictims.length}
+                      className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                        selectedJokeIds.includes(jokeId)
+                          ? 'border-gold scale-105'
+                          : 'border-white/20 hover:border-white/40'
+                      } ${
+                        !selectedJokeIds.includes(jokeId) && selectedJokeIds.length >= selectedVictims.length
+                          ? 'opacity-40 cursor-not-allowed'
+                          : ''
+                      }`}
+                    >
                       <img
-                        src={victim.display_avatar}
-                        alt={victim.alias}
+                        src={AVATAR_PATHS.joke(jokeId)}
+                        alt={`Castigo ${jokeId}`}
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = AVATAR_PATHS.default
                         }}
                       />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-white font-bold text-sm truncate">{victim.alias}</div>
-                      <div className="text-white/40 text-xs truncate">{victim.display_name}</div>
-                    </div>
-                    {selectedVictims.includes(victim.user_id) && (
-                      <div className="text-gold text-xl">✓</div>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
+                      {selectedJokeIds.includes(jokeId) && (
+                        <div className="absolute inset-0 bg-gold/20 flex items-center justify-center">
+                          <div className="text-gold text-2xl font-black">✓</div>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
 
-            <div className="text-white/60 text-xs mb-4">
-              Seleccionados: {selectedVictims.length} / 2
-            </div>
+                <div className="text-white/60 text-xs mb-4">
+                  Seleccionados: {selectedJokeIds.length} / {selectedVictims.length}
+                </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowPunishModal(false)}
-                disabled={punishing}
-                className="flex-1 btn btn-outline"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handlePunish}
-                disabled={punishing || selectedVictims.length !== 2}
-                className="flex-1 btn bg-gold hover:bg-gold/80 text-navy-deepest font-black"
-              >
-                {punishing ? 'Castigando...' : '👑 Castigar'}
-              </button>
-            </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setPunishStep(1)
+                      setSelectedJokeIds([])
+                      setPunishError(null)
+                    }}
+                    disabled={punishing}
+                    className="flex-1 btn btn-outline"
+                  >
+                    ← Atrás
+                  </button>
+                  <button
+                    onClick={handlePunish}
+                    disabled={punishing || selectedJokeIds.length !== selectedVictims.length}
+                    className="flex-1 btn bg-gold hover:bg-gold/80 text-navy-deepest font-black"
+                  >
+                    {punishing ? 'Castigando...' : '👑 Castigar'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

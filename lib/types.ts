@@ -10,6 +10,8 @@ export interface Profile {
   favorite_team_id: number | null
   paid: boolean
   role: Role
+  avatar_perm_id: number | null
+  avatar_temp_id: number | null
 }
 
 export interface Team {
@@ -100,9 +102,13 @@ export interface LeaderboardRow {
   display_name: string | null
   alias: string
   paid: boolean
+  avatar_perm_id: number | null
+  avatar_temp_id: number | null
   match_points: number
   special_points: number
   total_points: number
+  rank: number
+  display_avatar: string
 }
 
 export interface MatchScore {

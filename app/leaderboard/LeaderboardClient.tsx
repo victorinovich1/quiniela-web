@@ -1,7 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import Flag from '@/components/Flag'
+import { createClient } from '@/lib/supabase/client'
 import type { LeaderboardRow, Match, Team, Prediction } from '@/lib/types'
+import { TOTAL_JOKE_AVATARS, AVATAR_PATHS } from '@/lib/avatars'
 
 interface Props {
   user: { id: string }
@@ -12,14 +15,12 @@ interface Props {
   dataError: string | null
 }
 
-function initials(name: string | null | undefined): string {
-  if (!name) return '?'
-  const parts = name.trim().split(/\s+/)
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-}
-
 export default function LeaderboardClient({ user, rows, recentMatches, teams, predictions, dataError }: Props) {
+  const [showPunishModal, setShowPunishModal] = useState(false)
+  const [punishing, setPunishing] = useState(false)
+  const [selectedVictims, setSelectedVictims] = useState<string[]>([])
+  const [punishError, setPunishError] = useState<string | null>(null)
+
   const teamsById = teams.reduce((acc, t) => {
     if (t?.id) acc[t.id] = t
     return acc
@@ -35,6 +36,71 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
 
   const updatedAt = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
 
+  // Verificar si el usuario actual es el Rey (#1)
+  const myRow = rows.find(r => r.user_id === user.id)
+  const isKing = myRow?.rank === 1
+
+  // Avatares de broma disponibles (dinámico)
+  const jokeAvatars = Array.from({ length: TOTAL_JOKE_AVATARS }, (_, i) => i + 1)
+
+  // Usuarios elegibles para castigo (todos excepto el Rey)
+  const eligibleVictims = rows.filter(r => r.user_id !== user.id)
+
+  async function handlePunish() {
+    if (selectedVictims.length !== 2) {
+      setPunishError('Debes seleccionar exactamente 2 usuarios')
+      return
+    }
+
+    setPunishing(true)
+    setPunishError(null)
+
+    try {
+      const supabase = createClient()
+      
+      // Asignar avatares de broma aleatorios a los 2 seleccionados
+      const victim1 = selectedVictims[0]
+      const victim2 = selectedVictims[1]
+      const jokeId1 = jokeAvatars[Math.floor(Math.random() * jokeAvatars.length)]
+      const jokeId2 = jokeAvatars[Math.floor(Math.random() * jokeAvatars.length)]
+
+      const { error: err1 } = await supabase
+        .from('profiles')
+        .update({ avatar_temp_id: jokeId1 })
+        .eq('id', victim1)
+
+      if (err1) throw err1
+
+      const { error: err2 } = await supabase
+        .from('profiles')
+        .update({ avatar_temp_id: jokeId2 })
+        .eq('id', victim2)
+
+      if (err2) throw err2
+
+      setShowPunishModal(false)
+      setSelectedVictims([])
+      
+      // Recargar página para ver los cambios
+      window.location.reload()
+    } catch (e) {
+      setPunishError(e instanceof Error ? e.message : 'Error al castigar')
+    } finally {
+      setPunishing(false)
+    }
+  }
+
+  function toggleVictim(userId: string) {
+    setSelectedVictims(prev => {
+      if (prev.includes(userId)) {
+        return prev.filter(id => id !== userId)
+      } else if (prev.length < 2) {
+        return [...prev, userId]
+      }
+      return prev
+    })
+  }
+
   return (
     <>
       {dataError && (
@@ -43,6 +109,29 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
           <div className="text-xs opacity-80">{dataError}</div>
           <div className="text-xs opacity-60 mt-2">
             Si el problema persiste, contacta al administrador.
+          </div>
+        </div>
+      )}
+
+      {/* Botón del Rey */}
+      {isKing && (
+        <div className="bg-gradient-to-r from-gold/20 to-yellow-500/10 border-2 border-gold rounded-xl p-4 mb-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-gold font-black uppercase tracking-wider text-sm flex items-center gap-2">
+                <span className="text-2xl">👑</span>
+                TRONO DEL REY
+              </h3>
+              <p className="text-white/60 text-xs mt-1">
+                Como líder del ranking, puedes castigar a 2 usuarios con avatares de broma
+              </p>
+            </div>
+            <button
+              onClick={() => setShowPunishModal(true)}
+              className="btn bg-gold hover:bg-gold/80 text-navy-deepest font-black whitespace-nowrap"
+            >
+              👑 CASTIGAR (2)
+            </button>
           </div>
         </div>
       )}
@@ -99,16 +188,25 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                     }}>
                     <div className={`text-base font-extrabold ${medal}`}>{idx + 1}</div>
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-extrabold flex-shrink-0 ${
-                        idx === 0 ? 'bg-gold text-navy-deepest' : idx < 3 ? 'bg-fifaGreen text-navy-deepest' : 'bg-white/10 text-white/80'
-                      }`}>
-                        {initials(row?.alias)}
+                      {/* Avatar */}
+                      <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden border-2 border-white/20 bg-white/10">
+                        <img
+                          src={row?.display_avatar ?? AVATAR_PATHS.default}
+                          alt={row?.alias ?? 'Avatar'}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback si la imagen no existe
+                            (e.target as HTMLImageElement).src = AVATAR_PATHS.default
+                          }}
+                        />
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-xs sm:text-sm font-bold text-white uppercase tracking-tight truncate">{row?.alias ?? 'Sin nombre'}</span>
                           {isMe && <span className="badge bg-gold text-navy-deepest">Tú</span>}
+                          {row?.rank === 1 && <span className="badge bg-gold text-navy-deepest">👑 REY</span>}
                           {!row?.paid && <span className="badge bg-danger/30 text-danger">Sin pagar</span>}
+                          {row?.avatar_temp_id && <span className="badge bg-yellow-500/30 text-yellow-400">🤡 Castigado</span>}
                         </div>
                         <div className="text-[10px] text-white/40 truncate">
                           {row?.display_name || 'Anónimo'}
@@ -140,6 +238,96 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
           </div>
         )}
       </div>
+
+      {/* Modal de Castigo */}
+      {showPunishModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-navy-deepest border-2 border-gold rounded-xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-gold font-black uppercase tracking-wider text-lg flex items-center gap-2">
+                <span className="text-2xl">👑</span>
+                Castigo del Rey
+              </h3>
+              <button
+                onClick={() => setShowPunishModal(false)}
+                className="text-white/40 hover:text-white text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <p className="text-white/70 text-sm mb-4">
+              Selecciona 2 usuarios para asignarles avatares de broma. El castigo durará hasta el próximo partido en vivo.
+            </p>
+
+            {punishError && (
+              <div className="bg-danger/15 border border-danger/40 text-danger rounded-lg p-3 mb-4 text-sm">
+                {punishError}
+              </div>
+            )}
+
+            <div className="space-y-2 mb-6 max-h-60 overflow-y-auto">
+              {eligibleVictims.map((victim) => (
+                <button
+                  key={victim.user_id}
+                  onClick={() => toggleVictim(victim.user_id)}
+                  disabled={punishing || (!selectedVictims.includes(victim.user_id) && selectedVictims.length >= 2)}
+                  className={`w-full text-left p-3 rounded-lg border transition-all ${
+                    selectedVictims.includes(victim.user_id)
+                      ? 'bg-gold/20 border-gold'
+                      : 'bg-white/5 border-white/10 hover:bg-white/10'
+                  } ${
+                    punishing || (!selectedVictims.includes(victim.user_id) && selectedVictims.length >= 2)
+                      ? 'opacity-50 cursor-not-allowed'
+                      : 'cursor-pointer'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white/20 bg-white/10 flex-shrink-0">
+                      <img
+                        src={victim.display_avatar}
+                        alt={victim.alias}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = AVATAR_PATHS.default
+                        }}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-white font-bold text-sm truncate">{victim.alias}</div>
+                      <div className="text-white/40 text-xs truncate">{victim.display_name}</div>
+                    </div>
+                    {selectedVictims.includes(victim.user_id) && (
+                      <div className="text-gold text-xl">✓</div>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <div className="text-white/60 text-xs mb-4">
+              Seleccionados: {selectedVictims.length} / 2
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowPunishModal(false)}
+                disabled={punishing}
+                className="flex-1 btn btn-outline"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handlePunish}
+                disabled={punishing || selectedVictims.length !== 2}
+                className="flex-1 btn bg-gold hover:bg-gold/80 text-navy-deepest font-black"
+              >
+                {punishing ? 'Castigando...' : '👑 Castigar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import PageHeader from '@/components/PageHeader'
 import type { User } from '@supabase/supabase-js'
 import type { Profile } from '@/lib/types'
+import { TOTAL_PERM_AVATARS, AVATAR_PATHS } from '@/lib/avatars'
 
 export default function ProfileClient({
   user,
@@ -16,6 +17,7 @@ export default function ProfileClient({
   lockAt: string | null
 }) {
   const [displayName, setDisplayName] = useState(profile?.display_name || '')
+  const [avatarPermId, setAvatarPermId] = useState(profile?.avatar_perm_id || null)
   const [deletingAccount, setDeletingAccount] = useState(false)
   const podiumLocked = lockAt ? Date.now() > new Date(lockAt).getTime() : false
   const [currentPassword, setCurrentPassword] = useState('')
@@ -27,6 +29,34 @@ export default function ProfileClient({
   const [profileMsg, setProfileMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [passwordMsg, setPasswordMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
+  // Avatares permanentes disponibles (dinámico)
+  const permanentAvatars = Array.from({ length: TOTAL_PERM_AVATARS }, (_, i) => i + 1)
+  const isPunished = profile?.avatar_temp_id !== null
+  
+  // Estado para avatares ocupados por otros usuarios
+  const [occupiedAvatars, setOccupiedAvatars] = useState<Set<number>>(new Set())
+  const [loadingAvatars, setLoadingAvatars] = useState(true)
+
+  // Cargar avatares ocupados
+  useEffect(() => {
+    async function fetchOccupiedAvatars() {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('avatar_perm_id')
+        .not('avatar_perm_id', 'is', null)
+        .neq('id', user.id) // Excluir el usuario actual
+
+      if (!error && data) {
+        const occupied = new Set(data.map(p => p.avatar_perm_id).filter(Boolean) as number[])
+        setOccupiedAvatars(occupied)
+      }
+      setLoadingAvatars(false)
+    }
+
+    fetchOccupiedAvatars()
+  }, [user.id])
+
   async function handleSaveProfile() {
     if (!user) return
     setSavingProfile(true)
@@ -35,7 +65,10 @@ export default function ProfileClient({
     const supabase = createClient()
     const { error } = await supabase
       .from('profiles')
-      .update({ display_name: displayName.trim() || null })
+      .update({ 
+        display_name: displayName.trim() || null,
+        avatar_perm_id: avatarPermId
+      })
       .eq('id', user.id)
 
     setSavingProfile(false)
@@ -120,26 +153,6 @@ export default function ProfileClient({
             Este nombre aparecerá en el ranking y en tus jugadas
           </p>
         </div>
-
-        {profileMsg && (
-          <div
-            className={`text-sm p-3 rounded ${
-              profileMsg.type === 'success'
-                ? 'bg-fifaGreen/20 text-fifaGreen'
-                : 'bg-danger/20 text-danger'
-            }`}
-          >
-            {profileMsg.text}
-          </div>
-        )}
-
-        <button
-          onClick={handleSaveProfile}
-          disabled={savingProfile}
-          className="btn btn-primary w-full md:w-auto"
-        >
-          {savingProfile ? 'Guardando...' : 'Guardar cambios'}
-        </button>
       </div>
 
       {/* Cambio de contraseña */}
@@ -187,6 +200,99 @@ export default function ProfileClient({
           className="btn btn-primary w-full md:w-auto"
         >
           {savingPassword ? 'Actualizando...' : 'Cambiar contraseña'}
+        </button>
+      </div>
+
+      {/* Avatar */}
+      <div className="card p-4 space-y-4">
+        <h2 className="font-extrabold uppercase tracking-tight text-white text-lg">Avatar</h2>
+
+        {isPunished && (
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">🤡</span>
+              <div>
+                <p className="text-yellow-400 font-bold text-sm">¡Has sido castigado por el Rey!</p>
+                <p className="text-white/60 text-xs mt-1">
+                  Tu avatar real volverá cuando inicie el próximo partido en vivo.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div>
+          <label className="block text-sm font-medium text-white/70 mb-3">
+            Selecciona tu avatar permanente
+          </label>
+          {loadingAvatars ? (
+            <div className="text-center py-8 text-white/50">Cargando avatares disponibles...</div>
+          ) : (
+            <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+              {permanentAvatars.map((id) => {
+                const isOccupied = occupiedAvatars.has(id)
+                const isSelected = avatarPermId === id
+                const canSelect = !isOccupied || isSelected
+                
+                return (
+                  <button
+                    key={id}
+                    onClick={() => canSelect && setAvatarPermId(id)}
+                    disabled={isOccupied && !isSelected}
+                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                      isSelected
+                        ? 'border-fifaGreen scale-105'
+                        : isOccupied
+                        ? 'border-white/10 opacity-40 cursor-not-allowed'
+                        : 'border-white/20 hover:border-white/40'
+                    }`}
+                  >
+                    <img
+                      src={AVATAR_PATHS.permanent(id)}
+                      alt={`Avatar ${id}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = AVATAR_PATHS.default
+                      }}
+                    />
+                    {isSelected && (
+                      <div className="absolute inset-0 bg-fifaGreen/20 flex items-center justify-center">
+                        <div className="text-fifaGreen text-2xl font-black">✓</div>
+                      </div>
+                    )}
+                    {isOccupied && !isSelected && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <div className="text-white/70 text-xl">🔒</div>
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+          <p className="text-xs text-white/50 mt-2">
+            Los avatares son únicos. No podrás elegir uno que ya esté en uso por otro participante.
+          </p>
+        </div>
+
+        {profileMsg && (
+          <div
+            className={`text-sm p-3 rounded ${
+              profileMsg.type === 'success'
+                ? 'bg-fifaGreen/20 text-fifaGreen'
+                : 'bg-danger/20 text-danger'
+            }`}
+          >
+            {profileMsg.text}
+          </div>
+        )}
+
+        <button
+          onClick={handleSaveProfile}
+          disabled={savingProfile}
+          className="btn btn-primary w-full md:w-auto"
+        >
+          {savingProfile ? 'Guardando...' : 'Guardar cambios'}
         </button>
       </div>
 

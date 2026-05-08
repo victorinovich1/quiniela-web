@@ -33,6 +33,8 @@ O usa Supabase MCP `apply_migration(name, query)` si tienes un agente con acceso
 | 015 | official_schedule_and_stadiums | Sobrescribe ~50 partidos con datos oficiales (FIFA + medios) |
 | 016 | add_iso_code | `alter table teams add column iso_code` + carga 48 ISO codes |
 | 017 | official_full_schedule_fifa | Actualiza los 104 partidos con horario + estadio desde API oficial FIFA (season 285023) |
+| 018 | lock_entries_deletion | RLS política que impide borrar entries después del lock_at |
+| 038 | avatar_war_system | Sistema de avatares: columnas avatar_perm_id (UNIQUE) y avatar_temp_id, trigger auto-limpia castigos al iniciar partido, view leaderboard con display_avatar |
 
 ## Convenciones
 

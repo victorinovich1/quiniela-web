@@ -41,6 +41,9 @@ export default function ProfileClient({
   const permanentAvatars = Array.from({ length: TOTAL_AVATARS }, (_, i) => i + 1)
   const [occupiedAvatars, setOccupiedAvatars] = useState<Set<number>>(new Set())
   const [loadingAvatars, setLoadingAvatars] = useState(true)
+  
+  // Acordeón de seguridad
+  const [securityOpen, setSecurityOpen] = useState(false)
 
   // Cargar avatares ocupados
   useEffect(() => {
@@ -142,11 +145,14 @@ export default function ProfileClient({
         <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-8">
           {/* COLUMNA IZQUIERDA: Identidad Visual */}
           <div className="space-y-4">
-            {/* Avatar */}
+            {/* Avatar clickeable */}
             <div className="flex flex-col items-center lg:items-start">
-              <div className={`w-40 h-40 rounded-full overflow-hidden border-4 ${
-                avatarPermId ? 'border-fifaGreen shadow-lg shadow-fifaGreen/30' : 'border-white/20'
-              } bg-white/10 mb-3`}>
+              <button
+                onClick={() => setShowAvatarModal(true)}
+                className={`group relative w-40 h-40 rounded-full overflow-hidden border-4 ${
+                  avatarPermId ? 'border-fifaGreen shadow-lg shadow-fifaGreen/30' : 'border-white/20'
+                } bg-white/10 mb-3 cursor-pointer transition-all hover:scale-105`}
+              >
                 <img
                   src={avatarPermId ? AVATAR_PATHS.permanent(avatarPermId) : AVATAR_PATHS.default}
                   alt="Avatar"
@@ -155,16 +161,13 @@ export default function ProfileClient({
                     (e.target as HTMLImageElement).src = AVATAR_PATHS.default
                   }}
                 />
-              </div>
-
-              <button
-                onClick={() => setShowAvatarModal(true)}
-                className="btn btn-outline w-full text-sm"
-              >
-                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-                Cambiar Avatar
+                {/* Overlay con icono */}
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
               </button>
             </div>
 
@@ -264,98 +267,120 @@ export default function ProfileClient({
           </div>
         </div>
 
-        {/* ZONA DE SEGURIDAD (fuera del grid) */}
-        <div className="card p-6 space-y-6 border border-white/10">
-          <h2 className="font-extrabold uppercase tracking-tight text-white text-lg">Seguridad</h2>
+        {/* ZONA DE SEGURIDAD (fuera del grid) - Acordeón */}
+        <div className="card border border-white/10">
+          <button
+            onClick={() => setSecurityOpen(!securityOpen)}
+            className="w-full p-6 flex items-center justify-between hover:bg-white/5 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <h2 className="font-extrabold uppercase tracking-tight text-white text-lg">Seguridad</h2>
+            </div>
+            <svg
+              className={`w-5 h-5 text-white/70 transition-transform ${securityOpen ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
 
-          {/* Cambiar contraseña */}
-          <div className="space-y-4 pb-6 border-b border-white/10">
-            <h3 className="font-bold text-white/90 text-sm">Cambiar contraseña</h3>
+          {securityOpen && (
+            <div className="px-6 pb-6 space-y-6 border-t border-white/10">
+              {/* Cambiar contraseña */}
+              <div className="space-y-4 pt-6 pb-6 border-b border-white/10">
+                <h3 className="font-bold text-white/90 text-sm">Cambiar contraseña</h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-white/70 mb-1">Nueva contraseña</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Mínimo 6 caracteres"
-                  className="input"
-                  minLength={6}
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-white/70 mb-1">Nueva contraseña</label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                      className="input"
+                      minLength={6}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-white/70 mb-1">Confirmar contraseña</label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Repite la contraseña"
+                      className="input"
+                    />
+                  </div>
+                </div>
+
+                {passwordMsg && (
+                  <div
+                    className={`text-sm p-3 rounded ${
+                      passwordMsg.type === 'success'
+                        ? 'bg-fifaGreen/20 text-fifaGreen'
+                        : 'bg-danger/20 text-danger'
+                    }`}
+                  >
+                    {passwordMsg.text}
+                  </div>
+                )}
+
+                <button
+                  onClick={handleChangePassword}
+                  disabled={savingPassword || !newPassword || !confirmPassword}
+                  className="btn btn-primary"
+                >
+                  {savingPassword ? 'Actualizando...' : 'Cambiar contraseña'}
+                </button>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-white/70 mb-1">Confirmar contraseña</label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Repite la contraseña"
-                  className="input"
-                />
+              {/* Eliminar cuenta */}
+              <div className="space-y-4">
+                <h3 className="font-bold text-danger text-sm">Zona de peligro</h3>
+                <p className="text-sm text-white/60">
+                  Eliminar tu cuenta es permanente. Se borrarán todas tus jugadas y pronósticos.
+                </p>
+
+                {podiumLocked && (
+                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-sm text-yellow-400">
+                    ⚠️ No puedes eliminar tu cuenta una vez iniciado el mundial
+                  </div>
+                )}
+
+                <button
+                  onClick={async () => {
+                    if (!confirm('¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.')) return
+                    if (!confirm('¿Realmente quieres continuar? Se borrarán todas tus jugadas y pronósticos de forma permanente.')) return
+
+                    setDeletingAccount(true)
+                    const supabase = createClient()
+
+                    try {
+                      const { error } = await supabase.rpc('delete_user_self')
+                      if (error) throw error
+
+                      await supabase.auth.signOut()
+                      window.location.href = '/'
+                    } catch (err) {
+                      alert(err instanceof Error ? err.message : 'Error al eliminar la cuenta')
+                      setDeletingAccount(false)
+                    }
+                  }}
+                  disabled={podiumLocked || deletingAccount}
+                  className="btn bg-danger/20 border border-danger text-danger hover:bg-danger hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deletingAccount ? 'Eliminando cuenta...' : 'Eliminar mi cuenta'}
+                </button>
               </div>
             </div>
-
-            {passwordMsg && (
-              <div
-                className={`text-sm p-3 rounded ${
-                  passwordMsg.type === 'success'
-                    ? 'bg-fifaGreen/20 text-fifaGreen'
-                    : 'bg-danger/20 text-danger'
-                }`}
-              >
-                {passwordMsg.text}
-              </div>
-            )}
-
-            <button
-              onClick={handleChangePassword}
-              disabled={savingPassword || !newPassword || !confirmPassword}
-              className="btn btn-primary"
-            >
-              {savingPassword ? 'Actualizando...' : 'Cambiar contraseña'}
-            </button>
-          </div>
-
-          {/* Eliminar cuenta */}
-          <div className="space-y-4">
-            <h3 className="font-bold text-danger text-sm">Zona de peligro</h3>
-            <p className="text-sm text-white/60">
-              Eliminar tu cuenta es permanente. Se borrarán todas tus jugadas y pronósticos.
-            </p>
-
-            {podiumLocked && (
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-sm text-yellow-400">
-                ⚠️ No puedes eliminar tu cuenta una vez iniciado el mundial
-              </div>
-            )}
-
-            <button
-              onClick={async () => {
-                if (!confirm('¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.')) return
-                if (!confirm('¿Realmente quieres continuar? Se borrarán todas tus jugadas y pronósticos de forma permanente.')) return
-
-                setDeletingAccount(true)
-                const supabase = createClient()
-
-                try {
-                  const { error } = await supabase.rpc('delete_user_self')
-                  if (error) throw error
-
-                  await supabase.auth.signOut()
-                  window.location.href = '/'
-                } catch (err) {
-                  alert(err instanceof Error ? err.message : 'Error al eliminar la cuenta')
-                  setDeletingAccount(false)
-                }
-              }}
-              disabled={podiumLocked || deletingAccount}
-              className="btn bg-danger/20 border border-danger text-danger hover:bg-danger hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {deletingAccount ? 'Eliminando cuenta...' : 'Eliminar mi cuenta'}
-            </button>
-          </div>
+          )}
         </div>
       </div>
 
@@ -380,6 +405,20 @@ export default function ProfileClient({
                 ×
               </button>
             </div>
+
+            {/* Opción para quitar avatar */}
+            <button
+              onClick={() => {
+                setAvatarPermId(null)
+                setShowAvatarModal(false)
+              }}
+              className="w-full mb-6 p-4 bg-white/5 hover:bg-white/10 border-2 border-dashed border-white/20 hover:border-white/40 rounded-lg transition-all flex items-center justify-center gap-3 text-white/70 hover:text-white"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <span className="font-medium">Quitar avatar (usar predeterminado)</span>
+            </button>
 
             {loadingAvatars ? (
               <div className="text-center py-8 text-white/50">Cargando avatares...</div>

@@ -1018,7 +1018,11 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
                       </>
                     )
                   } else {
-                    return <span className="text-yellow-400">Sincronización pendiente</span>
+                    return (
+                      <span className="text-yellow-400 font-medium">
+                        ⏱️ Esperando próximo ciclo (cada {s.sync_interval_minutes || 10} min)
+                      </span>
+                    )
                   }
                 })()}
               </div>
@@ -1033,19 +1037,42 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
               <span className="text-2xl">🔍</span>
               <div className="flex-1">
                 <h4 className="text-sm font-bold text-red-400 uppercase tracking-wider mb-2">
-                  Diagnóstico de Error
+                  Diagnóstico de Conexión API
                 </h4>
-                <div className="bg-black/30 rounded p-3 font-mono text-xs text-white/90 break-words">
+                <div className="bg-black/40 rounded p-3 font-mono text-sm text-red-300 break-words border border-red-500/20">
                   {s.last_sync_status}
                 </div>
-                <div className="mt-3 text-xs text-white/60 space-y-1">
-                  <p><strong className="text-white/80">Códigos comunes:</strong></p>
-                  <ul className="list-disc list-inside space-y-0.5 ml-2">
-                    <li><span className="font-mono">403 Forbidden</span> → Clave API inválida o expirada</li>
-                    <li><span className="font-mono">404 Not Found</span> → Temporada no disponible aún</li>
-                    <li><span className="font-mono">429 Too Many Requests</span> → Límite de llamadas excedido</li>
-                    <li><span className="font-mono">401 Unauthorized</span> → Header X-Auth-Token incorrecto</li>
-                  </ul>
+                <div className="mt-3 text-xs text-white/70 space-y-2">
+                  <div>
+                    <p className="font-bold text-white/90 mb-1">💡 Soluciones comunes:</p>
+                    <ul className="space-y-1 ml-2">
+                      {s.last_sync_status.includes('403') && (
+                        <li className="text-yellow-300">
+                          → Verifica tu API Key en <a href="https://www.football-data.org/client/home" target="_blank" rel="noopener" className="underline">football-data.org</a>
+                        </li>
+                      )}
+                      {s.last_sync_status.includes('404') && (
+                        <li className="text-yellow-300">
+                          → El Mundial 2026 puede no estar disponible aún. El sistema intentará con 2022 como fallback
+                        </li>
+                      )}
+                      {s.last_sync_status.includes('429') && (
+                        <li className="text-yellow-300">
+                          → Límite de llamadas excedido. Aumenta el intervalo de sincronización a 15-30 minutos
+                        </li>
+                      )}
+                      {s.last_sync_status.includes('401') && (
+                        <li className="text-yellow-300">
+                          → Revisa que FOOTBALL_DATA_API_KEY esté configurada en las variables de entorno de Vercel
+                        </li>
+                      )}
+                      {!s.last_sync_status.match(/40[134]|429/) && (
+                        <li className="text-white/60">
+                          → Revisa los logs de Vercel para más detalles del error
+                        </li>
+                      )}
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>

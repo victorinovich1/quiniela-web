@@ -193,9 +193,9 @@ export async function GET(request: NextRequest) {
     console.log('[cron/sync-results] Response status:', upstreamRes.status, upstreamRes.statusText)
     console.log('[cron/sync-results] Response ok:', upstreamRes.ok)
 
-    // Modo de prueba: Si season=2026 no existe (404), reintentar con 2022
-    if (!upstreamRes.ok && upstreamRes.status === 404 && season === '2026') {
-      console.log('[cron/sync-results] ⚠️  Season 2026 no disponible (404), activando modo de prueba con 2022...')
+    // Modo de prueba: Si season=2026 falla (400/403/404), reintentar con 2022 para validar conexión
+    if (!upstreamRes.ok && [400, 403, 404].includes(upstreamRes.status) && season === '2026') {
+      console.log('[cron/sync-results] ⚠️  Season 2026 falló (' + upstreamRes.status + '), activando modo de prueba con 2022...')
       currentSeason = '2022'
       fixtureUrl = buildFixtureUrl(competitionCode, currentSeason)
       console.log('[cron/sync-results] Nueva URL (fallback):', fixtureUrl)
@@ -213,28 +213,44 @@ export async function GET(request: NextRequest) {
     if (!upstreamRes.ok) {
       const txt = await upstreamRes.text()
       const statusText = upstreamRes.statusText || 'Error'
-      // Formato claro: "403 Forbidden", "429 Too Many Requests", etc.
-      const errorMsg = `${upstreamRes.status} ${statusText}`
-      const details = txt.slice(0, 200)
+      
+      // Mensajes específicos según código HTTP
+      let userMessage = ''
+      if (upstreamRes.status === 403) {
+        userMessage = currentSeason === '2026' 
+          ? 'Error 403: Tu API Key no soporta el Mundial 2026 o está inválida. Verifica en football-data.org'
+          : 'Error 403: API Key inválida o expirada. Verifica en football-data.org'
+      } else if (upstreamRes.status === 404) {
+        userMessage = 'Error 404: Temporada no encontrada. El Mundial 2026 puede no estar disponible aún'
+      } else if (upstreamRes.status === 429) {
+        userMessage = 'Error 429: Límite de llamadas excedido. Intenta de nuevo en unos minutos'
+      } else if (upstreamRes.status === 401) {
+        userMessage = 'Error 401: Header X-Auth-Token incorrecto o faltante'
+      } else if (upstreamRes.status === 400) {
+        userMessage = `Error 400: Solicitud inválida. ${txt.slice(0, 100)}`
+      } else {
+        userMessage = `${upstreamRes.status} ${statusText}: ${txt.slice(0, 100)}`
+      }
       
       // LOG DETALLADO: Error completo
       console.error('[cron/sync-results] ❌ ERROR DE API:')
       console.error('[cron/sync-results] Status:', upstreamRes.status, statusText)
       console.error('[cron/sync-results] URL que falló:', fixtureUrl)
+      console.error('[cron/sync-results] Mensaje para usuario:', userMessage)
       console.error('[cron/sync-results] Respuesta completa (primeros 500 chars):')
       console.error(txt.slice(0, 500))
       console.error('[cron/sync-results] === FIN DE LOG DE ERROR ===')
       
-      // Registrar error en BD con código HTTP claro
+      // Registrar error en BD con mensaje específico
       await supabase
         .from('settings')
-        .update({ last_sync_status: `${errorMsg}: ${details}` })
+        .update({ last_sync_status: userMessage })
         .eq('id', 1)
       
       return NextResponse.json(
         {
           ok: false,
-          error: errorMsg,
+          error: userMessage,
           details: txt.slice(0, 500),
           url: fixtureUrl,
           debugInfo: {

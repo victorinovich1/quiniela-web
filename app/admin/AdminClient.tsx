@@ -985,11 +985,22 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
           </span>
         </div>
 
+        {/* Nota sobre plan gratuito */}
+        <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded">
+          <div className="flex items-start gap-2">
+            <span className="text-lg">ℹ️</span>
+            <div className="flex-1 text-xs text-yellow-200/90">
+              <strong>Plan Gratuito de Vercel:</strong> La sincronización automática se ejecuta <strong>una vez al día a medianoche (00:00)</strong>. 
+              Durante los partidos, usa el botón <strong>&quot;🔄 Sincronizar Resultados (API)&quot;</strong> para actualizar en tiempo real sin límites.
+            </div>
+          </div>
+        </div>
+
         {/* Control de intervalo y estado de conexión */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           {/* Intervalo de sincronización */}
           <div className="p-3 bg-white/5 rounded">
-            <label className="label-up block mb-2">Intervalo de sincronización</label>
+            <label className="label-up block mb-2">Intervalo de sincronización manual</label>
             <div className="flex items-center gap-2">
               <input
                 type="number"
@@ -1002,7 +1013,7 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
               <span className="text-sm text-white/60">minutos</span>
             </div>
             <p className="text-xs text-white/40 mt-1">
-              Tiempo mínimo entre actualizaciones automáticas
+              Tiempo mínimo entre sincronizaciones manuales (botón 🔄)
             </p>
           </div>
 

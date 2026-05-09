@@ -125,13 +125,15 @@ export async function GET(request: NextRequest) {
     }
 
     // Validar intervalo: solo sincronizar si ha pasado el tiempo configurado
+    // Margen de tolerancia de 30 segundos para evitar perder ciclos de Vercel Cron
     const intervalMinutes = settings.sync_interval_minutes || 10
     if (settings.last_sync_at) {
       const lastSync = new Date(settings.last_sync_at).getTime()
       const now = Date.now()
       const elapsedMinutes = (now - lastSync) / (1000 * 60)
+      const minInterval = intervalMinutes - 0.5 // Margen de 30 segundos
       
-      if (elapsedMinutes < intervalMinutes) {
+      if (elapsedMinutes < minInterval) {
         const remainingMinutes = Math.ceil(intervalMinutes - elapsedMinutes)
         return NextResponse.json({
           ok: true,

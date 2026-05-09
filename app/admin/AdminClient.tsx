@@ -787,6 +787,7 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
   const [syncError, setSyncError] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
   const [recentSyncs, setRecentSyncs] = useState<Match[]>([])
+  const [currentTime, setCurrentTime] = useState(Date.now())
 
   async function loadRecentSyncs() {
     const supabase = createClient()
@@ -798,6 +799,44 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
       .limit(5)
     if (data) setRecentSyncs(data as Match[])
   }
+
+  // Realtime: Suscripción a cambios en la tabla settings
+  useEffect(() => {
+    const supabase = createClient()
+    
+    const channel = supabase
+      .channel('settings-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'settings',
+          filter: 'id=eq.1',
+        },
+        (payload) => {
+          console.log('[AdminClient] Settings actualizados vía Realtime:', payload.new)
+          setS(payload.new as Settings)
+          // Recargar partidos recientes si cambió last_sync_at
+          if (payload.new.last_sync_at) {
+            loadRecentSyncs()
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
+
+  // Timer: Actualizar currentTime cada segundo para cuenta regresiva
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now())
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     if (s) {
@@ -999,28 +1038,30 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
                 </div>
               )
             })()}
-            {/* Próxima ejecución */}
+            {/* Próxima ejecución con cuenta regresiva en tiempo real */}
             {s.last_sync_at && s.api_sync_enabled && (
               <div className="mt-2 text-xs text-white/60">
                 {(() => {
                   const lastSync = new Date(s.last_sync_at).getTime()
                   const intervalMs = (s.sync_interval_minutes || 10) * 60 * 1000
-                  const nextSync = new Date(lastSync + intervalMs)
-                  const now = new Date()
+                  const nextSyncTime = lastSync + intervalMs
+                  const remainingMs = nextSyncTime - currentTime
                   
-                  if (nextSync > now) {
+                  if (remainingMs > 0) {
+                    const minutes = Math.floor(remainingMs / 60000)
+                    const seconds = Math.floor((remainingMs % 60000) / 1000)
                     return (
                       <>
-                        Próxima actualización estimada:{' '}
-                        <span className="text-white font-medium">
-                          {nextSync.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                        Próxima actualización en:{' '}
+                        <span className="text-fifaGreen font-bold font-mono">
+                          {minutes}:{seconds.toString().padStart(2, '0')}
                         </span>
                       </>
                     )
                   } else {
                     return (
-                      <span className="text-yellow-400 font-medium">
-                        ⏱️ Esperando próximo ciclo (cada {s.sync_interval_minutes || 10} min)
+                      <span className="text-yellow-400 font-medium animate-pulse">
+                        ⏱️ Sincronización en proceso...
                       </span>
                     )
                   }

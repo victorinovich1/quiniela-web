@@ -1,7 +1,7 @@
 // Configuración de avatares del sistema
 // Actualiza estos valores cuando agregues más imágenes
 
-export const TOTAL_AVATARS = 41 // Total de avatares en /permanentes/
+export const TOTAL_AVATARS = 39 // Total de avatares en /permanentes/
 
 export const AVATAR_PATHS = {
   permanent: (id: number) => `/images/avatars/permanentes/${id}.png`,

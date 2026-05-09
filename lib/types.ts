@@ -11,6 +11,7 @@ export interface Profile {
   paid: boolean
   role: Role
   avatar_perm_id: number | null
+  country_code: string | null
 }
 
 export interface Team {
@@ -102,6 +103,7 @@ export interface LeaderboardRow {
   alias: string
   paid: boolean
   avatar_perm_id: number | null
+  country_code: string | null
   match_points: number
   special_points: number
   total_points: number

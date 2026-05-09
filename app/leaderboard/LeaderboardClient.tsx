@@ -93,21 +93,28 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                     }}>
                     <div className={`text-base font-extrabold ${medal}`}>{idx + 1}</div>
                     <div className="flex items-center gap-3 min-w-0">
-                      {/* Avatar */}
-                      <div className={`w-16 h-16 rounded-full flex-shrink-0 overflow-hidden border-2 ${
-                        row?.rank === 1 
-                          ? 'border-gold shadow-lg shadow-gold/50' 
-                          : 'border-white/20'
-                      } bg-white/10`}>
-                        <img
-                          src={row?.display_avatar ?? AVATAR_PATHS.default}
-                          alt={row?.alias ?? 'Avatar'}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            // Fallback si la imagen no existe
-                            (e.target as HTMLImageElement).src = AVATAR_PATHS.default
-                          }}
-                        />
+                      {/* Avatar con bandera */}
+                      <div className="relative flex-shrink-0">
+                        <div className={`w-16 h-16 rounded-full overflow-hidden border-2 ${
+                          row?.rank === 1 
+                            ? 'border-gold shadow-lg shadow-gold/50' 
+                            : 'border-white/20'
+                        } bg-white/10`}>
+                          <img
+                            src={row?.display_avatar ?? AVATAR_PATHS.default}
+                            alt={row?.alias ?? 'Avatar'}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = AVATAR_PATHS.default
+                            }}
+                          />
+                        </div>
+                        {/* Bandera superpuesta */}
+                        {row?.country_code && (
+                          <div className="absolute -bottom-1 -right-1 bg-navy-deepest rounded-full p-0.5 border border-white/20">
+                            <Flag team={{ iso_code: row.country_code } as any} size={14} />
+                          </div>
+                        )}
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">

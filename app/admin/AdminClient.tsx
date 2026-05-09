@@ -984,15 +984,15 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
                     : 'bg-red-500/20 border border-red-500/30'
                 }`}>
                   <span className="text-2xl">{isHealthy ? '🟢' : '🔴'}</span>
-                  <div>
+                  <div className="flex-1">
                     <div className={`text-sm font-bold uppercase tracking-wider ${
                       isHealthy ? 'text-green-400' : 'text-red-400'
                     }`}>
                       {isHealthy ? 'SISTEMA ONLINE' : 'ERROR DE CONEXIÓN'}
                     </div>
                     {!isHealthy && status && status !== 'online' && (
-                      <div className="text-xs text-white/60 mt-0.5 truncate">
-                        {status.slice(0, 50)}
+                      <div className="text-xs text-white/80 mt-1 font-mono break-words">
+                        {status.slice(0, 120)}
                       </div>
                     )}
                   </div>

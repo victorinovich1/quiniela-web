@@ -172,30 +172,48 @@ export async function GET(request: NextRequest) {
     }
   }
 
-    const fixtureUrl = buildFixtureUrl(competitionCode, season)
+    // Construir URL y hacer llamada a la API
+    let fixtureUrl = buildFixtureUrl(competitionCode, season)
+    let currentSeason = season
     
-    const upstreamRes = await fetch(fixtureUrl, {
+    let upstreamRes = await fetch(fixtureUrl, {
       headers: {
         'X-Auth-Token': footballDataKey,
       },
       cache: 'no-store',
     })
 
+    // Modo de prueba: Si season=2026 no existe (404), reintentar con 2022
+    if (!upstreamRes.ok && upstreamRes.status === 404 && season === '2026') {
+      console.log('[cron/sync-results] Season 2026 no disponible, probando con 2022 como fallback...')
+      currentSeason = '2022'
+      fixtureUrl = buildFixtureUrl(competitionCode, currentSeason)
+      upstreamRes = await fetch(fixtureUrl, {
+        headers: {
+          'X-Auth-Token': footballDataKey,
+        },
+        cache: 'no-store',
+      })
+    }
+
     if (!upstreamRes.ok) {
       const txt = await upstreamRes.text()
-      const errorMsg = `API error ${upstreamRes.status}: ${txt.slice(0, 200)}`
-      console.error('[cron/sync-results]', errorMsg)
+      const statusText = upstreamRes.statusText || 'Error'
+      // Formato claro: "403 Forbidden", "429 Too Many Requests", etc.
+      const errorMsg = `${upstreamRes.status} ${statusText}`
+      const details = txt.slice(0, 200)
+      console.error('[cron/sync-results]', errorMsg, details)
       
-      // Registrar error en BD
+      // Registrar error en BD con código HTTP claro
       await supabase
         .from('settings')
-        .update({ last_sync_status: errorMsg })
+        .update({ last_sync_status: `${errorMsg}: ${details}` })
         .eq('id', 1)
       
       return NextResponse.json(
         {
           ok: false,
-          error: `football-data API error ${upstreamRes.status}`,
+          error: errorMsg,
           details: txt.slice(0, 500),
         },
         { status: 502 }
@@ -313,7 +331,8 @@ export async function GET(request: NextRequest) {
       ok: true,
       source: 'football-data.org',
       competitionCode,
-      season,
+      season: currentSeason,
+      fallbackMode: currentSeason !== season,
       upstreamCount: externalMatches.length,
       updated,
       skippedNoTeams,

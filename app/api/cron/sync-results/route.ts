@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
     // LOG DETALLADO: URL y configuración
     console.log('[cron/sync-results] === INICIO DE SINCRONIZACIÓN ===')
     console.log('[cron/sync-results] URL completa:', fixtureUrl)
-    console.log('[cron/sync-results] API Key presente:', footballDataKey ? 'SÍ (' + footballDataKey.slice(0, 8) + '...)' : 'NO')
+    console.log('[cron/sync-results] API Key configurada:', footballDataKey ? 'SÍ' : 'NO')
     console.log('[cron/sync-results] Competición:', competitionCode, '| Temporada:', season)
     
     let upstreamRes = await fetch(fixtureUrl, {

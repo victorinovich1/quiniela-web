@@ -176,6 +176,12 @@ export async function GET(request: NextRequest) {
     let fixtureUrl = buildFixtureUrl(competitionCode, season)
     let currentSeason = season
     
+    // LOG DETALLADO: URL y configuración
+    console.log('[cron/sync-results] === INICIO DE SINCRONIZACIÓN ===')
+    console.log('[cron/sync-results] URL completa:', fixtureUrl)
+    console.log('[cron/sync-results] API Key presente:', footballDataKey ? 'SÍ (' + footballDataKey.slice(0, 8) + '...)' : 'NO')
+    console.log('[cron/sync-results] Competición:', competitionCode, '| Temporada:', season)
+    
     let upstreamRes = await fetch(fixtureUrl, {
       headers: {
         'X-Auth-Token': footballDataKey,
@@ -183,17 +189,25 @@ export async function GET(request: NextRequest) {
       cache: 'no-store',
     })
 
+    // LOG DETALLADO: Respuesta inicial
+    console.log('[cron/sync-results] Response status:', upstreamRes.status, upstreamRes.statusText)
+    console.log('[cron/sync-results] Response ok:', upstreamRes.ok)
+
     // Modo de prueba: Si season=2026 no existe (404), reintentar con 2022
     if (!upstreamRes.ok && upstreamRes.status === 404 && season === '2026') {
-      console.log('[cron/sync-results] Season 2026 no disponible, probando con 2022 como fallback...')
+      console.log('[cron/sync-results] ⚠️  Season 2026 no disponible (404), activando modo de prueba con 2022...')
       currentSeason = '2022'
       fixtureUrl = buildFixtureUrl(competitionCode, currentSeason)
+      console.log('[cron/sync-results] Nueva URL (fallback):', fixtureUrl)
+      
       upstreamRes = await fetch(fixtureUrl, {
         headers: {
           'X-Auth-Token': footballDataKey,
         },
         cache: 'no-store',
       })
+      
+      console.log('[cron/sync-results] Fallback response status:', upstreamRes.status, upstreamRes.statusText)
     }
 
     if (!upstreamRes.ok) {
@@ -202,7 +216,14 @@ export async function GET(request: NextRequest) {
       // Formato claro: "403 Forbidden", "429 Too Many Requests", etc.
       const errorMsg = `${upstreamRes.status} ${statusText}`
       const details = txt.slice(0, 200)
-      console.error('[cron/sync-results]', errorMsg, details)
+      
+      // LOG DETALLADO: Error completo
+      console.error('[cron/sync-results] ❌ ERROR DE API:')
+      console.error('[cron/sync-results] Status:', upstreamRes.status, statusText)
+      console.error('[cron/sync-results] URL que falló:', fixtureUrl)
+      console.error('[cron/sync-results] Respuesta completa (primeros 500 chars):')
+      console.error(txt.slice(0, 500))
+      console.error('[cron/sync-results] === FIN DE LOG DE ERROR ===')
       
       // Registrar error en BD con código HTTP claro
       await supabase
@@ -215,6 +236,13 @@ export async function GET(request: NextRequest) {
           ok: false,
           error: errorMsg,
           details: txt.slice(0, 500),
+          url: fixtureUrl,
+          debugInfo: {
+            status: upstreamRes.status,
+            statusText: upstreamRes.statusText,
+            season: currentSeason,
+            isFallback: currentSeason !== season,
+          },
         },
         { status: 502 }
       )
@@ -225,6 +253,8 @@ export async function GET(request: NextRequest) {
       payload = await upstreamRes.json()
     } catch (parseErr) {
       const txt = await upstreamRes.text()
+      console.error('[cron/sync-results] ❌ ERROR: Respuesta no es JSON válido')
+      console.error('[cron/sync-results] Respuesta recibida:', txt.slice(0, 500))
       return NextResponse.json(
         {
           ok: false,
@@ -236,6 +266,16 @@ export async function GET(request: NextRequest) {
     }
 
     const externalMatches = payload.matches ?? []
+    
+    // LOG DETALLADO: Estructura de respuesta
+    console.log('[cron/sync-results] ✅ Respuesta JSON recibida correctamente')
+    console.log('[cron/sync-results] Partidos en respuesta:', externalMatches.length)
+    if (externalMatches.length === 0) {
+      console.warn('[cron/sync-results] ⚠️  La API devolvió 0 partidos. Posibles causas:')
+      console.warn('[cron/sync-results]    - La temporada aún no tiene fixture cargado')
+      console.warn('[cron/sync-results]    - El código de competición es incorrecto')
+      console.warn('[cron/sync-results] Estructura recibida:', JSON.stringify(payload).slice(0, 300))
+    }
 
     let updated = 0
     let skippedNoTeams = 0
@@ -327,6 +367,18 @@ export async function GET(request: NextRequest) {
       })
       .eq('id', 1)
 
+    // LOG DETALLADO: Resumen de sincronización
+    console.log('[cron/sync-results] ✅ === SINCRONIZACIÓN COMPLETADA ===')
+    console.log('[cron/sync-results] Partidos actualizados:', updated)
+    console.log('[cron/sync-results] Partidos recibidos de la API:', externalMatches.length)
+    console.log('[cron/sync-results] Omitidos (sin equipos):', skippedNoTeams)
+    console.log('[cron/sync-results] Omitidos (código desconocido):', skippedUnknownCode)
+    console.log('[cron/sync-results] Omitidos (sin mapeo):', skippedNoMapping)
+    if (currentSeason !== season) {
+      console.log('[cron/sync-results] ⚠️  MODO FALLBACK: usando temporada', currentSeason, 'en lugar de', season)
+    }
+    console.log('[cron/sync-results] === FIN DE SINCRONIZACIÓN ===')
+
     return NextResponse.json({
       ok: true,
       source: 'football-data.org',
@@ -344,6 +396,15 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     // Captura cualquier error inesperado y devuelve JSON, nunca HTML
     const errorMsg = error instanceof Error ? error.message : 'Error desconocido en sincronización'
+    
+    // LOG DETALLADO: Error inesperado
+    console.error('[cron/sync-results] ❌ === ERROR INESPERADO ===')
+    console.error('[cron/sync-results] Mensaje:', errorMsg)
+    if (error instanceof Error && error.stack) {
+      console.error('[cron/sync-results] Stack trace:')
+      console.error(error.stack)
+    }
+    console.error('[cron/sync-results] === FIN DE ERROR ===')
     
     // Intentar actualizar error en BD
     try {

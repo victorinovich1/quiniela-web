@@ -1026,6 +1026,32 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
           </div>
         </div>
 
+        {/* Panel de diagnóstico de errores */}
+        {s.last_sync_status && s.last_sync_status !== 'online' && (
+          <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+            <div className="flex items-start gap-2">
+              <span className="text-2xl">🔍</span>
+              <div className="flex-1">
+                <h4 className="text-sm font-bold text-red-400 uppercase tracking-wider mb-2">
+                  Diagnóstico de Error
+                </h4>
+                <div className="bg-black/30 rounded p-3 font-mono text-xs text-white/90 break-words">
+                  {s.last_sync_status}
+                </div>
+                <div className="mt-3 text-xs text-white/60 space-y-1">
+                  <p><strong className="text-white/80">Códigos comunes:</strong></p>
+                  <ul className="list-disc list-inside space-y-0.5 ml-2">
+                    <li><span className="font-mono">403 Forbidden</span> → Clave API inválida o expirada</li>
+                    <li><span className="font-mono">404 Not Found</span> → Temporada no disponible aún</li>
+                    <li><span className="font-mono">429 Too Many Requests</span> → Límite de llamadas excedido</li>
+                    <li><span className="font-mono">401 Unauthorized</span> → Header X-Auth-Token incorrecto</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-2 text-sm">
           {s.last_sync_at && (
             <div className="text-white/70">

@@ -67,7 +67,7 @@ export default function AdminClient({
       </div>
 
       {tab === 'teams' && !isManager && <TeamsTab initialTeams={initialTeams} />}
-      {tab === 'matches' && !isManager && <MatchesTab initialMatches={initialMatches} teams={initialTeams} />}
+      {tab === 'matches' && !isManager && <MatchesTab initialMatches={initialMatches} teams={initialTeams} settings={initialSettings} />}
       {tab === 'invitations' && <InvitationsTab initialInvitations={initialInvitations} />}
       {tab === 'participants' && <ParticipantsTab initialProfiles={initialProfiles} initialEntries={initialEntries} isManager={isManager} />}
       {tab === 'settings' && !isManager && <SettingsTab initialSettings={initialSettings} teams={initialTeams} />}
@@ -138,7 +138,11 @@ function TeamsTab({ initialTeams }: { initialTeams: Team[] }) {
 // =============================================================
 // MATCHES TAB
 // =============================================================
-function MatchesTab({ initialMatches, teams }: { initialMatches: Match[]; teams: Team[] }) {
+function MatchesTab({ initialMatches, teams, settings }: { 
+  initialMatches: Match[]
+  teams: Team[]
+  settings: Settings | null
+}) {
   const [matches, setMatches] = useState(initialMatches)
   const [phase, setPhase] = useState<Phase>('group')
   const [groupFilter, setGroupFilter] = useState<string>('A')
@@ -184,11 +188,21 @@ function MatchesTab({ initialMatches, teams }: { initialMatches: Match[]; teams:
     setTimeout(() => setMsg(null), 2000)
   }
 
+  const syncInterval = settings?.sync_interval_minutes || 10
+
   return (
     <div>
-      <p className="text-sm text-white/70 mb-3">
-        Captura los marcadores oficiales tras cada partido. Marca como &quot;finalizado&quot; para que cuente en el ranking.
-      </p>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm text-white/70">
+          Captura los marcadores oficiales tras cada partido. Marca como &quot;finalizado&quot; para que cuente en el ranking.
+        </p>
+        {settings?.api_sync_enabled && (
+          <div className="text-xs text-fifaGreen font-bold uppercase tracking-wider flex items-center gap-1.5 bg-fifaGreen/10 px-3 py-1.5 rounded-full border border-fifaGreen/30">
+            <span className="animate-pulse">🔄</span>
+            Sincronizando cada {syncInterval} min
+          </div>
+        )}
+      </div>
       {msg && <div className="mb-3 text-sm text-success">{msg}</div>}
 
       {/* Búsqueda por # de partido */}
@@ -930,6 +944,86 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
           <span className={`text-xs px-2 py-1 rounded ${s.api_sync_enabled ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
             {s.api_sync_enabled ? 'ACTIVA' : 'PAUSADA'}
           </span>
+        </div>
+
+        {/* Control de intervalo y estado de conexión */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          {/* Intervalo de sincronización */}
+          <div className="p-3 bg-white/5 rounded">
+            <label className="label-up block mb-2">Intervalo de sincronización</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={1}
+                max={60}
+                value={s.sync_interval_minutes}
+                onChange={(e) => update('sync_interval_minutes', parseInt(e.target.value) || 10)}
+                className="input flex-1"
+              />
+              <span className="text-sm text-white/60">minutos</span>
+            </div>
+            <p className="text-xs text-white/40 mt-1">
+              Tiempo mínimo entre actualizaciones automáticas
+            </p>
+          </div>
+
+          {/* Estado de conexión */}
+          <div className="p-3 bg-white/5 rounded">
+            <label className="label-up block mb-2">Estado de Conexión</label>
+            {(() => {
+              const status = s.last_sync_status
+              const lastSync = s.last_sync_at ? new Date(s.last_sync_at).getTime() : null
+              const now = Date.now()
+              const intervalMs = (s.sync_interval_minutes || 10) * 60 * 1000
+              const isHealthy = status === 'online' && lastSync && (now - lastSync) < (intervalMs * 2)
+              
+              return (
+                <div className={`flex items-center gap-2 px-3 py-2 rounded ${
+                  isHealthy 
+                    ? 'bg-green-500/20 border border-green-500/30' 
+                    : 'bg-red-500/20 border border-red-500/30'
+                }`}>
+                  <span className="text-2xl">{isHealthy ? '🟢' : '🔴'}</span>
+                  <div>
+                    <div className={`text-sm font-bold uppercase tracking-wider ${
+                      isHealthy ? 'text-green-400' : 'text-red-400'
+                    }`}>
+                      {isHealthy ? 'SISTEMA ONLINE' : 'ERROR DE CONEXIÓN'}
+                    </div>
+                    {!isHealthy && status && status !== 'online' && (
+                      <div className="text-xs text-white/60 mt-0.5 truncate">
+                        {status.slice(0, 50)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
+            {/* Próxima ejecución */}
+            {s.last_sync_at && s.api_sync_enabled && (
+              <div className="mt-2 text-xs text-white/60">
+                {(() => {
+                  const lastSync = new Date(s.last_sync_at).getTime()
+                  const intervalMs = (s.sync_interval_minutes || 10) * 60 * 1000
+                  const nextSync = new Date(lastSync + intervalMs)
+                  const now = new Date()
+                  
+                  if (nextSync > now) {
+                    return (
+                      <>
+                        Próxima actualización estimada:{' '}
+                        <span className="text-white font-medium">
+                          {nextSync.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </>
+                    )
+                  } else {
+                    return <span className="text-yellow-400">Sincronización pendiente</span>
+                  }
+                })()}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="space-y-2 text-sm">

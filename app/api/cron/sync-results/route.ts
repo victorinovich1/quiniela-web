@@ -45,8 +45,14 @@ const FOOTBALL_DATA_BASE = 'https://api.football-data.org/v4'
 
 function mapStatus(raw: string | null | undefined): MatchStatus {
   if (!raw) return 'scheduled'
-  if (raw === 'IN_PLAY' || raw === 'PAUSED' || raw === 'LIVE') return 'live'
-  if (raw === 'FINISHED') return 'finished'
+  const normalized = raw.toUpperCase()
+  // Estados en vivo
+  if (normalized === 'IN_PLAY' || normalized === 'PAUSED' || normalized === 'LIVE') return 'live'
+  // Estados finalizados
+  if (normalized === 'FINISHED' || normalized === 'AWARDED') return 'finished'
+  // Estados pendientes
+  if (normalized === 'TIMED' || normalized === 'SCHEDULED') return 'scheduled'
+  // Default fallback
   return 'scheduled'
 }
 
@@ -103,10 +109,10 @@ export async function GET(request: NextRequest) {
   })
 
   try {
-    // Verificar interruptor maestro
+    // Verificar interruptor maestro y configuración de intervalo
     const { data: settings } = await supabase
       .from('settings')
-      .select('api_sync_enabled')
+      .select('api_sync_enabled, sync_interval_minutes, last_sync_at')
       .eq('id', 1)
       .single()
 
@@ -116,6 +122,25 @@ export async function GET(request: NextRequest) {
         message: 'Sincronización deshabilitada por configuración',
         updated: 0,
       })
+    }
+
+    // Validar intervalo: solo sincronizar si ha pasado el tiempo configurado
+    const intervalMinutes = settings.sync_interval_minutes || 10
+    if (settings.last_sync_at) {
+      const lastSync = new Date(settings.last_sync_at).getTime()
+      const now = Date.now()
+      const elapsedMinutes = (now - lastSync) / (1000 * 60)
+      
+      if (elapsedMinutes < intervalMinutes) {
+        const remainingMinutes = Math.ceil(intervalMinutes - elapsedMinutes)
+        return NextResponse.json({
+          ok: true,
+          message: 'Sincronización omitida por configuración de intervalo',
+          nextSyncIn: `${remainingMinutes} minutos`,
+          intervalMinutes,
+          updated: 0,
+        })
+      }
     }
 
     const [{ data: teams, error: teamsErr }, { data: matches, error: matchesErr }] = await Promise.all([
@@ -158,7 +183,15 @@ export async function GET(request: NextRequest) {
 
     if (!upstreamRes.ok) {
       const txt = await upstreamRes.text()
-      console.error('[cron/sync-results] Error de API:', txt.slice(0, 500))
+      const errorMsg = `API error ${upstreamRes.status}: ${txt.slice(0, 200)}`
+      console.error('[cron/sync-results]', errorMsg)
+      
+      // Registrar error en BD
+      await supabase
+        .from('settings')
+        .update({ last_sync_status: errorMsg })
+        .eq('id', 1)
+      
       return NextResponse.json(
         {
           ok: false,
@@ -266,11 +299,12 @@ export async function GET(request: NextRequest) {
       updated += 1
     }
 
-    // Actualizar timestamp de última sincronización exitosa
+    // Actualizar timestamp y estado de última sincronización exitosa
     await supabase
       .from('settings')
       .update({ 
         last_sync_at: new Date().toISOString(),
+        last_sync_status: 'online',
         last_sync_error: null,
       })
       .eq('id', 1)
@@ -296,7 +330,10 @@ export async function GET(request: NextRequest) {
     try {
       await supabase
         .from('settings')
-        .update({ last_sync_error: errorMsg })
+        .update({ 
+          last_sync_status: errorMsg,
+          last_sync_error: errorMsg,
+        })
         .eq('id', 1)
     } catch {
       // Ignorar error al guardar error

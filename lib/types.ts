@@ -84,6 +84,8 @@ export interface Settings {
   fourth_team_id: number | null
   last_sync_at: string | null
   last_sync_error: string | null
+  last_sync_status: string | null
+  sync_interval_minutes: number
   api_sync_enabled: boolean
 }
 

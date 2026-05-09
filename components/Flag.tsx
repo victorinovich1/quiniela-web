@@ -11,7 +11,7 @@ export default function Flag({
   size = 24,
   className = '',
 }: {
-  team: Pick<Team, 'iso_code' | 'name'> | null
+  team: { iso_code: string | null; name?: string } | null
   size?: number
   className?: string
 }) {
@@ -21,7 +21,7 @@ export default function Flag({
         className={`inline-flex items-center justify-center bg-white/10 border border-white/20 rounded-sm ${className}`}
         style={{ width: size * 1.33, height: size }}
         aria-hidden="true"
-        title={team ? `${team.name}` : 'sin equipo'}
+        title={team?.name ?? 'sin equipo'}
       >
         <svg width={size * 0.6} height={size * 0.6} viewBox="0 0 24 24" fill="none" className="opacity-40">
           <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -30,10 +30,13 @@ export default function Flag({
       </span>
     )
   }
+  
+  const displayName = team.name ?? team.iso_code.toUpperCase()
+  
   return (
     <img
       src={flagSrc(team.iso_code, size * 2)}
-      alt={team.name}
+      alt={displayName}
       width={size * 1.33}
       height={size}
       className={`inline-block rounded-sm shadow-sm object-cover ${className}`}
@@ -49,7 +52,7 @@ export default function Flag({
         fallback.innerHTML = `<svg width="${size * 0.6}" height="${size * 0.6}" viewBox="0 0 24 24" fill="none" class="opacity-40"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 22v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
         target.parentNode?.insertBefore(fallback, target)
       }}
-      title={`${team.name} (${team.iso_code})`}
+      title={displayName}
     />
   )
 }

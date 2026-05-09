@@ -22,7 +22,6 @@ export default function ResetPasswordPage() {
     // Verificar sesión actual
     supabase.auth.getSession().then(({ data, error: sessionError }) => {
       if (sessionError) {
-        console.error('Error getting session:', sessionError)
         setError('Error al verificar la sesión. Intenta solicitar un nuevo enlace.')
         return
       }

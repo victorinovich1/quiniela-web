@@ -66,32 +66,16 @@ function buildFixtureUrl(
 function assertCronAuthorized(request: NextRequest): string | null {
   const secret = process.env.CRON_SECRET
   const authHeader = request.headers.get('authorization')
-  const sentSecret = authHeader?.replace('Bearer ', '')
   
-  console.log('[Sync] Comparando: Enviado(' + (sentSecret ? sentSecret.substring(0, 10) + '...' : 'NULL') + ') vs Esperado(' + (secret ? secret.substring(0, 10) + '...' : 'NULL') + ')')
-  console.log('[Sync] Header completo recibido:', authHeader ? authHeader.substring(0, 30) + '...' : 'NULL')
-  console.log('[Sync] Headers disponibles:', Array.from(request.headers.keys()).join(', '))
+  if (!secret) return null
+  if (authHeader === `Bearer ${secret}`) return null
   
-  if (!secret) {
-    console.log('[Sync] CRON_SECRET no configurado en servidor')
-    return null
-  }
-
-  if (authHeader === `Bearer ${secret}`) {
-    console.log('[Sync] Autorización exitosa')
-    return null
-  }
-
-  console.error('[Sync] Autorización FALLIDA')
   return 'Unauthorized cron call'
 }
 
 export async function GET(request: NextRequest) {
-  console.log('[cron/sync-results] Iniciando sincronización')
-  
   const unauthorizedReason = assertCronAuthorized(request)
   if (unauthorizedReason) {
-    console.error('[cron/sync-results] No autorizado:', unauthorizedReason)
     return NextResponse.json({ ok: false, error: unauthorizedReason }, { status: 401 })
   }
 
@@ -100,14 +84,6 @@ export async function GET(request: NextRequest) {
   const footballDataKey = process.env.FOOTBALL_DATA_API_KEY
   const competitionCode = process.env.FOOTBALL_DATA_COMPETITION_CODE ?? 'WC'
   const season = process.env.FOOTBALL_DATA_SEASON ?? '2026'
-
-  console.log('[cron/sync-results] Vars:', {
-    hasSupabaseUrl: !!supabaseUrl,
-    hasServiceRole: !!serviceRole,
-    hasFootballDataKey: !!footballDataKey,
-    competitionCode,
-    season,
-  })
 
   if (!supabaseUrl || !serviceRole) {
     return NextResponse.json(
@@ -135,7 +111,6 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (!settings?.api_sync_enabled) {
-      console.log('[cron/sync-results] Sincronización deshabilitada por settings.api_sync_enabled')
       return NextResponse.json({
         ok: true,
         message: 'Sincronización deshabilitada por configuración',
@@ -173,7 +148,6 @@ export async function GET(request: NextRequest) {
   }
 
     const fixtureUrl = buildFixtureUrl(competitionCode, season)
-    console.log('[cron/sync-results] Llamando a football-data API:', fixtureUrl)
     
     const upstreamRes = await fetch(fixtureUrl, {
       headers: {
@@ -181,8 +155,6 @@ export async function GET(request: NextRequest) {
       },
       cache: 'no-store',
     })
-
-    console.log('[cron/sync-results] Respuesta API:', upstreamRes.status, upstreamRes.statusText)
 
     if (!upstreamRes.ok) {
       const txt = await upstreamRes.text()
@@ -251,10 +223,7 @@ export async function GET(request: NextRequest) {
       }
 
       // No actualizar si el Admin fijó el resultado manualmente
-      if (mapped.manual_override) {
-        console.log(`[cron/sync-results] Partido M${mapped.match_number} tiene manual_override, omitiendo`)
-        continue
-      }
+      if (mapped.manual_override) continue
 
       const rawHome = parseScore(fm.score?.fullTime?.home)
       const rawAway = parseScore(fm.score?.fullTime?.away)

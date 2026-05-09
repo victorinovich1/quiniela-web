@@ -234,7 +234,7 @@ export default function ProfileClient({
 
                 {selectedCountry && (
                   <div className="flex-shrink-0 mb-1">
-                    <Flag team={{ iso_code: selectedCountry.code } as any} size={32} />
+                    <Flag team={{ iso_code: selectedCountry.code }} size={32} />
                   </div>
                 )}
               </div>

@@ -72,8 +72,8 @@ quiniela-web/
 2. `npm install`
 3. Crear `.env.local` con:
    ```
-   NEXT_PUBLIC_SUPABASE_URL=https://yzxdsujooaujstzufwyu.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=<la anon key>
+   NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=tu-clave-anon-aqui
    ```
 4. `npm run dev` — abre http://localhost:3000
 

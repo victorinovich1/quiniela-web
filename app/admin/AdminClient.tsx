@@ -2,20 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { toLocalDateTimeInput } from '@/lib/utils'
 import PageHeader from '@/components/PageHeader'
 import Flag from '@/components/Flag'
 import type { Team, Match, Profile, Invitation, Settings, Phase, Entry, Role } from '@/lib/types'
 import { PHASE_LABELS, KO_PHASES, GROUP_CODES } from '@/lib/types'
 
 type Tab = 'teams' | 'matches' | 'invitations' | 'participants' | 'settings'
-
-// Convierte ISO UTC string a formato 'YYYY-MM-DDTHH:mm' en hora LOCAL
-// (que es lo que <input type="datetime-local"> espera)
-function toLocalDateTimeInput(iso: string): string {
-  const d = new Date(iso)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
 
 export default function AdminClient({
   userRole,

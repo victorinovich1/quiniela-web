@@ -121,6 +121,16 @@ export function parseScore(value: string): number | null {
 }
 
 /**
+ * Convierte ISO UTC string a formato 'YYYY-MM-DDTHH:mm' en hora LOCAL
+ * para usar con <input type="datetime-local">
+ */
+export function toLocalDateTimeInput(iso: string): string {
+  const d = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+/**
  * Clona un objeto simple (no deep clone, solo para objetos planos)
  */
 export function shallowClone<T extends Record<string, unknown>>(obj: T): T {

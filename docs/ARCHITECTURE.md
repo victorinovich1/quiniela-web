@@ -5,7 +5,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                       USUARIO (browser)                      │
-│  [Pronósticos]  [Ranking]  [Mis jugadas]  [Perfil]  [Admin]  │
+│  [Pronósticos]  [Ranking]  [Mis Quinielas]  [Perfil]  [Admin]│
 └──────────────────────────┬──────────────────────────────────┘
                            │ HTTPS
                            ▼
@@ -42,7 +42,7 @@
 5. Trigger `handle_new_user` crea perfil en `profiles` (rol = 'admin' si email coincide con el admin hardcodeado, sino 'participant')
 6. Frontend llama `redeem_invite(code)` para marcar el código como usado
 7. Frontend hace UPDATE a `profiles.display_name` con el nombre dado
-8. Redirect a `/entries` para crear primera jugada
+8. Redirect a `/entries` para crear primera quiniela
 
 ### Login
 1. Usuario va a `/login`
@@ -89,30 +89,30 @@
    - Cambiar contraseña
    - Ver información de la cuenta (rol, fecha de creación)
 2. **Zona de Peligro** al final de la página:
-   - Botón "Eliminar mi cuenta" (permanente, borra todas las jugadas y pronósticos)
+   - Botón "Eliminar mi cuenta" (permanente, borra todas las quinielas y pronósticos)
    - **Solo permitido antes de `lock_at`** — una vez iniciado el torneo, el botón se deshabilita
    - Tras confirmación doble, llama a RPC `delete_user_self()` que valida permisos y elimina en cascada
    - Cierra sesión automáticamente y redirige a la landing page
 
-### Gestionar jugadas (entries)
-1. `/entries` muestra todas las jugadas (participaciones) del usuario
-2. Cada jugada tiene:
+### Gestionar quinielas (entries)
+1. `/entries` muestra todas las quinielas (participaciones) del usuario
+2. Cada quiniela tiene:
    - **Alias único** (ej: "Casa", "Oficina", "Conservadora")
    - Estado de pago (pagada/pendiente) — marcado por el admin
    - Fecha de creación
    - Pronósticos independientes
 3. Usuarios pueden:
-   - **Crear nuevas jugadas** (si el torneo no ha empezado)
-   - **Editar el alias** de jugadas existentes (botón de lápiz junto al nombre)
-   - **Eliminar jugadas** (solo si el torneo no ha empezado)
+   - **Crear nuevas quinielas** (si el torneo no ha empezado)
+   - **Editar el alias** de quinielas existentes (botón de lápiz junto al nombre)
+   - **Eliminar quinielas** (solo si el torneo no ha empezado)
    - Navegar a `/predictions?entry=N` para llenar pronósticos
-4. Cada jugada compite independientemente en el ranking
-5. Cada jugada paga su propia cuota (marcada manualmente por el admin)
+4. Cada quiniela compite independientemente en el ranking
+5. Cada quiniela paga su propia cuota (marcada manualmente por el admin)
 
 **Restricciones:**
 - Alias deben ser únicos por usuario
-- No se pueden crear/editar/eliminar jugadas después de `lock_at`
-- RLS asegura que solo el usuario pueda modificar sus propias jugadas
+- No se pueden crear/editar/eliminar quinielas después de `lock_at`
+- RLS asegura que solo el usuario pueda modificar sus propias quinielas
 
 ## Páginas y guard de auth
 
@@ -145,15 +145,15 @@ El panel `/admin` ofrece control completo del sistema al rol `admin`:
 - Ver estado de invitaciones (usadas/disponibles)
 
 ### Gestión de Participantes
-- Ver todas las jugadas (entries) de cada usuario
-- Marcar jugadas como pagadas/pendientes
+- Ver todas las quinielas (entries) de cada usuario
+- Marcar quinielas como pagadas/pendientes
 - Cambiar roles (admin/manager/participant)
   - **admin**: Acceso completo al panel de administración
   - **manager**: Acceso restringido (solo Invitaciones y Participantes, sin permisos de edición)
   - **participant**: Usuario normal sin acceso al panel de administración
 - **Enviar correos de recuperación de contraseña**: Botón de "sobre" junto a cada usuario permite enviar email de reset password directamente (útil cuando Resend está en plan free y solo envía a email verificado)
-- **Eliminar usuarios**: Botón de papelera roja elimina permanentemente al usuario y todas sus jugadas (en cascada). No requiere que el torneo haya iniciado.
-- **Eliminar jugadas individuales**: Botón de papelera en cada jugada permite eliminar una entry específica sin borrar al usuario
+- **Eliminar usuarios**: Botón de papelera roja elimina permanentemente al usuario y todas sus quinielas (en cascada). No requiere que el torneo haya iniciado.
+- **Eliminar quinielas individuales**: Botón de papelera en cada quiniela permite eliminar una entry específica sin borrar al usuario
 
 ### Configuración del Sistema
 - Establecer fecha/hora de cierre de pronósticos (`lock_at`)
@@ -169,7 +169,7 @@ El sistema implementa un **bloqueo dual** para máxima flexibilidad:
 ### 1. Bloqueo Global (`settings.lock_at`)
 Afecta solo a:
 - **Predicciones especiales (podio)**: Los 4 selectores (campeón, subcampeón, 3º, 4º) se bloquean al llegar a `lock_at`
-- **Borrado de jugadas (entries)**: No se pueden eliminar entries después de `lock_at`
+- **Borrado de quinielas (entries)**: No se pueden eliminar entries después de `lock_at`
 
 **Implementación:**
 - Función SQL `predictions_locked()` retorna `lock_at < now()`

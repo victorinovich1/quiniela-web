@@ -66,7 +66,7 @@ export default function Navbar({
             <div className="hidden md:flex items-center gap-1">
               <Link href="/predictions" className={linkClass('/predictions')}>Pronósticos</Link>
               <Link href="/leaderboard" className={linkClass('/leaderboard')}>Ranking</Link>
-              <Link href="/entries" className={linkClass('/entries')}>Mis jugadas</Link>
+              <Link href="/entries" className={linkClass('/entries')}>MIS QUINIELAS</Link>
               <Link href="/profile" className={linkClass('/profile')}>Perfil</Link>
               <Link href="/rules" className={linkClass('/rules')}>Reglamento</Link>
               {isAdmin && (

@@ -30,7 +30,7 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="es">
+    <html lang="es" className="dark" style={{ colorScheme: 'dark' }}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

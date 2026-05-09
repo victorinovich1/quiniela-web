@@ -269,9 +269,9 @@ function MatchesTab({ initialMatches, teams }: { initialMatches: Match[]; teams:
                   onBlur={() => save(m)}
                   className="input text-xs [color-scheme:dark] bg-[#080b22] text-white"
                 >
-                  <option value="scheduled">Programado</option>
-                  <option value="live">En vivo</option>
-                  <option value="finished">Finalizado</option>
+                  <option value="scheduled" className="bg-[#080b22] text-white">Programado</option>
+                  <option value="live" className="bg-[#080b22] text-white">En vivo</option>
+                  <option value="finished" className="bg-[#080b22] text-white">Finalizado</option>
                 </select>
               </div>
 
@@ -721,9 +721,9 @@ function ParticipantsTab({
                     disabled={isManager}
                     className="input text-xs [color-scheme:dark] bg-[#080b22] text-white disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <option value="participant">Participante</option>
-                    <option value="manager">Manager</option>
-                    <option value="admin">Admin</option>
+                    <option value="participant" className="bg-[#080b22] text-white">Participante</option>
+                    <option value="manager" className="bg-[#080b22] text-white">Manager</option>
+                    <option value="admin" className="bg-[#080b22] text-white">Admin</option>
                   </select>
                 </div>
               </div>
@@ -1045,9 +1045,9 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
                 onChange={(e) => update(f.key, (e.target.value ? Number(e.target.value) : null) as Settings[typeof f.key])}
                 className="input flex-1 [color-scheme:dark] bg-[#080b22] text-white"
               >
-                <option value="">— sin definir —</option>
+                <option value="" className="bg-[#080b22] text-white">— sin definir —</option>
                 {teams.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
+                  <option key={t.id} value={t.id} className="bg-[#080b22] text-white">{t.name}</option>
                 ))}
               </select>
             </div>

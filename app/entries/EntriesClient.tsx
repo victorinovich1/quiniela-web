@@ -41,7 +41,7 @@ export default function EntriesClient({
       .single()
     setCreating(false)
     if (err) {
-      setError(err.message.includes('duplicate') ? 'Ya tienes una jugada con ese alias.' : err.message)
+      setError(err.message.includes('duplicate') ? 'Ya tienes una quiniela con ese alias.' : err.message)
       return
     }
     if (data) {
@@ -52,7 +52,7 @@ export default function EntriesClient({
   }
 
   async function deleteEntry(id: number) {
-    if (!confirm('¿Eliminar esta jugada y todos sus pronósticos? No se puede deshacer.')) return
+    if (!confirm('¿Eliminar esta quiniela y todos sus pronósticos? No se puede deshacer.')) return
     const supabase = createClient()
     const { error: err } = await supabase.from('entries').delete().eq('id', id)
     if (!err) {
@@ -90,7 +90,7 @@ export default function EntriesClient({
     setSaving(false)
     
     if (err) {
-      setEditError(err.message.includes('duplicate') ? 'Ya tienes una jugada con ese alias.' : err.message)
+      setEditError(err.message.includes('duplicate') ? 'Ya tienes una quiniela con ese alias.' : err.message)
       return
     }
     
@@ -104,13 +104,13 @@ export default function EntriesClient({
     <div>
       <PageHeader
         label="Tus participaciones"
-        title="Mis jugadas"
-        subtitle="Puedes tener varias jugadas con alias distintos. Cada una compite por separado y paga su cuota."
+        title="MIS QUINIELAS"
+        subtitle="Puedes tener varias quinielas con alias distintos. Cada una compite por separado y paga su cuota."
       />
 
       {entries.length === 0 ? (
         <div className="card text-center py-10 mb-6">
-          <p className="text-white/60 text-sm uppercase tracking-wider font-bold mb-2">Aún no tienes ninguna jugada</p>
+          <p className="text-white/60 text-sm uppercase tracking-wider font-bold mb-2">Aún no tienes ninguna quiniela</p>
           <p className="text-white/40 text-xs">Crea la primera abajo para empezar a pronosticar.</p>
         </div>
       ) : (
@@ -129,7 +129,7 @@ export default function EntriesClient({
                       value={editingAlias}
                       onChange={(ev) => setEditingAlias(ev.target.value)}
                       className="input"
-                      placeholder="Nombre de la jugada"
+                      placeholder="Nombre de la quiniela"
                       autoFocus
                     />
                   </div>
@@ -229,7 +229,7 @@ export default function EntriesClient({
                 onChange={(ev) => setAlias(ev.target.value)} className="input"
                 placeholder='Ej: "Casa", "Oficina", "Conservadora"' />
               <p className="text-[10px] text-white/40 mt-1.5 uppercase tracking-wider">
-                Cada jugada paga su cuota. El organizador la marca como &quot;pagada&quot; al recibirla.
+                Cada quiniela paga su cuota. El organizador la marca como &quot;pagada&quot; al recibirla.
               </p>
             </div>
             {error && <div className="text-danger text-sm">{error}</div>}
@@ -243,7 +243,7 @@ export default function EntriesClient({
       {locked && (
         <div className="card text-center">
           <p className="text-warning text-sm uppercase tracking-wider font-bold">
-            Pronósticos cerrados — no puedes crear más jugadas
+            Pronósticos cerrados — no puedes crear más quinielas
           </p>
         </div>
       )}

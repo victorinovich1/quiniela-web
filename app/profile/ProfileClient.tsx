@@ -221,7 +221,7 @@ export default function ProfileClient({
                   <select
                     value={countryCode}
                     onChange={(e) => setCountryCode(e.target.value)}
-                    className="input"
+                    className="input [color-scheme:dark]"
                   >
                     <option value="">Selecciona tu país</option>
                     {COUNTRIES.map((country) => (

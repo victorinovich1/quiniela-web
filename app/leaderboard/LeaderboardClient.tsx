@@ -111,9 +111,11 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                         </div>
                         {/* Bandera superpuesta */}
                         {row?.country_code && (
-                          <div className="absolute -bottom-1 -right-1 bg-navy-deepest rounded-full p-0.5 border border-white/20">
-                            <Flag team={{ iso_code: row.country_code } as any} size={14} />
-                          </div>
+                          <Flag 
+                            team={{ iso_code: row.country_code } as any} 
+                            size={16} 
+                            className="absolute -bottom-0.5 -right-0.5 drop-shadow-md"
+                          />
                         )}
                       </div>
                       <div className="min-w-0">

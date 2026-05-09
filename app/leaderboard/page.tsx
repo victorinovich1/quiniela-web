@@ -23,7 +23,7 @@ export default async function LeaderboardPage() {
     // 1. Leaderboard principal
     const { data: leaderboardData, error: leaderboardError } = await supabase
       .from('leaderboard')
-      .select('entry_id, user_id, display_name, alias, paid, match_points, special_points, total_points')
+      .select('entry_id, user_id, display_name, alias, paid, avatar_perm_id, country_code, match_points, special_points, total_points, rank, display_avatar')
       .order('total_points', { ascending: false })
 
     if (leaderboardError) throw leaderboardError
@@ -47,22 +47,15 @@ export default async function LeaderboardPage() {
       .order('kickoff_at', { ascending: false })
       .limit(2)
 
-    if (liveError) console.error('[Leaderboard] Error fetching live matches:', liveError)
-    if (finishedError) console.error('[Leaderboard] Error fetching finished matches:', finishedError)
+    if (liveError) throw liveError
+    if (finishedError) throw finishedError
 
     recentMatches = [...(liveMatches ?? []), ...(finishedMatches ?? [])] as Match[]
     const matchIds = recentMatches.map(m => m?.id).filter(Boolean) as number[]
 
-    console.log('[Leaderboard] Recent matches:', {
-      live: liveMatches?.length ?? 0,
-      finished: finishedMatches?.length ?? 0,
-      total: recentMatches.length,
-      matchIds
-    })
-
     // 3. Equipos para banderas
     const { data: teamsData, error: teamsError } = await supabase.from('teams').select('*')
-    if (teamsError) console.error('[Leaderboard] Error fetching teams:', teamsError)
+    if (teamsError) throw teamsError
     teams = (teamsData ?? []) as Team[]
 
     // 4. Pronósticos para partidos recientes
@@ -72,15 +65,10 @@ export default async function LeaderboardPage() {
         .select('entry_id, match_id, home_score, away_score, ko_winner_team_id')
         .in('match_id', matchIds)
 
-      if (predsError) {
-        console.error('[Leaderboard] Error fetching predictions:', predsError)
-      } else {
-        console.log('[Leaderboard] Predictions fetched:', predsData?.length ?? 0)
-        predictions = (predsData ?? []) as Prediction[]
-      }
+      if (predsError) throw predsError
+      predictions = (predsData ?? []) as Prediction[]
     }
   } catch (err) {
-    console.error('[Leaderboard Error]:', err)
     dataError = err instanceof Error ? err.message : 'Error desconocido al cargar datos'
   }
 

@@ -23,7 +23,7 @@ export default async function PredictionsPage({
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Cargar las jugadas del usuario
+  // Cargar las quinielas del usuario
   const { data: entriesRaw } = await supabase
     .from('entries')
     .select('*')

@@ -2,14 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  html {
+    color-scheme: dark !important;
+  }
+  select, option {
+    background-color: #080b22 !important;
+    color: white !important;
+  }
+}
+
 :root {
   --color-bg: #0f1437;
   --color-bg-deep: #080b22;
   --color-surface: #161c44;
+  color-scheme: dark;
 }
 
 html {
   scrollbar-gutter: stable;
+  color-scheme: dark;
 }
 
 html, body {

@@ -10,6 +10,8 @@ export interface Profile {
   favorite_team_id: number | null
   paid: boolean
   role: Role
+  avatar_perm_id: number | null
+  country_code: string | null
 }
 
 export interface Team {
@@ -82,6 +84,8 @@ export interface Settings {
   fourth_team_id: number | null
   last_sync_at: string | null
   last_sync_error: string | null
+  last_sync_status: string | null
+  sync_interval_minutes: number
   api_sync_enabled: boolean
 }
 
@@ -100,9 +104,13 @@ export interface LeaderboardRow {
   display_name: string | null
   alias: string
   paid: boolean
+  avatar_perm_id: number | null
+  country_code: string | null
   match_points: number
   special_points: number
   total_points: number
+  rank: number
+  display_avatar: string
 }
 
 export interface MatchScore {

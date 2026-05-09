@@ -1,6 +1,6 @@
 # Base de datos
 
-Postgres 17 en Supabase (eu-west-1, project ref `yzxdsujooaujstzufwyu`).
+Postgres 17 en Supabase.
 
 ## Reglas para cambios de schema
 

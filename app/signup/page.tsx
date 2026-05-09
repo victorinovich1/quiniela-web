@@ -82,10 +82,7 @@ export default function SignupPage() {
       const { error: redeemErr } = await supabase.rpc('redeem_invite', {
         p_code: cleanCode,
       })
-      if (redeemErr) {
-        // No bloqueamos: el usuario ya tiene cuenta, solo se queda sin "redimir"
-        console.warn('Error al canjear invitación:', redeemErr)
-      }
+      // Ignorar error de redeem si ya fue usado - el usuario ya tiene cuenta
 
       // 4) Actualizar el display_name en su profile (el trigger ya lo creó con default)
       if (signUpData.user) {

@@ -29,10 +29,6 @@ export async function POST(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET
   const vercelBypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
 
-  console.log('[admin/sync-results] CRON_SECRET presente:', !!cronSecret)
-  console.log('[admin/sync-results] Vercel bypass presente:', !!vercelBypass)
-  console.log('[admin/sync-results] Llamando a:', `${baseUrl}/api/cron/sync-results`)
-
   if (!cronSecret) {
     return NextResponse.json({ ok: false, error: 'CRON_SECRET no configurado' }, { status: 500 })
   }
@@ -46,8 +42,6 @@ export async function POST(request: NextRequest) {
     if (vercelBypass) {
       headers['x-vercel-protection-bypass'] = vercelBypass
     }
-
-    console.log('[admin/sync-results] Headers enviados:', Object.keys(headers))
 
     const res = await fetch(`${baseUrl}/api/cron/sync-results`, {
       method: 'GET',

@@ -2,20 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { toLocalDateTimeInput } from '@/lib/utils'
 import PageHeader from '@/components/PageHeader'
 import Flag from '@/components/Flag'
 import type { Team, Match, Profile, Invitation, Settings, Phase, Entry, Role } from '@/lib/types'
 import { PHASE_LABELS, KO_PHASES, GROUP_CODES } from '@/lib/types'
 
 type Tab = 'teams' | 'matches' | 'invitations' | 'participants' | 'settings'
-
-// Convierte ISO UTC string a formato 'YYYY-MM-DDTHH:mm' en hora LOCAL
-// (que es lo que <input type="datetime-local"> espera)
-function toLocalDateTimeInput(iso: string): string {
-  const d = new Date(iso)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
 
 export default function AdminClient({
   userRole,
@@ -74,7 +67,7 @@ export default function AdminClient({
       </div>
 
       {tab === 'teams' && !isManager && <TeamsTab initialTeams={initialTeams} />}
-      {tab === 'matches' && !isManager && <MatchesTab initialMatches={initialMatches} teams={initialTeams} />}
+      {tab === 'matches' && !isManager && <MatchesTab initialMatches={initialMatches} teams={initialTeams} settings={initialSettings} />}
       {tab === 'invitations' && <InvitationsTab initialInvitations={initialInvitations} />}
       {tab === 'participants' && <ParticipantsTab initialProfiles={initialProfiles} initialEntries={initialEntries} isManager={isManager} />}
       {tab === 'settings' && !isManager && <SettingsTab initialSettings={initialSettings} teams={initialTeams} />}
@@ -145,7 +138,11 @@ function TeamsTab({ initialTeams }: { initialTeams: Team[] }) {
 // =============================================================
 // MATCHES TAB
 // =============================================================
-function MatchesTab({ initialMatches, teams }: { initialMatches: Match[]; teams: Team[] }) {
+function MatchesTab({ initialMatches, teams, settings }: { 
+  initialMatches: Match[]
+  teams: Team[]
+  settings: Settings | null
+}) {
   const [matches, setMatches] = useState(initialMatches)
   const [phase, setPhase] = useState<Phase>('group')
   const [groupFilter, setGroupFilter] = useState<string>('A')
@@ -191,11 +188,21 @@ function MatchesTab({ initialMatches, teams }: { initialMatches: Match[]; teams:
     setTimeout(() => setMsg(null), 2000)
   }
 
+  const syncInterval = settings?.sync_interval_minutes || 10
+
   return (
     <div>
-      <p className="text-sm text-white/70 mb-3">
-        Captura los marcadores oficiales tras cada partido. Marca como &quot;finalizado&quot; para que cuente en el ranking.
-      </p>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm text-white/70">
+          Captura los marcadores oficiales tras cada partido. Marca como &quot;finalizado&quot; para que cuente en el ranking.
+        </p>
+        {settings?.api_sync_enabled && (
+          <div className="text-xs text-fifaGreen font-bold uppercase tracking-wider flex items-center gap-1.5 bg-fifaGreen/10 px-3 py-1.5 rounded-full border border-fifaGreen/30">
+            <span className="animate-pulse">🔄</span>
+            Sincronizando cada {syncInterval} min
+          </div>
+        )}
+      </div>
       {msg && <div className="mb-3 text-sm text-success">{msg}</div>}
 
       {/* Búsqueda por # de partido */}
@@ -269,9 +276,9 @@ function MatchesTab({ initialMatches, teams }: { initialMatches: Match[]; teams:
                   onBlur={() => save(m)}
                   className="input text-xs [color-scheme:dark] bg-[#080b22] text-white"
                 >
-                  <option value="scheduled">Programado</option>
-                  <option value="live">En vivo</option>
-                  <option value="finished">Finalizado</option>
+                  <option value="scheduled" className="bg-[#080b22] text-white">Programado</option>
+                  <option value="live" className="bg-[#080b22] text-white">En vivo</option>
+                  <option value="finished" className="bg-[#080b22] text-white">Finalizado</option>
                 </select>
               </div>
 
@@ -721,9 +728,9 @@ function ParticipantsTab({
                     disabled={isManager}
                     className="input text-xs [color-scheme:dark] bg-[#080b22] text-white disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <option value="participant">Participante</option>
-                    <option value="manager">Manager</option>
-                    <option value="admin">Admin</option>
+                    <option value="participant" className="bg-[#080b22] text-white">Participante</option>
+                    <option value="manager" className="bg-[#080b22] text-white">Manager</option>
+                    <option value="admin" className="bg-[#080b22] text-white">Admin</option>
                   </select>
                 </div>
               </div>
@@ -780,6 +787,7 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
   const [syncError, setSyncError] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
   const [recentSyncs, setRecentSyncs] = useState<Match[]>([])
+  const [currentTime, setCurrentTime] = useState(Date.now())
 
   async function loadRecentSyncs() {
     const supabase = createClient()
@@ -791,6 +799,44 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
       .limit(5)
     if (data) setRecentSyncs(data as Match[])
   }
+
+  // Realtime: Suscripción a cambios en la tabla settings
+  useEffect(() => {
+    const supabase = createClient()
+    
+    const channel = supabase
+      .channel('settings-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'settings',
+          filter: 'id=eq.1',
+        },
+        (payload) => {
+          console.log('[AdminClient] Settings actualizados vía Realtime:', payload.new)
+          setS(payload.new as Settings)
+          // Recargar partidos recientes si cambió last_sync_at
+          if (payload.new.last_sync_at) {
+            loadRecentSyncs()
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
+
+  // Timer: Actualizar currentTime cada segundo para cuenta regresiva
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now())
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     if (s) {
@@ -939,6 +985,152 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
           </span>
         </div>
 
+        {/* Nota sobre plan gratuito */}
+        <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded">
+          <div className="flex items-start gap-2">
+            <span className="text-lg">ℹ️</span>
+            <div className="flex-1 text-xs text-yellow-200/90">
+              <strong>Plan Gratuito de Vercel:</strong> La sincronización automática se ejecuta <strong>una vez al día a medianoche (00:00)</strong>. 
+              Durante los partidos, usa el botón <strong>&quot;🔄 Sincronizar Resultados (API)&quot;</strong> para actualizar en tiempo real sin límites.
+            </div>
+          </div>
+        </div>
+
+        {/* Control de intervalo y estado de conexión */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          {/* Intervalo de sincronización */}
+          <div className="p-3 bg-white/5 rounded">
+            <label className="label-up block mb-2">Intervalo de sincronización manual</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={1}
+                max={60}
+                value={s.sync_interval_minutes}
+                onChange={(e) => update('sync_interval_minutes', parseInt(e.target.value) || 10)}
+                className="input flex-1"
+              />
+              <span className="text-sm text-white/60">minutos</span>
+            </div>
+            <p className="text-xs text-white/40 mt-1">
+              Tiempo mínimo entre sincronizaciones manuales (botón 🔄)
+            </p>
+          </div>
+
+          {/* Estado de conexión */}
+          <div className="p-3 bg-white/5 rounded">
+            <label className="label-up block mb-2">Estado de Conexión</label>
+            {(() => {
+              const status = s.last_sync_status
+              const lastSync = s.last_sync_at ? new Date(s.last_sync_at).getTime() : null
+              const now = Date.now()
+              const intervalMs = (s.sync_interval_minutes || 10) * 60 * 1000
+              const isHealthy = status === 'online' && lastSync && (now - lastSync) < (intervalMs * 2)
+              
+              return (
+                <div className={`flex items-center gap-2 px-3 py-2 rounded ${
+                  isHealthy 
+                    ? 'bg-green-500/20 border border-green-500/30' 
+                    : 'bg-red-500/20 border border-red-500/30'
+                }`}>
+                  <span className="text-2xl">{isHealthy ? '🟢' : '🔴'}</span>
+                  <div className="flex-1">
+                    <div className={`text-sm font-bold uppercase tracking-wider ${
+                      isHealthy ? 'text-green-400' : 'text-red-400'
+                    }`}>
+                      {isHealthy ? 'SISTEMA ONLINE' : 'ERROR DE CONEXIÓN'}
+                    </div>
+                    {!isHealthy && status && status !== 'online' && (
+                      <div className="text-xs text-white/80 mt-1 font-mono break-words">
+                        {status.slice(0, 120)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
+            {/* Próxima ejecución con cuenta regresiva en tiempo real */}
+            {s.last_sync_at && s.api_sync_enabled && (
+              <div className="mt-2 text-xs text-white/60">
+                {(() => {
+                  const lastSync = new Date(s.last_sync_at).getTime()
+                  const intervalMs = (s.sync_interval_minutes || 10) * 60 * 1000
+                  const nextSyncTime = lastSync + intervalMs
+                  const remainingMs = nextSyncTime - currentTime
+                  
+                  if (remainingMs > 0) {
+                    const minutes = Math.floor(remainingMs / 60000)
+                    const seconds = Math.floor((remainingMs % 60000) / 1000)
+                    return (
+                      <>
+                        Próxima actualización en:{' '}
+                        <span className="text-fifaGreen font-bold font-mono">
+                          {minutes}:{seconds.toString().padStart(2, '0')}
+                        </span>
+                      </>
+                    )
+                  } else {
+                    return (
+                      <span className="text-yellow-400 font-medium animate-pulse">
+                        ⏱️ Sincronización en proceso...
+                      </span>
+                    )
+                  }
+                })()}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Panel de diagnóstico de errores */}
+        {s.last_sync_status && s.last_sync_status !== 'online' && (
+          <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+            <div className="flex items-start gap-2">
+              <span className="text-2xl">🔍</span>
+              <div className="flex-1">
+                <h4 className="text-sm font-bold text-red-400 uppercase tracking-wider mb-2">
+                  Diagnóstico de Conexión API
+                </h4>
+                <div className="bg-black/40 rounded p-3 font-mono text-sm text-red-300 break-words border border-red-500/20">
+                  {s.last_sync_status}
+                </div>
+                <div className="mt-3 text-xs text-white/70 space-y-2">
+                  <div>
+                    <p className="font-bold text-white/90 mb-1">💡 Soluciones comunes:</p>
+                    <ul className="space-y-1 ml-2">
+                      {s.last_sync_status.includes('403') && (
+                        <li className="text-yellow-300">
+                          → Verifica tu API Key en <a href="https://www.football-data.org/client/home" target="_blank" rel="noopener" className="underline">football-data.org</a>
+                        </li>
+                      )}
+                      {s.last_sync_status.includes('404') && (
+                        <li className="text-yellow-300">
+                          → El Mundial 2026 puede no estar disponible aún. El sistema intentará con 2022 como fallback
+                        </li>
+                      )}
+                      {s.last_sync_status.includes('429') && (
+                        <li className="text-yellow-300">
+                          → Límite de llamadas excedido. Aumenta el intervalo de sincronización a 15-30 minutos
+                        </li>
+                      )}
+                      {s.last_sync_status.includes('401') && (
+                        <li className="text-yellow-300">
+                          → Revisa que FOOTBALL_DATA_API_KEY esté configurada en las variables de entorno de Vercel
+                        </li>
+                      )}
+                      {!s.last_sync_status.match(/40[134]|429/) && (
+                        <li className="text-white/60">
+                          → Revisa los logs de Vercel para más detalles del error
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-2 text-sm">
           {s.last_sync_at && (
             <div className="text-white/70">
@@ -1045,9 +1237,9 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
                 onChange={(e) => update(f.key, (e.target.value ? Number(e.target.value) : null) as Settings[typeof f.key])}
                 className="input flex-1 [color-scheme:dark] bg-[#080b22] text-white"
               >
-                <option value="">— sin definir —</option>
+                <option value="" className="bg-[#080b22] text-white">— sin definir —</option>
                 {teams.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
+                  <option key={t.id} value={t.id} className="bg-[#080b22] text-white">{t.name}</option>
                 ))}
               </select>
             </div>

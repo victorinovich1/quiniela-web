@@ -16,7 +16,7 @@ export default function BottomNav({
   const items = [
     { href: '/predictions', label: 'Pronósticos', icon: PredIcon },
     { href: '/leaderboard', label: 'Ranking', icon: TrophyIcon },
-    { href: '/entries', label: 'Mis jugadas', icon: GridIcon },
+    { href: '/entries', label: 'Mis quinielas', icon: GridIcon },
     { href: '/rules', label: 'Reglas', icon: BookIcon },
     { href: '/profile', label: 'Perfil', icon: UserIcon },
   ]

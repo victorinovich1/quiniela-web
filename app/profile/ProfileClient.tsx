@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import PageHeader from '@/components/PageHeader'
 import type { User } from '@supabase/supabase-js'
 import type { Profile } from '@/lib/types'
-import { TOTAL_PERM_AVATARS, AVATAR_PATHS } from '@/lib/avatars'
+import { TOTAL_AVATARS, AVATAR_PATHS } from '@/lib/avatars'
 
 export default function ProfileClient({
   user,
@@ -29,9 +29,8 @@ export default function ProfileClient({
   const [profileMsg, setProfileMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [passwordMsg, setPasswordMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  // Avatares permanentes disponibles (dinámico)
-  const permanentAvatars = Array.from({ length: TOTAL_PERM_AVATARS }, (_, i) => i + 1)
-  const isPunished = profile?.avatar_temp_id !== null
+  // Avatares disponibles (dinámico)
+  const permanentAvatars = Array.from({ length: TOTAL_AVATARS }, (_, i) => i + 1)
   
   // Estado para avatares ocupados por otros usuarios
   const [occupiedAvatars, setOccupiedAvatars] = useState<Set<number>>(new Set())
@@ -206,20 +205,6 @@ export default function ProfileClient({
       {/* Avatar */}
       <div className="card p-4 space-y-4">
         <h2 className="font-extrabold uppercase tracking-tight text-white text-lg">Avatar</h2>
-
-        {isPunished && (
-          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">🤡</span>
-              <div>
-                <p className="text-yellow-400 font-bold text-sm">¡Has sido castigado por el Rey!</p>
-                <p className="text-white/60 text-xs mt-1">
-                  Tu avatar real volverá cuando inicie el próximo partido en vivo.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
 
         <div>
           <label className="block text-sm font-medium text-white/70 mb-3">

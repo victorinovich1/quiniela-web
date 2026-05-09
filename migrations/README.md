@@ -36,6 +36,7 @@ O usa Supabase MCP `apply_migration(name, query)` si tienes un agente con acceso
 | 018 | lock_entries_deletion | RLS política que impide borrar entries después del lock_at |
 | 038 | avatar_war_system | Sistema de avatares: columnas avatar_perm_id (UNIQUE) y avatar_temp_id, trigger auto-limpia castigos al iniciar partido, view leaderboard con display_avatar |
 | 039 | fix_avatar_paths | Corrige rutas de avatares en view leaderboard para usar subcarpetas /permanentes/ y /bromas/ |
+| 040 | simplify_avatars | Elimina mecánica de castigos: drop avatar_temp_id, drop trigger/función, view simplificada con solo avatares permanentes |
 
 ## Convenciones
 

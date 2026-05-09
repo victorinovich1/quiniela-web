@@ -36,15 +36,11 @@ export default function ProfileClient({
   
   // Modal de avatares
   const [showAvatarModal, setShowAvatarModal] = useState(false)
-  const [tempAvatarId, setTempAvatarId] = useState<number | null>(null)
   
   // Avatares disponibles
   const permanentAvatars = Array.from({ length: TOTAL_AVATARS }, (_, i) => i + 1)
   const [occupiedAvatars, setOccupiedAvatars] = useState<Set<number>>(new Set())
   const [loadingAvatars, setLoadingAvatars] = useState(true)
-  
-  // Acordeón de seguridad
-  const [securityOpen, setSecurityOpen] = useState(false)
 
   // Cargar avatares ocupados
   useEffect(() => {
@@ -124,7 +120,6 @@ export default function ProfileClient({
   }
 
   function handleSelectAvatar(id: number) {
-    setTempAvatarId(id)
     setAvatarPermId(id)
     setShowAvatarModal(false)
   }
@@ -135,22 +130,23 @@ export default function ProfileClient({
   const memberSince = user.created_at ? new Date(user.created_at).toLocaleDateString('es-MX', { year: 'numeric', month: 'long' }) : '—'
 
   return (
-    <div className="space-y-6">
+    <>
       <PageHeader
         label="Tu cuenta"
         title="Mi perfil"
         subtitle="Gestiona tu información personal y seguridad"
       />
 
-      {/* SECCIÓN A: IDENTIDAD */}
-      <div className="card p-6">
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Avatar con botón editar */}
-          <div className="flex-shrink-0">
-            <div className="relative group">
-              <div className={`w-30 h-30 rounded-full overflow-hidden border-4 ${
-                avatarPermId ? 'border-fifaGreen' : 'border-white/20'
-              } bg-white/10`}>
+      <div className="max-w-4xl mx-auto space-y-6 pb-24">
+        {/* Grid principal: Avatar izquierda + Info derecha */}
+        <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-8">
+          {/* COLUMNA IZQUIERDA: Identidad Visual */}
+          <div className="space-y-4">
+            {/* Avatar */}
+            <div className="flex flex-col items-center lg:items-start">
+              <div className={`w-40 h-40 rounded-full overflow-hidden border-4 ${
+                avatarPermId ? 'border-fifaGreen shadow-lg shadow-fifaGreen/30' : 'border-white/20'
+              } bg-white/10 mb-3`}>
                 <img
                   src={avatarPermId ? AVATAR_PATHS.permanent(avatarPermId) : AVATAR_PATHS.default}
                   alt="Avatar"
@@ -160,133 +156,123 @@ export default function ProfileClient({
                   }}
                 />
               </div>
+
               <button
                 onClick={() => setShowAvatarModal(true)}
-                className="absolute bottom-0 right-0 bg-fifaGreen hover:bg-fifaGreen/80 text-navy-deepest rounded-full p-2 shadow-lg transition-all"
-                title="Cambiar avatar"
+                className="btn btn-outline w-full text-sm"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                 </svg>
+                Cambiar Avatar
               </button>
-            </div>
-          </div>
-
-          {/* Info básica */}
-          <div className="flex-1 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-white/70 mb-1">Nombre de pantalla</label>
-              <input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="¿Cómo quieres que te vean?"
-                className="input"
-                maxLength={50}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white/70 mb-1">Email</label>
-              <input
-                type="email"
-                value={user.email || ''}
-                disabled
-                className="input opacity-60 cursor-not-allowed"
-              />
             </div>
 
             {/* Badges */}
-            <div className="flex flex-wrap gap-2">
-              <div className="badge bg-fifaGreen/20 text-fifaGreen border border-fifaGreen/30">
+            <div className="space-y-2">
+              <div className="badge bg-fifaGreen/20 text-fifaGreen border border-fifaGreen/30 w-full justify-center py-2">
                 {roleLabel}
               </div>
-              <div className="badge bg-white/10 text-white/70 border border-white/20">
-                Miembro desde: {memberSince}
+              <div className="badge bg-white/10 text-white/70 border border-white/20 w-full justify-center py-2 text-xs">
+                Miembro desde {memberSince}
               </div>
             </div>
           </div>
-        </div>
 
-        {profileMsg && (
-          <div
-            className={`mt-4 text-sm p-3 rounded ${
-              profileMsg.type === 'success'
-                ? 'bg-fifaGreen/20 text-fifaGreen'
-                : 'bg-danger/20 text-danger'
-            }`}
-          >
-            {profileMsg.text}
-          </div>
-        )}
+          {/* COLUMNA DERECHA: Información y Formularios */}
+          <div className="space-y-6">
+            {/* Datos personales */}
+            <div className="card p-6 space-y-4">
+              <h2 className="font-extrabold uppercase tracking-tight text-white text-sm">Datos Personales</h2>
+              
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-1">Nombre de pantalla</label>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="¿Cómo quieres que te vean?"
+                  className="input"
+                  maxLength={50}
+                />
+              </div>
 
-        <button
-          onClick={handleSaveProfile}
-          disabled={savingProfile}
-          className="btn btn-primary mt-4 w-full md:w-auto"
-        >
-          {savingProfile ? 'Guardando...' : 'Guardar cambios'}
-        </button>
-      </div>
-
-      {/* SECCIÓN B: LOCALIZACIÓN */}
-      <div className="card p-6">
-        <h2 className="font-extrabold uppercase tracking-tight text-white text-lg mb-4">Ubicación</h2>
-        
-        <div className="flex items-end gap-3">
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-white/70 mb-1">País</label>
-            <select
-              value={countryCode}
-              onChange={(e) => setCountryCode(e.target.value)}
-              className="input"
-            >
-              <option value="">Selecciona tu país</option>
-              {COUNTRIES.map((country) => (
-                <option key={country.code} value={country.code}>
-                  {country.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {selectedCountry && (
-            <div className="flex-shrink-0 mb-1">
-              <Flag team={{ iso_code: selectedCountry.code } as any} size={32} />
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={user.email || ''}
+                  disabled
+                  className="input opacity-60 cursor-not-allowed"
+                />
+              </div>
             </div>
-          )}
+
+            {/* Ubicación */}
+            <div className="card p-6 space-y-4">
+              <h2 className="font-extrabold uppercase tracking-tight text-white text-sm">Ubicación</h2>
+              
+              <div className="flex items-end gap-3">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-white/70 mb-1">País</label>
+                  <select
+                    value={countryCode}
+                    onChange={(e) => setCountryCode(e.target.value)}
+                    className="input"
+                  >
+                    <option value="">Selecciona tu país</option>
+                    {COUNTRIES.map((country) => (
+                      <option key={country.code} value={country.code}>
+                        {country.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {selectedCountry && (
+                  <div className="flex-shrink-0 mb-1">
+                    <Flag team={{ iso_code: selectedCountry.code } as any} size={32} />
+                  </div>
+                )}
+              </div>
+
+              <p className="text-xs text-white/50">
+                Tu bandera aparecerá junto a tu avatar en el ranking
+              </p>
+            </div>
+
+            {/* Mensajes y botón guardar */}
+            {profileMsg && (
+              <div
+                className={`text-sm p-3 rounded ${
+                  profileMsg.type === 'success'
+                    ? 'bg-fifaGreen/20 text-fifaGreen'
+                    : 'bg-danger/20 text-danger'
+                }`}
+              >
+                {profileMsg.text}
+              </div>
+            )}
+
+            <button
+              onClick={handleSaveProfile}
+              disabled={savingProfile}
+              className="btn btn-primary w-full"
+            >
+              {savingProfile ? 'Guardando...' : 'Guardar cambios'}
+            </button>
+          </div>
         </div>
 
-        <p className="text-xs text-white/50 mt-2">
-          Tu bandera aparecerá junto a tu avatar en el ranking
-        </p>
-      </div>
+        {/* ZONA DE SEGURIDAD (fuera del grid) */}
+        <div className="card p-6 space-y-6 border border-white/10">
+          <h2 className="font-extrabold uppercase tracking-tight text-white text-lg">Seguridad</h2>
 
-      {/* SECCIÓN C: SEGURIDAD */}
-      <div className="card border-2 border-white/10">
-        <button
-          onClick={() => setSecurityOpen(!securityOpen)}
-          className="w-full p-4 flex items-center justify-between hover:bg-white/5 transition-colors"
-        >
-          <h2 className="font-extrabold uppercase tracking-tight text-white text-lg">
-            Seguridad
-          </h2>
-          <svg
-            className={`w-5 h-5 text-white/70 transition-transform ${securityOpen ? 'rotate-180' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
+          {/* Cambiar contraseña */}
+          <div className="space-y-4 pb-6 border-b border-white/10">
+            <h3 className="font-bold text-white/90 text-sm">Cambiar contraseña</h3>
 
-        {securityOpen && (
-          <div className="p-6 pt-0 space-y-6 border-t border-white/10">
-            {/* Cambiar contraseña */}
-            <div className="space-y-4">
-              <h3 className="font-bold text-white uppercase text-sm tracking-wider">Cambiar contraseña</h3>
-
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-white/70 mb-1">Nueva contraseña</label>
                 <input
@@ -305,73 +291,72 @@ export default function ProfileClient({
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Repite la nueva contraseña"
+                  placeholder="Repite la contraseña"
                   className="input"
                 />
               </div>
-
-              {passwordMsg && (
-                <div
-                  className={`text-sm p-3 rounded ${
-                    passwordMsg.type === 'success'
-                      ? 'bg-fifaGreen/20 text-fifaGreen'
-                      : 'bg-danger/20 text-danger'
-                  }`}
-                >
-                  {passwordMsg.text}
-                </div>
-              )}
-
-              <button
-                onClick={handleChangePassword}
-                disabled={savingPassword || !newPassword || !confirmPassword}
-                className="btn btn-primary w-full md:w-auto"
-              >
-                {savingPassword ? 'Actualizando...' : 'Cambiar contraseña'}
-              </button>
             </div>
 
-            {/* Eliminar cuenta */}
-            <div className="pt-6 border-t border-danger/20">
-              <h3 className="font-bold text-danger uppercase text-sm tracking-wider mb-3">Zona de peligro</h3>
-              <p className="text-sm text-white/70 mb-4">
-                Eliminar tu cuenta es una acción permanente. Se borrarán todas tus jugadas y pronósticos.
-              </p>
-
-              {podiumLocked && (
-                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-sm text-yellow-400 mb-4">
-                  ⚠️ No puedes eliminar tu cuenta una vez iniciado el mundial
-                </div>
-              )}
-
-              <button
-                onClick={async () => {
-                  if (!confirm('¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.')) return
-                  if (!confirm('¿Realmente quieres continuar? Se borrarán todas tus jugadas y pronósticos de forma permanente.')) return
-
-                  setDeletingAccount(true)
-                  const supabase = createClient()
-
-                  try {
-                    const { error } = await supabase.rpc('delete_user_self')
-
-                    if (error) throw error
-
-                    await supabase.auth.signOut()
-                    window.location.href = '/'
-                  } catch (err) {
-                    alert(err instanceof Error ? err.message : 'Error al eliminar la cuenta')
-                    setDeletingAccount(false)
-                  }
-                }}
-                disabled={podiumLocked || deletingAccount}
-                className="btn bg-danger/20 border-danger text-danger hover:bg-danger hover:text-white disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto"
+            {passwordMsg && (
+              <div
+                className={`text-sm p-3 rounded ${
+                  passwordMsg.type === 'success'
+                    ? 'bg-fifaGreen/20 text-fifaGreen'
+                    : 'bg-danger/20 text-danger'
+                }`}
               >
-                {deletingAccount ? 'Eliminando cuenta...' : 'Eliminar mi cuenta'}
-              </button>
-            </div>
+                {passwordMsg.text}
+              </div>
+            )}
+
+            <button
+              onClick={handleChangePassword}
+              disabled={savingPassword || !newPassword || !confirmPassword}
+              className="btn btn-primary"
+            >
+              {savingPassword ? 'Actualizando...' : 'Cambiar contraseña'}
+            </button>
           </div>
-        )}
+
+          {/* Eliminar cuenta */}
+          <div className="space-y-4">
+            <h3 className="font-bold text-danger text-sm">Zona de peligro</h3>
+            <p className="text-sm text-white/60">
+              Eliminar tu cuenta es permanente. Se borrarán todas tus jugadas y pronósticos.
+            </p>
+
+            {podiumLocked && (
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-sm text-yellow-400">
+                ⚠️ No puedes eliminar tu cuenta una vez iniciado el mundial
+              </div>
+            )}
+
+            <button
+              onClick={async () => {
+                if (!confirm('¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.')) return
+                if (!confirm('¿Realmente quieres continuar? Se borrarán todas tus jugadas y pronósticos de forma permanente.')) return
+
+                setDeletingAccount(true)
+                const supabase = createClient()
+
+                try {
+                  const { error } = await supabase.rpc('delete_user_self')
+                  if (error) throw error
+
+                  await supabase.auth.signOut()
+                  window.location.href = '/'
+                } catch (err) {
+                  alert(err instanceof Error ? err.message : 'Error al eliminar la cuenta')
+                  setDeletingAccount(false)
+                }
+              }}
+              disabled={podiumLocked || deletingAccount}
+              className="btn bg-danger/20 border border-danger text-danger hover:bg-danger hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {deletingAccount ? 'Eliminando cuenta...' : 'Eliminar mi cuenta'}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Modal de selección de avatar */}
@@ -390,7 +375,7 @@ export default function ProfileClient({
               </h2>
               <button
                 onClick={() => setShowAvatarModal(false)}
-                className="text-white/70 hover:text-white text-2xl"
+                className="text-white/70 hover:text-white text-2xl leading-none"
               >
                 ×
               </button>
@@ -448,6 +433,6 @@ export default function ProfileClient({
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }

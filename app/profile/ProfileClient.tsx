@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import PageHeader from '@/components/PageHeader'
 import Flag from '@/components/Flag'
@@ -8,6 +8,7 @@ import type { User } from '@supabase/supabase-js'
 import type { Profile, Settings } from '@/lib/types'
 import { TOTAL_AVATARS, AVATAR_PATHS } from '@/lib/avatars'
 import { COUNTRIES } from '@/lib/countries'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function ProfileClient({
   user,
@@ -553,6 +554,37 @@ function AvatarTierSection({
   userId: string
   reqText: string
 }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+
+  const updateScrollButtons = () => {
+    if (containerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = containerRef.current
+      setCanScrollLeft(scrollLeft > 0)
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10)
+    }
+  }
+
+  useEffect(() => {
+    updateScrollButtons()
+    const container = containerRef.current
+    if (container) {
+      container.addEventListener('scroll', updateScrollButtons)
+      return () => container.removeEventListener('scroll', updateScrollButtons)
+    }
+  }, [avatarIds])
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (containerRef.current) {
+      const scrollAmount = 300
+      containerRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      })
+    }
+  }
+
   const getAvatarPath = (id: number) => `/images/avatars/${category}/${id}.webp`
 
   return (
@@ -571,8 +603,28 @@ function AvatarTierSection({
         <p className="text-xs text-yellow-400/70 mb-3 text-center">{reqText}</p>
       )}
 
-      <div 
-        className="flex flex-nowrap overflow-x-auto snap-x snap-mandatory gap-3 pb-4 px-1 -mx-1 cursor-grab active:cursor-grabbing scrollbar-hide md:scrollbar-styled"
+      <div className="relative group">
+        {/* Flecha izquierda */}
+        <button
+          onClick={() => scroll('left')}
+          disabled={!canScrollLeft}
+          className={`hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 items-center justify-center rounded-full bg-navy-dark/80 border border-white/10 text-fifaGreen hover:bg-navy-dark hover:border-fifaGreen/50 transition-all disabled:opacity-0 disabled:pointer-events-none opacity-0 group-hover:opacity-100`}
+        >
+          <ChevronLeft size={20} />
+        </button>
+
+        {/* Flecha derecha */}
+        <button
+          onClick={() => scroll('right')}
+          disabled={!canScrollRight}
+          className={`hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 items-center justify-center rounded-full bg-navy-dark/80 border border-white/10 text-fifaGreen hover:bg-navy-dark hover:border-fifaGreen/50 transition-all disabled:opacity-0 disabled:pointer-events-none opacity-0 group-hover:opacity-100`}
+        >
+          <ChevronRight size={20} />
+        </button>
+
+        <div
+          ref={containerRef} 
+          className="flex flex-nowrap overflow-x-auto snap-x snap-mandatory gap-3 pb-4 px-10 md:px-12 -mx-1 cursor-grab active:cursor-grabbing scrollbar-hide md:scrollbar-styled"
         onWheel={(e) => {
           if (e.deltaY !== 0) {
             e.preventDefault()
@@ -626,6 +678,7 @@ function AvatarTierSection({
             </button>
           )
         })}
+        </div>
       </div>
     </div>
   )

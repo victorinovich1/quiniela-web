@@ -48,9 +48,9 @@ export default function ProfileClient({
   const unlockPremium = (totalPoints >= (settings?.req_pts_premium ?? 70)) || (exactCount >= (settings?.req_exact_premium ?? 7))
   const unlockLegend = (totalPoints >= (settings?.req_pts_legend ?? 120)) || (exactCount >= (settings?.req_exact_legend ?? 12))
   
-  // Avatares por categoría (asumiendo 12 por categoría para demo)
+  // Avatares por categoría
   const avatarsByCategory = {
-    permanentes: Array.from({ length: 12 }, (_, i) => i + 1),
+    permanentes: Array.from({ length: 39 }, (_, i) => i + 1),
     especiales: Array.from({ length: 12 }, (_, i) => i + 1),
     premium: Array.from({ length: 12 }, (_, i) => i + 1),
     leyendas: Array.from({ length: 12 }, (_, i) => i + 1),
@@ -473,7 +473,7 @@ export default function ProfileClient({
                 {/* Especiales */}
                 <AvatarTierSection
                   title="🌟 ESPECIALES"
-                  subtitle={unlockSpecial ? 'Desbloqueados' : `Requiere ${settings?.req_pts_special ?? 30} pts o ${settings?.req_exact_special ?? 3} exactos`}
+                  subtitle={unlockSpecial ? 'Desbloqueados' : 'Bloqueados'}
                   category="especiales"
                   avatarIds={avatarsByCategory.especiales}
                   isUnlocked={unlockSpecial}
@@ -482,13 +482,13 @@ export default function ProfileClient({
                   occupiedSet={occupiedAvatars.get('especiales') || new Set()}
                   onSelect={(id) => handleSelectAvatar(id, 'especiales')}
                   userId={user.id}
-                  reqText={unlockSpecial ? '' : `Desbloquea con ${settings?.req_pts_special ?? 30} pts o ${settings?.req_exact_special ?? 3} exactos`}
+                  reqText={unlockSpecial ? '' : `Requiere de ${settings?.req_pts_special ?? 30} ptos o acertar ${settings?.req_exact_special ?? 3} marcadores exactos`}
                 />
 
                 {/* Premium */}
                 <AvatarTierSection
                   title="💎 PREMIUM"
-                  subtitle={unlockPremium ? 'Desbloqueados' : `Requiere ${settings?.req_pts_premium ?? 70} pts o ${settings?.req_exact_premium ?? 7} exactos`}
+                  subtitle={unlockPremium ? 'Desbloqueados' : 'Bloqueados'}
                   category="premium"
                   avatarIds={avatarsByCategory.premium}
                   isUnlocked={unlockPremium}
@@ -497,13 +497,13 @@ export default function ProfileClient({
                   occupiedSet={occupiedAvatars.get('premium') || new Set()}
                   onSelect={(id) => handleSelectAvatar(id, 'premium')}
                   userId={user.id}
-                  reqText={unlockPremium ? '' : `Desbloquea con ${settings?.req_pts_premium ?? 70} pts o ${settings?.req_exact_premium ?? 7} exactos`}
+                  reqText={unlockPremium ? '' : `Requiere de ${settings?.req_pts_premium ?? 70} ptos o acertar ${settings?.req_exact_premium ?? 7} marcadores exactos`}
                 />
 
                 {/* Leyendas */}
                 <AvatarTierSection
                   title="🏆 LEYENDAS"
-                  subtitle={unlockLegend ? 'Desbloqueados' : `Requiere ${settings?.req_pts_legend ?? 120} pts o ${settings?.req_exact_legend ?? 12} exactos`}
+                  subtitle={unlockLegend ? 'Desbloqueados' : 'Bloqueados'}
                   category="leyendas"
                   avatarIds={avatarsByCategory.leyendas}
                   isUnlocked={unlockLegend}
@@ -512,7 +512,7 @@ export default function ProfileClient({
                   occupiedSet={occupiedAvatars.get('leyendas') || new Set()}
                   onSelect={(id) => handleSelectAvatar(id, 'leyendas')}
                   userId={user.id}
-                  reqText={unlockLegend ? '' : `Desbloquea con ${settings?.req_pts_legend ?? 120} pts o ${settings?.req_exact_legend ?? 12} exactos`}
+                  reqText={unlockLegend ? '' : `Requiere de ${settings?.req_pts_legend ?? 120} ptos o acertar ${settings?.req_exact_legend ?? 12} marcadores exactos`}
                 />
               </div>
             )}
@@ -557,7 +557,7 @@ function AvatarTierSection({
 
   return (
     <div className={`border rounded-lg p-4 ${isUnlocked ? 'border-white/20 bg-white/5' : 'border-white/10 bg-white/[0.02]'}`}>
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2">
         <div>
           <h3 className="font-bold text-sm uppercase tracking-wider">{title}</h3>
           <p className={`text-xs ${isUnlocked ? 'text-fifaGreen' : 'text-white/50'}`}>{subtitle}</p>
@@ -567,7 +567,11 @@ function AvatarTierSection({
         )}
       </div>
 
-      <div className="grid grid-cols-6 sm:grid-cols-8 lg:grid-cols-12 gap-2">
+      {reqText && (
+        <p className="text-xs text-yellow-400/70 mb-3 text-center">{reqText}</p>
+      )}
+
+      <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-4 px-1 -mx-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {avatarIds.map((id) => {
           const isOccupied = occupiedSet.has(id)
           const isSelected = currentId === id && currentCategory === category
@@ -578,7 +582,7 @@ function AvatarTierSection({
               key={id}
               onClick={() => canSelect && onSelect(id)}
               disabled={!canSelect}
-              className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+              className={`relative w-20 h-20 flex-shrink-0 snap-start rounded-lg overflow-hidden border-2 transition-all ${
                 isSelected
                   ? 'border-fifaGreen scale-105'
                   : !isUnlocked
@@ -615,10 +619,6 @@ function AvatarTierSection({
           )
         })}
       </div>
-
-      {reqText && (
-        <p className="text-xs text-yellow-400/70 mt-2 text-center">{reqText}</p>
-      )}
     </div>
   )
 }

@@ -34,6 +34,10 @@ export default function CompactMatchRow({
   const showLive = status === 'live'
   const isLockedByStatus = status !== 'scheduled'
 
+  const stadium = match.stadium || ''
+  const stadiumParts = stadium.split(',').map((s) => s.trim())
+  const cityShort = stadiumParts[1] || stadiumParts[0] || ''
+
   return (
     <div className={`card p-2 hover:bg-white/5 transition-colors ${matchLocked ? 'opacity-60' : ''}`}>
       <div className="flex items-center gap-2">
@@ -103,6 +107,12 @@ export default function CompactMatchRow({
             <span className="text-[11px] font-bold text-white/40 uppercase truncate">{awayLabel}</span>
           )}
         </div>
+
+        {cityShort && (
+          <div className="hidden md:block text-[10px] font-bold text-white/40 uppercase truncate w-20 text-right">
+            {cityShort}
+          </div>
+        )}
       </div>
     </div>
   )

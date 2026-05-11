@@ -4,6 +4,68 @@
 
 Inspirado en gráficos oficiales del Mundial 2026: fondo navy oscuro, glow sutiles, equipos en pills blancos con bandera, tipografía bold mayúscula, acento verde FIFA.
 
+## Formato de Imágenes: WebP Obligatorio
+
+**Estándar:** Todas las imágenes del proyecto usan formato **WebP** para optimización de tamaño.
+
+### Beneficios
+
+- **Reducción de tamaño**: ~30-50% menor que PNG/JPG equivalente
+- **Calidad visual**: Sin pérdida perceptible de calidad
+- **Compatibilidad**: Soportado en todos los navegadores modernos
+
+### Uso en el Proyecto
+
+| Directorio | Cantidad | Uso |
+|------------|----------|-----|
+| `/public/images/avatars/permanentes/` | 39 avatares | Categoría básica desbloqueada |
+| `/public/images/avatars/especiales/` | 12 avatares | Desbloqueable por desempeño |
+| `/public/images/avatars/premium/` | 12 avatares | Desbloqueable por desempeño |
+| `/public/images/avatars/leyendas/` | 12 avatares | Desbloqueable por desempeño |
+| `/public/images/avatars/` | 1 default.webp | Fallback si avatar no existe |
+| `/public/images/` | hero-*.webp | Landing page |
+
+**Total:** 75 avatares + 1 default + imágenes de landing
+
+### Componente de Avatares
+
+```typescript
+// lib/avatars.ts
+export const AVATAR_PATHS = {
+  permanent: (id: number) => `/images/avatars/permanentes/${id}.webp`,
+  special: (id: number) => `/images/avatars/especiales/${id}.webp`,
+  premium: (id: number) => `/images/avatars/premium/${id}.webp`,
+  legend: (id: number) => `/images/avatars/leyendas/${id}.webp`,
+  default: '/images/avatars/default.webp',
+}
+```
+
+### Construcción Dinámica de Paths
+
+En `leaderboard` view y componentes:
+
+```typescript
+const avatarPath = avatarPermId && avatarCategory
+  ? `/images/avatars/${avatarCategory}/${avatarPermId}.webp`
+  : '/images/avatars/default.webp'
+```
+
+**Fallback:** Si la imagen falla al cargar, se muestra `default.webp` automáticamente via `onError` handler.
+
+### Conversión de Imágenes Existentes
+
+Para convertir PNG/JPG a WebP:
+
+```bash
+# Con ImageMagick
+magick convert input.png -quality 85 output.webp
+
+# Con cwebp (Google)
+cwebp -q 85 input.png -o output.webp
+```
+
+**Calidad recomendada:** 80-90 para avatares, 75-85 para imágenes decorativas.
+
 ### Paleta de colores (Tailwind)
 
 | Token | Hex | Uso |
@@ -215,6 +277,327 @@ import PageHeader from '@/components/PageHeader'
 - `/entries` — Mis jugadas
 - `/profile` — Mi perfil
 - `/admin` — Panel de administración
+
+**Páginas con estructura especial:**
+- `/predictions` — Usa selector de jugada + tabs (no PageHeader)
+
+### Carrusel de Avatares
+
+**Componente:** `app/profile/ProfileClient.tsx` → `AvatarTierSection`
+
+Carrusel horizontal con scroll snap para selección de avatares con gamificación por niveles.
+
+#### Características
+
+**Scroll Horizontal:**
+- `overflow-x-auto scroll-smooth snap-x snap-mandatory`
+- `scrollbar-hide` en móvil, `scrollbar-styled` en desktop (md:)
+- Scroll snap cada avatar: `snap-center`
+
+**Navegación con Flechas (Desktop):**
+- ChevronLeft / ChevronRight de `lucide-react`
+- Posicionados `absolute left-0` y `right-0` con `top-1/2 -translate-y-1/2`
+- Fondo: `bg-navy-dark/80 backdrop-blur-sm`
+- Borde: `border border-white/10`
+- Color: `text-fifaGreen`
+- Hover: `hover:bg-navy-dark hover:scale-110`
+- Visibilidad: `hidden md:flex` + `opacity-0 group-hover:opacity-100`
+- Click: Scroll 300px smooth
+
+**Navegación con Rueda del Mouse:**
+```typescript
+onWheel={(e) => {
+  if (e.deltaY !== 0) {
+    e.currentTarget.scrollLeft += e.deltaY
+  }
+}}
+```
+- Convierte scroll vertical a horizontal
+- Sin `preventDefault` para evitar warnings de passive listeners
+- Clase `touch-pan-y` para permitir gestos táctiles
+
+**Scroll Buttons State:**
+```typescript
+const [canScrollLeft, setCanScrollLeft] = useState(false)
+const [canScrollRight, setCanScrollRight] = useState(false)
+
+const updateScrollButtons = () => {
+  if (!containerRef.current) return
+  const { scrollLeft, scrollWidth, clientWidth } = containerRef.current
+  setCanScrollLeft(scrollLeft > 10)
+  setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10)
+}
+```
+- Botones disabled cuando no hay más scroll en esa dirección
+- Umbral de 10px para evitar flickering
+
+**Padding del Contenedor:**
+- `px-10 md:px-12` — Espacio extra para que las flechas no tapen los avatares
+
+#### Avatares Individuales
+
+**Estructura:**
+```tsx
+<button
+  className={cn(
+    "flex-shrink-0 w-20 h-20 rounded-full overflow-hidden transition-all snap-center",
+    "border-4",
+    isSelected ? "border-fifaGreen scale-110" : "border-transparent",
+    isUnlocked ? "opacity-100 hover:scale-105" : "opacity-40 cursor-not-allowed"
+  )}
+>
+  <img
+    src={`/images/avatars/${category}/${avatar.id}.webp`}
+    alt={`Avatar ${avatar.id}`}
+    className="w-full h-full object-cover"
+  />
+  {isSelected && (
+    <div className="absolute top-0 right-0 bg-fifaGreen rounded-full p-1">
+      <Check size={12} className="text-navy-deepest" />
+    </div>
+  )}
+  {!isUnlocked && (
+    <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+      <Lock size={24} className="text-white/80" />
+    </div>
+  )}
+</button>
+```
+
+**Estados Visuales:**
+- **Seleccionado**: Borde verde `border-fifaGreen` + scale 110% + checkmark verde
+- **Bloqueado**: Opacidad 40% + candado 🔒 + cursor-not-allowed
+- **Hover desbloqueado**: Scale 105%
+
+#### Texto de Requisitos
+
+Debajo del carrusel:
+
+```tsx
+<p className="text-xs text-white/50 text-center mt-2">
+  Requiere de {req_pts} ptos o acertar {req_exact} marcadores exactos
+</p>
+```
+
+#### Scrollbar Estilizado (CSS)
+
+```css
+/* globals.css */
+.scrollbar-styled {
+  scrollbar-color: rgba(52, 211, 153, 0.5) transparent;
+  scrollbar-width: thin;
+}
+
+.scrollbar-styled::-webkit-scrollbar {
+  height: 8px;
+}
+
+.scrollbar-styled::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-styled::-webkit-scrollbar-thumb {
+  background-color: rgba(52, 211, 153, 0.5);
+  border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+  .scrollbar-styled {
+    scrollbar-width: none;
+  }
+  .scrollbar-styled::-webkit-scrollbar {
+    display: none;
+  }
+}
+```
+
+### Badge de Estado en Vivo
+
+Indicador visual para partidos que están actualmente en juego.
+
+#### Variantes
+
+**Variante Estándar (Predictions):**
+```tsx
+{getMatchStatus(match) === 'live' && (
+  <div className="absolute -top-1 -right-1 bg-danger text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-full animate-pulse">
+    EN VIVO
+  </div>
+)}
+```
+
+**Variante Compacta (CompactMatchRow):**
+```tsx
+<div className="bg-danger text-white text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-sm">
+  VIVO
+</div>
+```
+
+**Variante Admin (Virtual):**
+```tsx
+<span className="text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-fifaGreen/20 text-fifaGreen border border-fifaGreen/30">
+  VIVO (Virtual)
+</span>
+```
+
+#### Estilos Comunes
+
+- **Color:** `bg-danger` (#f87171 rojo)
+- **Texto:** `text-white uppercase font-bold/font-black`
+- **Tamaño:** 8-10px según contexto
+- **Animación:** `animate-pulse` para llamar la atención
+- **Posición:** `absolute` en partidos, `inline` en admin
+
+#### Lógica de Display
+
+Usar función centralizada `getMatchStatus(match)`:
+
+```typescript
+import { getMatchStatus } from '@/lib/utils'
+
+const status = getMatchStatus(match)  // 'finished' | 'live' | 'scheduled'
+
+{status === 'live' && <LiveBadge />}
+```
+
+**Estado Virtual:** Si `kickoff_at <= now()` pero `status='scheduled'`, se muestra como 'live' con marcador 0-0.
+
+### Layout de Doble Columna (Fase de Grupos)
+
+**Componente:** `app/predictions/components/GroupStageTab.tsx`
+
+Layout responsivo que muestra partidos del grupo a la izquierda y tabla de posiciones a la derecha.
+
+#### Estructura Desktop
+
+```tsx
+<div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
+  {/* Columna Izquierda: Partidos */}
+  <div className="space-y-4">
+    {groupMatches.map(match => (
+      <CompactMatchRow key={match.id} match={match} />
+    ))}
+  </div>
+  
+  {/* Columna Derecha: Tabla sticky */}
+  <div className="lg:sticky lg:top-6 lg:h-fit">
+    <StandingsTable group={group} />
+  </div>
+</div>
+```
+
+#### Comportamiento Responsivo
+
+**Mobile (< 1024px):**
+- Stacked vertical: Partidos arriba, tabla abajo
+- `grid-cols-1`
+- Tabla no es sticky
+
+**Desktop (>= 1024px):**
+- Lado a lado: Partidos izquierda (1fr), tabla derecha (300px)
+- `grid-cols-[1fr_300px]`
+- Tabla sticky con `lg:sticky lg:top-6 lg:h-fit`
+- Gap de 1.5rem entre columnas
+
+#### Tabla de Posiciones
+
+**Estructura:**
+```tsx
+<div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-4">
+  <h3 className="text-sm font-black uppercase tracking-wider text-fifaGreen mb-3">
+    Tabla Grupo {group}
+  </h3>
+  
+  <table className="w-full text-xs">
+    <thead>
+      <tr className="text-white/50 uppercase text-[10px] border-b border-white/10">
+        <th className="text-left pb-2">POS</th>
+        <th className="text-left pb-2">EQUIPO</th>
+        <th className="text-center pb-2">PJ</th>
+        <th className="text-center pb-2">PTS</th>
+      </tr>
+    </thead>
+    <tbody>
+      {standings.map((team, idx) => (
+        <tr key={team.id} className="border-b border-white/5 last:border-0">
+          <td className="py-2 text-white/70">{idx + 1}</td>
+          <td className="py-2">
+            <div className="flex items-center gap-1.5">
+              <Flag team={team} size={12} />
+              <span className="text-white font-bold truncate">{team.name}</span>
+            </div>
+          </td>
+          <td className="text-center text-white/70">{team.played}</td>
+          <td className="text-center text-fifaGreen font-bold">{team.points}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+```
+
+#### Ventajas del Layout
+
+1. **Contexto completo:** Usuario ve partidos y tabla simultáneamente
+2. **Sticky table:** Tabla siempre visible mientras scrollea partidos
+3. **Responsive:** Funciona perfecto en mobile (stacked) y desktop (side-by-side)
+4. **Compacto:** `CompactMatchRow` optimizado para este layout (elimina decoración innecesaria)
+
+### Timestamp en Vivo
+
+**Componente:** `components/LiveTimestamp.tsx`
+
+Muestra la hora actual del usuario, actualizada cada minuto.
+
+#### Implementación
+
+```typescript
+'use client'
+
+import { useState, useEffect } from 'react'
+
+export default function LiveTimestamp() {
+  const [time, setTime] = useState('')
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date()
+      setTime(now.toLocaleTimeString('es-ES', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false
+      }))
+    }
+    
+    updateTime() // Primera actualización inmediata
+    const interval = setInterval(updateTime, 60000) // Cada minuto
+    
+    return () => clearInterval(interval)
+  }, [])
+
+  return <span className="text-white/60">{time}</span>
+}
+```
+
+#### Uso
+
+Típicamente en subtítulo de `PageHeader`:
+
+```tsx
+<PageHeader
+  label="Clasificación general"
+  title="Ranking"
+  subtitle={<>Actualizado: <LiveTimestamp /></>}
+/>
+```
+
+**Resultado visual:** "Actualizado: 14:32"
+
+#### Ventajas
+
+- **Sin hidratación:** Inicializa vacío, actualiza en cliente
+- **Bajo overhead:** Solo re-render cada 60 segundos
+- **UX mejorada:** Usuario ve que el ranking está "vivo"
 
 **Páginas con estructura especial:**
 - `/predictions` — Usa selector de jugada + tabs (no PageHeader)

@@ -571,7 +571,15 @@ function AvatarTierSection({
         <p className="text-xs text-yellow-400/70 mb-3 text-center">{reqText}</p>
       )}
 
-      <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-4 px-1 -mx-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      <div 
+        className="flex flex-nowrap overflow-x-auto snap-x snap-mandatory gap-3 pb-4 px-1 -mx-1 cursor-grab active:cursor-grabbing scrollbar-hide md:scrollbar-styled"
+        onWheel={(e) => {
+          if (e.deltaY !== 0) {
+            e.preventDefault()
+            e.currentTarget.scrollLeft += e.deltaY
+          }
+        }}
+      >
         {avatarIds.map((id) => {
           const isOccupied = occupiedSet.has(id)
           const isSelected = currentId === id && currentCategory === category

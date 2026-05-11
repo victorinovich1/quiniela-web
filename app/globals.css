@@ -140,3 +140,29 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;  /* Chrome, Safari, Opera */
 }
+
+/* Scrollbar estilizado para carruseles en desktop */
+@media (min-width: 768px) {
+  .scrollbar-styled::-webkit-scrollbar {
+    height: 8px;
+  }
+  
+  .scrollbar-styled::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+  }
+  
+  .scrollbar-styled::-webkit-scrollbar-thumb {
+    background: rgba(52, 211, 153, 0.5); /* fifaGreen/50 */
+    border-radius: 4px;
+  }
+  
+  .scrollbar-styled::-webkit-scrollbar-thumb:hover {
+    background: rgba(52, 211, 153, 0.7); /* fifaGreen/70 */
+  }
+  
+  .scrollbar-styled {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(52, 211, 153, 0.5) rgba(255, 255, 255, 0.05);
+  }
+}

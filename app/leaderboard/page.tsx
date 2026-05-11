@@ -30,28 +30,19 @@ export default async function LeaderboardPage() {
     if (leaderboardError) throw leaderboardError
     rows = (leaderboardData ?? []) as LeaderboardRow[]
 
-    // 2. Partidos recientes: live + últimos 2 finished
-    const { data: liveMatches, error: liveError } = await supabase
+    // 2. Partidos recientes: live + finished + virtualmente en vivo (kicked off pero aún scheduled)
+    const now = new Date().toISOString()
+    const { data: recentMatchesData, error: recentError } = await supabase
       .from('matches')
       .select('*')
-      .eq('status', 'live')
       .not('kickoff_at', 'is', null)
       .gte('kickoff_at', '2000-01-01')
+      .or(`status.eq.live,status.eq.finished,and(status.eq.scheduled,kickoff_at.lte.${now})`)
       .order('kickoff_at', { ascending: false })
+      .limit(10)
 
-    const { data: finishedMatches, error: finishedError } = await supabase
-      .from('matches')
-      .select('*')
-      .eq('status', 'finished')
-      .not('kickoff_at', 'is', null)
-      .gte('kickoff_at', '2000-01-01')
-      .order('kickoff_at', { ascending: false })
-      .limit(2)
-
-    if (liveError) throw liveError
-    if (finishedError) throw finishedError
-
-    recentMatches = [...(liveMatches ?? []), ...(finishedMatches ?? [])] as Match[]
+    if (recentError) throw recentError
+    recentMatches = (recentMatchesData ?? []) as Match[]
     const matchIds = recentMatches.map(m => m?.id).filter(Boolean) as number[]
 
     // 3. Equipos para banderas

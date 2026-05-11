@@ -1,6 +1,6 @@
 import type { Match, Team } from '@/lib/types'
 import Flag from '@/components/Flag'
-import { isMatchLocked, shouldShowLiveIndicator } from '@/lib/utils'
+import { isMatchLocked, getMatchStatus } from '@/lib/utils'
 
 type PredMap = Record<number, { home: number | null; away: number | null; ko: number | null }>
 
@@ -35,8 +35,11 @@ export default function FifaMatchRow({
   const teamsNotDefined = !match.home_team_id || !match.away_team_id
   const matchLocked = isMatchLocked(match, locked)
   const disableInputs = matchLocked || (isKnockout && teamsNotDefined)
-  const showLive = shouldShowLiveIndicator(match)
-  const isLockedByStatus = match.status !== 'scheduled'
+  
+  // Usar función centralizada para determinar estado real
+  const status = getMatchStatus(match)
+  const showLive = status === 'live'
+  const isLockedByStatus = status !== 'scheduled'
 
   const showKoSelect = showKoWinner && p.home !== null && p.away !== null && p.home === p.away
 

@@ -3,6 +3,7 @@
 import Flag from '@/components/Flag'
 import type { LeaderboardRow, Match, Team, Prediction } from '@/lib/types'
 import { AVATAR_PATHS } from '@/lib/avatars'
+import { getMatchStatus, getMatchScores } from '@/lib/utils'
 
 interface Props {
   user: { id: string }
@@ -59,9 +60,14 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                 {recentMatches.map((m) => {
                   const homeTeam = m?.home_team_id ? teamsById[m.home_team_id] : null
                   const awayTeam = m?.away_team_id ? teamsById[m.away_team_id] : null
-                  const isLive = m?.status === 'live'
-                  const isFinished = m?.status === 'finished'
-                  const hasScore = m?.home_score !== null && m?.away_score !== null
+                  
+                  // Usar funciones centralizadas para estado y marcador
+                  const status = getMatchStatus(m)
+                  const [homeScore, awayScore] = getMatchScores(m)
+                  const isLive = status === 'live'
+                  const isFinished = status === 'finished'
+                  const hasScore = homeScore !== null && awayScore !== null
+                  
                   return (
                     <div key={m?.id ?? Math.random()} className="flex flex-col items-center gap-1">
                       <div className="flex items-center gap-0.5">
@@ -77,7 +83,7 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                             ? 'bg-fifaGreen text-navy-deepest'
                             : 'text-white/60'
                         }`}>
-                          {m.home_score}-{m.away_score}
+                          {homeScore}-{awayScore}
                         </div>
                       )}
                       {isLive && (
@@ -143,17 +149,21 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                     {recentMatches.map((m) => {
                       const pred = row?.entry_id && m?.id ? predsByEntry[row.entry_id]?.[m.id] : null
                       const hasPred = pred && pred.home_score !== null && pred.away_score !== null
-                      const isFinished = m?.status === 'finished'
-                      const hasMatchScore = m?.home_score !== null && m?.away_score !== null
+                      
+                      // Usar funciones centralizadas para estado y marcador
+                      const status = getMatchStatus(m)
+                      const [homeScore, awayScore] = getMatchScores(m)
+                      const isFinished = status === 'finished'
+                      const hasMatchScore = homeScore !== null && awayScore !== null
                       
                       // Calcular si el pronóstico acertó
                       let hasPoints = false
                       if (hasPred && isFinished && hasMatchScore) {
                         // Marcador exacto
-                        const isExact = pred.home_score === m.home_score && pred.away_score === m.away_score
+                        const isExact = pred.home_score === homeScore && pred.away_score === awayScore
                         // Ganador correcto (mismo signo)
                         const predSign = Math.sign((pred.home_score ?? 0) - (pred.away_score ?? 0))
-                        const matchSign = Math.sign((m.home_score ?? 0) - (m.away_score ?? 0))
+                        const matchSign = Math.sign((homeScore ?? 0) - (awayScore ?? 0))
                         const isWinnerCorrect = predSign === matchSign
                         hasPoints = isExact || isWinnerCorrect
                       }

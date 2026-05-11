@@ -11,6 +11,7 @@ export interface Profile {
   paid: boolean
   role: Role
   avatar_perm_id: number | null
+  avatar_category: string | null
   country_code: string | null
 }
 
@@ -87,6 +88,12 @@ export interface Settings {
   last_sync_status: string | null
   sync_interval_minutes: number
   api_sync_enabled: boolean
+  req_pts_special: number
+  req_exact_special: number
+  req_pts_premium: number
+  req_exact_premium: number
+  req_pts_legend: number
+  req_exact_legend: number
 }
 
 export interface Invitation {
@@ -105,10 +112,12 @@ export interface LeaderboardRow {
   alias: string
   paid: boolean
   avatar_perm_id: number | null
+  avatar_category: string | null
   country_code: string | null
   match_points: number
   special_points: number
   total_points: number
+  exact_count: number
   rank: number
   display_avatar: string
 }

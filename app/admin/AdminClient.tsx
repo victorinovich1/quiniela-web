@@ -1260,6 +1260,95 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
         </div>
       </div>
 
+      <div className="card p-4 bg-fifaGreen/5 border border-fifaGreen/20">
+        <h3 className="font-extrabold uppercase tracking-tight text-fifaGreen mb-2">Configuración de Niveles (Avatares)</h3>
+        <p className="text-xs text-white/60 mb-4">
+          Un nivel se desbloquea si el usuario cumple el requisito de Puntos <strong>O</strong> el de Marcadores Exactos.
+        </p>
+        <div className="space-y-4">
+          {/* Nivel Especial */}
+          <div className="bg-white/5 rounded-lg p-3">
+            <h4 className="text-sm font-bold text-yellow-400 mb-2">🌟 ESPECIAL</h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-white/60 mb-1">Puntos requeridos</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={s.req_pts_special ?? 30}
+                  onChange={(e) => update('req_pts_special', Number(e.target.value))}
+                  className="input w-full text-center"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-white/60 mb-1">Exactos requeridos</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={s.req_exact_special ?? 3}
+                  onChange={(e) => update('req_exact_special', Number(e.target.value))}
+                  className="input w-full text-center"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Nivel Premium */}
+          <div className="bg-white/5 rounded-lg p-3">
+            <h4 className="text-sm font-bold text-purple-400 mb-2">💎 PREMIUM</h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-white/60 mb-1">Puntos requeridos</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={s.req_pts_premium ?? 70}
+                  onChange={(e) => update('req_pts_premium', Number(e.target.value))}
+                  className="input w-full text-center"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-white/60 mb-1">Exactos requeridos</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={s.req_exact_premium ?? 7}
+                  onChange={(e) => update('req_exact_premium', Number(e.target.value))}
+                  className="input w-full text-center"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Nivel Leyenda */}
+          <div className="bg-white/5 rounded-lg p-3">
+            <h4 className="text-sm font-bold text-orange-400 mb-2">🏆 LEYENDA</h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-white/60 mb-1">Puntos requeridos</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={s.req_pts_legend ?? 120}
+                  onChange={(e) => update('req_pts_legend', Number(e.target.value))}
+                  className="input w-full text-center"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-white/60 mb-1">Exactos requeridos</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={s.req_exact_legend ?? 12}
+                  onChange={(e) => update('req_exact_legend', Number(e.target.value))}
+                  className="input w-full text-center"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <button onClick={save} disabled={saving} className="btn btn-primary w-full md:w-auto">
         {saving ? 'Guardando...' : 'Guardar toda la configuración'}
       </button>

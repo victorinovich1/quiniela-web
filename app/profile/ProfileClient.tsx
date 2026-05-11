@@ -1,27 +1,34 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import PageHeader from '@/components/PageHeader'
 import Flag from '@/components/Flag'
 import type { User } from '@supabase/supabase-js'
-import type { Profile } from '@/lib/types'
+import type { Profile, Settings } from '@/lib/types'
 import { TOTAL_AVATARS, AVATAR_PATHS } from '@/lib/avatars'
 import { COUNTRIES } from '@/lib/countries'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function ProfileClient({
   user,
   profile,
-  lockAt,
+  settings,
+  totalPoints,
+  exactCount,
 }: {
   user: User
   profile: Profile | null
-  lockAt: string | null
+  settings: Settings | null
+  totalPoints: number
+  exactCount: number
 }) {
   const [displayName, setDisplayName] = useState(profile?.display_name || '')
   const [avatarPermId, setAvatarPermId] = useState(profile?.avatar_perm_id || null)
+  const [avatarCategory, setAvatarCategory] = useState(profile?.avatar_category || 'permanentes')
   const [countryCode, setCountryCode] = useState(profile?.country_code || '')
   const [deletingAccount, setDeletingAccount] = useState(false)
+  const lockAt = settings?.lock_at || null
   const podiumLocked = lockAt ? Date.now() > new Date(lockAt).getTime() : false
   
   // Estados de contraseña
@@ -37,27 +44,44 @@ export default function ProfileClient({
   // Modal de avatares
   const [showAvatarModal, setShowAvatarModal] = useState(false)
   
-  // Avatares disponibles
-  const permanentAvatars = Array.from({ length: TOTAL_AVATARS }, (_, i) => i + 1)
-  const [occupiedAvatars, setOccupiedAvatars] = useState<Set<number>>(new Set())
+  // Lógica de desbloqueo de niveles
+  const unlockSpecial = (totalPoints >= (settings?.req_pts_special ?? 30)) || (exactCount >= (settings?.req_exact_special ?? 3))
+  const unlockPremium = (totalPoints >= (settings?.req_pts_premium ?? 70)) || (exactCount >= (settings?.req_exact_premium ?? 7))
+  const unlockLegend = (totalPoints >= (settings?.req_pts_legend ?? 120)) || (exactCount >= (settings?.req_exact_legend ?? 12))
+  
+  // Avatares por categoría
+  const avatarsByCategory = {
+    permanentes: Array.from({ length: 39 }, (_, i) => i + 1),
+    especiales: Array.from({ length: 12 }, (_, i) => i + 1),
+    premium: Array.from({ length: 12 }, (_, i) => i + 1),
+    leyendas: Array.from({ length: 12 }, (_, i) => i + 1),
+  }
+  
+  // Avatares ocupados por categoría
+  const [occupiedAvatars, setOccupiedAvatars] = useState<Map<string, Set<number>>>(new Map())
   const [loadingAvatars, setLoadingAvatars] = useState(true)
   
   // Acordeón de seguridad
   const [securityOpen, setSecurityOpen] = useState(false)
 
-  // Cargar avatares ocupados
+  // Cargar avatares ocupados por categoría
   useEffect(() => {
     async function fetchOccupiedAvatars() {
       const supabase = createClient()
       const { data, error } = await supabase
         .from('profiles')
-        .select('avatar_perm_id')
+        .select('avatar_perm_id, avatar_category')
         .not('avatar_perm_id', 'is', null)
         .neq('id', user.id)
 
       if (!error && data) {
-        const occupied = new Set(data.map(p => p.avatar_perm_id).filter(Boolean) as number[])
-        setOccupiedAvatars(occupied)
+        const occupiedMap = new Map<string, Set<number>>()
+        data.forEach(p => {
+          const cat = p.avatar_category || 'permanentes'
+          if (!occupiedMap.has(cat)) occupiedMap.set(cat, new Set())
+          if (p.avatar_perm_id) occupiedMap.get(cat)!.add(p.avatar_perm_id)
+        })
+        setOccupiedAvatars(occupiedMap)
       }
       setLoadingAvatars(false)
     }
@@ -76,6 +100,7 @@ export default function ProfileClient({
       .update({ 
         display_name: displayName.trim() || null,
         avatar_perm_id: avatarPermId,
+        avatar_category: avatarCategory,
         country_code: countryCode || null
       })
       .eq('id', user.id)
@@ -122,8 +147,9 @@ export default function ProfileClient({
     }
   }
 
-  function handleSelectAvatar(id: number) {
+  function handleSelectAvatar(id: number, category: string) {
     setAvatarPermId(id)
+    setAvatarCategory(category)
     setShowAvatarModal(false)
   }
 
@@ -154,7 +180,11 @@ export default function ProfileClient({
                 } bg-white/10 mb-3 cursor-pointer transition-all hover:scale-105`}
               >
                 <img
-                  src={avatarPermId ? AVATAR_PATHS.permanent(avatarPermId) : AVATAR_PATHS.default}
+                  src={
+                    avatarPermId && avatarCategory
+                      ? `/images/avatars/${avatarCategory}/${avatarPermId}.webp`
+                      : AVATAR_PATHS.default
+                  }
                   alt="Avatar"
                   className="w-full h-full object-cover"
                   onError={(e) => {
@@ -384,20 +414,25 @@ export default function ProfileClient({
         </div>
       </div>
 
-      {/* Modal de selección de avatar */}
+      {/* Modal de selección de avatar por niveles */}
       {showAvatarModal && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
           onClick={() => setShowAvatarModal(false)}
         >
           <div
-            className="card max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6"
+            className="card max-w-5xl w-full max-h-[90vh] overflow-y-auto p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="font-extrabold uppercase tracking-tight text-white text-xl">
-                Selecciona tu avatar
-              </h2>
+              <div>
+                <h2 className="font-extrabold uppercase tracking-tight text-white text-xl mb-1">
+                  Selecciona tu avatar
+                </h2>
+                <p className="text-xs text-white/60">
+                  Tus stats: {totalPoints} pts · {exactCount} exactos
+                </p>
+              </div>
               <button
                 onClick={() => setShowAvatarModal(false)}
                 className="text-white/70 hover:text-white text-2xl leading-none"
@@ -410,6 +445,7 @@ export default function ProfileClient({
             <button
               onClick={() => {
                 setAvatarPermId(null)
+                setAvatarCategory('permanentes')
                 setShowAvatarModal(false)
               }}
               className="w-full mb-6 p-4 bg-white/5 hover:bg-white/10 border-2 border-dashed border-white/20 hover:border-white/40 rounded-lg transition-all flex items-center justify-center gap-3 text-white/70 hover:text-white"
@@ -423,55 +459,231 @@ export default function ProfileClient({
             {loadingAvatars ? (
               <div className="text-center py-8 text-white/50">Cargando avatares...</div>
             ) : (
-              <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-10 gap-3">
-                {permanentAvatars.map((id) => {
-                  const isOccupied = occupiedAvatars.has(id)
-                  const isSelected = avatarPermId === id
-                  const canSelect = !isOccupied || isSelected
+              <div className="space-y-6">
+                {/* Básicos - Siempre desbloqueados */}
+                <AvatarTierSection
+                  title="⚪ BÁSICOS"
+                  subtitle="Siempre disponibles"
+                  category="permanentes"
+                  avatarIds={avatarsByCategory.permanentes}
+                  isUnlocked={true}
+                  currentId={avatarPermId}
+                  currentCategory={avatarCategory}
+                  occupiedSet={occupiedAvatars.get('permanentes') || new Set()}
+                  onSelect={(id) => handleSelectAvatar(id, 'permanentes')}
+                  userId={user.id}
+                  reqText=""
+                />
 
-                  return (
-                    <button
-                      key={id}
-                      onClick={() => canSelect && handleSelectAvatar(id)}
-                      disabled={isOccupied && !isSelected}
-                      className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                        isSelected
-                          ? 'border-fifaGreen scale-105'
-                          : isOccupied
-                          ? 'border-white/10 opacity-40 cursor-not-allowed'
-                          : 'border-white/20 hover:border-white/40 hover:scale-105'
-                      }`}
-                    >
-                      <img
-                        src={AVATAR_PATHS.permanent(id)}
-                        alt={`Avatar ${id}`}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = AVATAR_PATHS.default
-                        }}
-                      />
-                      {isSelected && (
-                        <div className="absolute inset-0 bg-fifaGreen/20 flex items-center justify-center">
-                          <div className="text-fifaGreen text-2xl font-black">✓</div>
-                        </div>
-                      )}
-                      {isOccupied && !isSelected && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                          <div className="text-white/70 text-xl">🔒</div>
-                        </div>
-                      )}
-                    </button>
-                  )
-                })}
+                {/* Especiales */}
+                <AvatarTierSection
+                  title="🌟 ESPECIALES"
+                  subtitle={unlockSpecial ? 'Desbloqueados' : 'Bloqueados'}
+                  category="especiales"
+                  avatarIds={avatarsByCategory.especiales}
+                  isUnlocked={unlockSpecial}
+                  currentId={avatarPermId}
+                  currentCategory={avatarCategory}
+                  occupiedSet={occupiedAvatars.get('especiales') || new Set()}
+                  onSelect={(id) => handleSelectAvatar(id, 'especiales')}
+                  userId={user.id}
+                  reqText={unlockSpecial ? '' : `Requiere de ${settings?.req_pts_special ?? 30} ptos o acertar ${settings?.req_exact_special ?? 3} marcadores exactos`}
+                />
+
+                {/* Premium */}
+                <AvatarTierSection
+                  title="💎 PREMIUM"
+                  subtitle={unlockPremium ? 'Desbloqueados' : 'Bloqueados'}
+                  category="premium"
+                  avatarIds={avatarsByCategory.premium}
+                  isUnlocked={unlockPremium}
+                  currentId={avatarPermId}
+                  currentCategory={avatarCategory}
+                  occupiedSet={occupiedAvatars.get('premium') || new Set()}
+                  onSelect={(id) => handleSelectAvatar(id, 'premium')}
+                  userId={user.id}
+                  reqText={unlockPremium ? '' : `Requiere de ${settings?.req_pts_premium ?? 70} ptos o acertar ${settings?.req_exact_premium ?? 7} marcadores exactos`}
+                />
+
+                {/* Leyendas */}
+                <AvatarTierSection
+                  title="🏆 LEYENDAS"
+                  subtitle={unlockLegend ? 'Desbloqueados' : 'Bloqueados'}
+                  category="leyendas"
+                  avatarIds={avatarsByCategory.leyendas}
+                  isUnlocked={unlockLegend}
+                  currentId={avatarPermId}
+                  currentCategory={avatarCategory}
+                  occupiedSet={occupiedAvatars.get('leyendas') || new Set()}
+                  onSelect={(id) => handleSelectAvatar(id, 'leyendas')}
+                  userId={user.id}
+                  reqText={unlockLegend ? '' : `Requiere de ${settings?.req_pts_legend ?? 120} ptos o acertar ${settings?.req_exact_legend ?? 12} marcadores exactos`}
+                />
               </div>
             )}
 
-            <p className="text-xs text-white/50 mt-4 text-center">
-              Los avatares son únicos. No podrás elegir uno que ya esté en uso.
+            <p className="text-xs text-white/50 mt-6 text-center">
+              Los avatares son únicos por categoría. No podrás elegir uno que ya esté en uso.
             </p>
           </div>
         </div>
       )}
     </>
+  )
+}
+
+// Componente auxiliar para cada sección de avatares
+function AvatarTierSection({
+  title,
+  subtitle,
+  category,
+  avatarIds,
+  isUnlocked,
+  currentId,
+  currentCategory,
+  occupiedSet,
+  onSelect,
+  userId,
+  reqText,
+}: {
+  title: string
+  subtitle: string
+  category: string
+  avatarIds: number[]
+  isUnlocked: boolean
+  currentId: number | null
+  currentCategory: string
+  occupiedSet: Set<number>
+  onSelect: (id: number) => void
+  userId: string
+  reqText: string
+}) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+
+  const updateScrollButtons = () => {
+    if (containerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = containerRef.current
+      setCanScrollLeft(scrollLeft > 0)
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10)
+    }
+  }
+
+  useEffect(() => {
+    updateScrollButtons()
+    const container = containerRef.current
+    if (container) {
+      container.addEventListener('scroll', updateScrollButtons)
+      return () => container.removeEventListener('scroll', updateScrollButtons)
+    }
+  }, [avatarIds])
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (containerRef.current) {
+      const scrollAmount = 300
+      containerRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      })
+    }
+  }
+
+  const getAvatarPath = (id: number) => `/images/avatars/${category}/${id}.webp`
+
+  return (
+    <div className={`border rounded-lg p-4 ${isUnlocked ? 'border-white/20 bg-white/5' : 'border-white/10 bg-white/[0.02]'}`}>
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <h3 className="font-bold text-sm uppercase tracking-wider">{title}</h3>
+          <p className={`text-xs ${isUnlocked ? 'text-fifaGreen' : 'text-white/50'}`}>{subtitle}</p>
+        </div>
+        {!isUnlocked && (
+          <div className="text-2xl opacity-50">🔒</div>
+        )}
+      </div>
+
+      {reqText && (
+        <p className="text-xs text-yellow-400/70 mb-3 text-center">{reqText}</p>
+      )}
+
+      <div className="relative group">
+        {/* Flecha izquierda */}
+        <button
+          onClick={() => scroll('left')}
+          disabled={!canScrollLeft}
+          className={`hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 items-center justify-center rounded-full bg-navy-dark/80 border border-white/10 text-fifaGreen hover:bg-navy-dark hover:border-fifaGreen/50 transition-all disabled:opacity-0 disabled:pointer-events-none opacity-0 group-hover:opacity-100`}
+        >
+          <ChevronLeft size={20} />
+        </button>
+
+        {/* Flecha derecha */}
+        <button
+          onClick={() => scroll('right')}
+          disabled={!canScrollRight}
+          className={`hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 items-center justify-center rounded-full bg-navy-dark/80 border border-white/10 text-fifaGreen hover:bg-navy-dark hover:border-fifaGreen/50 transition-all disabled:opacity-0 disabled:pointer-events-none opacity-0 group-hover:opacity-100`}
+        >
+          <ChevronRight size={20} />
+        </button>
+
+        <div
+          ref={containerRef} 
+          className="flex flex-nowrap overflow-x-auto snap-x snap-mandatory gap-3 pb-4 px-10 md:px-12 -mx-1 cursor-grab active:cursor-grabbing scrollbar-hide md:scrollbar-styled"
+        onWheel={(e) => {
+          if (e.deltaY !== 0) {
+            e.preventDefault()
+            e.currentTarget.scrollLeft += e.deltaY
+          }
+        }}
+      >
+        {avatarIds.map((id) => {
+          const isOccupied = occupiedSet.has(id)
+          const isSelected = currentId === id && currentCategory === category
+          const canSelect = isUnlocked && (!isOccupied || isSelected)
+
+          return (
+            <button
+              key={id}
+              onClick={() => canSelect && onSelect(id)}
+              disabled={!canSelect}
+              className={`relative w-20 h-20 flex-shrink-0 snap-start rounded-lg overflow-hidden border-2 transition-all ${
+                isSelected
+                  ? 'border-fifaGreen scale-105'
+                  : !isUnlocked
+                  ? 'border-white/5 opacity-30 cursor-not-allowed'
+                  : isOccupied
+                  ? 'border-white/10 opacity-40 cursor-not-allowed'
+                  : 'border-white/20 hover:border-white/40 hover:scale-105'
+              }`}
+            >
+              <img
+                src={getAvatarPath(id)}
+                alt={`${category} ${id}`}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/images/avatars/default.webp'
+                }}
+              />
+              {isSelected && (
+                <div className="absolute inset-0 bg-fifaGreen/20 flex items-center justify-center">
+                  <div className="text-fifaGreen text-2xl font-black">✓</div>
+                </div>
+              )}
+              {!isUnlocked && (
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                  <div className="text-white/50 text-lg">🔒</div>
+                </div>
+              )}
+              {isUnlocked && isOccupied && !isSelected && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <div className="text-white/70 text-xl">🔒</div>
+                </div>
+              )}
+            </button>
+          )
+        })}
+        </div>
+      </div>
+    </div>
   )
 }

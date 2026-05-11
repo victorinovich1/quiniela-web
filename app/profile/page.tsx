@@ -20,9 +20,24 @@ export default async function ProfilePage() {
 
   const { data: settings } = await supabase
     .from('settings')
-    .select('lock_at')
+    .select('*')
     .eq('id', 1)
     .single()
 
-  return <ProfileClient user={user} profile={profile} lockAt={settings?.lock_at || null} />
+  // Obtener stats del usuario desde leaderboard
+  const { data: userStats } = await supabase
+    .from('leaderboard')
+    .select('total_points, exact_count')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  return (
+    <ProfileClient 
+      user={user} 
+      profile={profile} 
+      settings={settings}
+      totalPoints={userStats?.total_points ?? 0}
+      exactCount={userStats?.exact_count ?? 0}
+    />
+  )
 }

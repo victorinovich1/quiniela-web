@@ -202,6 +202,522 @@ Afecta solo a:
 | Borrado de jugadas (entries) | `lock_at` global | Al iniciar el primer partido |
 | Marcadores de partidos individuales | `kickoff_at - 15 min` | Por partido, 15 min antes |
 
+## Estado Virtual de Partidos
+
+El sistema implementa **estado virtual** para mejorar la UX sin depender de la API externa:
+
+### Lógica de Estado Virtual
+
+**Función centralizada:** `getMatchStatus(match)` en `lib/utils.ts`
+
+```typescript
+function getMatchStatus(match: Match): 'finished' | 'live' | 'scheduled' {
+  if (match.status === 'finished') return 'finished'
+  if (match.status === 'live') return 'live'
+  
+  // Estado virtual: si llegó kickoff_at pero status='scheduled'
+  if (match.kickoff_at && Date.now() >= new Date(match.kickoff_at).getTime()) {
+    return 'live'  // Virtualmente en vivo
+  }
+  
+  return 'scheduled'
+}
+```
+
+**Función de marcadores:** `getMatchScores(match)` en `lib/utils.ts`
+
+```typescript
+function getMatchScores(match: Match): [number | null, number | null] {
+  // Si tiene marcador oficial, usar ese
+  if (match.home_score !== null && match.away_score !== null) {
+    return [match.home_score, match.away_score]
+  }
+  
+  // Si es virtualmente en vivo, mostrar 0-0
+  if (getMatchStatus(match) === 'live') {
+    return [0, 0]
+  }
+  
+  // Aún no comienza
+  return [null, null]
+}
+```
+
+### Componentes que usan estado virtual
+
+Todos los componentes que muestran partidos usan las funciones centralizadas:
+
+- **`app/leaderboard/LeaderboardClient.tsx`**: Muestra badge "EN VIVO" cuando `getMatchStatus() === 'live'`
+- **`app/admin/AdminClient.tsx`**: Muestra badge "VIVO (Virtual)" cuando kickoff pasó pero status='scheduled'
+- **`app/predictions/components/FifaMatchRow.tsx`**: Badge rojo "EN VIVO" parpadeante
+- **`app/predictions/components/CompactMatchRow.tsx`**: Badge "VIVO" compacto
+
+### Beneficios
+
+1. **UX inmediata**: Partidos se marcan como "en vivo" exactamente a su hora programada
+2. **Marcador 0-0 placeholder**: Los usuarios ven que el partido ya comenzó aunque la API no haya sincronizado
+3. **Sin dependencia crítica de API**: El sistema funciona incluso si la API falla o tiene latencia
+4. **Sincronización eventual**: Cuando la API retorne datos reales, el marcador se actualiza
+
+## Página de Resumen de Resultados
+
+**Ruta:** `/predictions/summary`
+
+Vista de solo lectura que muestra el estado actual de todos los partidos del torneo con:
+
+- **Partidos finalizados**: Marcador oficial
+- **Partidos en vivo**: Estado virtual (EN VIVO) con marcador real o 0-0
+- **Partidos programados**: Fecha y hora
+
+**Características:**
+- Organizada por fase (Grupos, Dieciseisavos, Octavos, etc.)
+- Diseño compacto optimizado para consulta rápida
+- No hay inputs ni edición (solo vista)
+- Accesible desde el menú principal
+
+**Uso:** Útil para que usuarios consulten resultados sin navegar a sus pronósticos.
+
+## Sincronización Híbrida de Resultados
+
+El sistema sincroniza resultados de partidos desde la API externa (football-data.org) usando un enfoque híbrido de 3 capas:
+
+### 1. Cron Job Diario (Vercel)
+
+**Archivo:** `vercel.json`
+
+```json
+{
+  "crons": [{
+    "path": "/api/cron/sync-results",
+    "schedule": "0 3 * * *"
+  }]
+}
+```
+
+- **Frecuencia**: Diariamente a las 3:00 AM UTC
+- **Propósito**: Sincronización de mantenimiento (resultados finales confirmados)
+- **Limitación**: Máximo 2 cron jobs en plan Hobby de Vercel
+
+### 2. Cron Job Frecuente (Cron-job.org)
+
+**Servicio externo:** [cron-job.org](https://cron-job.org)
+
+- **Frecuencia**: Cada 10 minutos durante días de partidos
+- **URL objetivo**: `https://tu-dominio.vercel.app/api/cron/sync-results`
+- **Header requerido**: `Authorization: Bearer CRON_SECRET`
+- **Propósito**: Sincronización en tiempo casi real durante el torneo
+- **Configuración**: Admin debe crear la tarea en cron-job.org apuntando a la API
+
+### 3. Sincronización Manual (Admin)
+
+**Panel Admin → Resultados → Botón "Sincronizar ahora"**
+
+- **Uso**: Sincronización inmediata bajo demanda
+- **Endpoint**: `POST /api/admin/sync-results`
+- **Validación**: Requiere `is_admin()` y sesión activa
+- **UI Feedback**: 
+  - Indicador de carga mientras procesa
+  - Mensajes de éxito/error
+  - Timestamp de última sincronización (`settings.last_sync_at`)
+  - Lista de partidos recién actualizados
+
+### Endpoint de Sincronización
+
+**`GET|POST /api/cron/sync-results`**
+
+**Autenticación:** 
+- Header `Authorization: Bearer CRON_SECRET` (para crons externos)
+- O sesión admin válida (para botón manual)
+
+**Proceso:**
+1. Valida autenticación (cron secret o admin session)
+2. Consulta API de football-data.org con `FOOTBALL_DATA_API_KEY`
+3. Itera partidos `status='live'` o `finished` recientes
+4. Para cada partido:
+   - Extrae `home_score`, `away_score`, `status`
+   - Si hay penales: extrae `shootout_winner`
+5. Hace `UPDATE` en `matches` usando `SUPABASE_SERVICE_ROLE_KEY`
+6. Actualiza `settings.last_sync_at = now()`
+7. Retorna JSON con partidos actualizados
+
+**Variables de entorno requeridas:**
+```env
+FOOTBALL_DATA_API_KEY=tu_api_key_de_football_data
+SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key
+CRON_SECRET=un_secreto_aleatorio_largo
+```
+
+### Configuración en Admin
+
+El panel de administración muestra:
+
+- **Última sincronización**: Timestamp de `settings.last_sync_at`
+- **API Key**: Estado configurada/no configurada (sin mostrar valor)
+- **Interval de sync**: Editable en minutos (`settings.sync_interval_minutes`)
+- **Últimos partidos sincronizados**: Lista de matches con `last_synced_at` reciente
+
+**Sección de configuración permite:**
+- Ver el intervalo actual de sincronización automática
+- Modificar el intervalo (ej. de 10 a 15 minutos)
+- Ver timestamp de última sync exitosa
+- Ejecutar sincronización manual inmediata
+
+### Flujo Completo
+
+```mermaid
+graph TD
+    A[Cron-job.org cada 10 min] -->|GET /api/cron/sync-results| B[API Route]
+    C[Vercel Cron 3 AM diario] -->|GET /api/cron/sync-results| B
+    D[Admin → Botón Manual] -->|POST /api/admin/sync-results| B
+    B -->|Valida auth| E{¿Autorizado?}
+    E -->|No| F[401 Unauthorized]
+    E -->|Sí| G[Consulta football-data.org]
+    G --> H[Actualiza matches en Supabase]
+    H --> I[Actualiza settings.last_sync_at]
+    I --> J[Retorna partidos actualizados]
+```
+
+### Manejo de Errores
+
+- **API key faltante**: Retorna error 500, no sincroniza
+- **API externa caída**: Retorna error 502, logs el problema
+- **Cron secret inválido**: Retorna 401, no ejecuta
+- **Timeout de API**: Límite de 10 segundos, retorna error parcial
+
+## Sistema de Avatares por Niveles
+
+El sistema incluye un **sistema de gamificación** donde los usuarios desbloquean avatares premium según su desempeño en el torneo:
+
+### 4 Categorías de Avatares
+
+| Categoría | Cantidad | Requisitos | Disponibilidad |
+|-----------|----------|------------|----------------|
+| **Básicos** | 39 | Ninguno | Siempre desbloqueados |
+| **Especiales** | 12 | Puntos >= X **O** Exactos >= Y | Desbloqueables |
+| **Premium** | 12 | Puntos >= X **O** Exactos >= Y | Desbloqueables |
+| **Leyendas** | 12 | Puntos >= X **O** Exactos >= Y | Desbloqueables |
+
+**Total:** 75 avatares disponibles
+
+### Configuración de Requisitos
+
+Los umbrales son configurables desde el Panel Admin:
+
+**Tabla `settings`:**
+- `req_pts_special` (default: 30 puntos)
+- `req_exact_special` (default: 3 marcadores exactos)
+- `req_pts_premium` (default: 70 puntos)
+- `req_exact_premium` (default: 7 marcadores exactos)
+- `req_pts_legend` (default: 120 puntos)
+- `req_exact_legend` (default: 12 marcadores exactos)
+
+### Lógica de Desbloqueo
+
+**Condición OR:** Se desbloquea si cumple **CUALQUIERA** de los dos requisitos:
+
+```typescript
+const unlockSpecial = (totalPoints >= req_pts_special) || (exactCount >= req_exact_special)
+const unlockPremium = (totalPoints >= req_pts_premium) || (exactCount >= req_exact_premium)
+const unlockLegend = (totalPoints >= req_pts_legend) || (exactCount >= req_exact_legend)
+```
+
+**Ejemplo:** Si un usuario tiene:
+- 25 puntos totales
+- 4 marcadores exactos
+
+Con configuración default (30 pts O 3 exactos):
+- ✅ Desbloquea **Especiales** (4 >= 3)
+- ❌ No desbloquea **Premium** (25 < 70 y 4 < 7)
+
+### Almacenamiento en Base de Datos
+
+**Tabla `profiles`:**
+- `avatar_perm_id` (int): ID del avatar seleccionado (1-75)
+- `avatar_category` (text): Categoría del avatar ('permanentes', 'especiales', 'premium', 'leyendas')
+- `country_code` (text): Código ISO del país del usuario (para bandera en ranking)
+
+**View `leaderboard`:**
+- Incluye `exact_count`: Conteo de marcadores exactos para validar desbloqueos
+- Construcción dinámica de `display_avatar`: `/images/avatars/{category}/{id}.webp`
+
+### Restricción de Unicidad
+
+**Constraint:** `profiles_avatar_category_id_unique`
+
+Permite que el **mismo ID** exista en **diferentes categorías**:
+- ID 1 de "Básicos" ≠ ID 1 de "Especiales"
+- Construcción del path: `/{category}/{id}.webp`
+
+### Formato de Imágenes
+
+**Todas las imágenes en formato WebP:**
+- Ruta: `/public/images/avatars/{category}/{id}.webp`
+- Reducción de tamaño: ~30-50% vs PNG/JPG
+- Fallback: `default.webp` si falla la carga
+
+**Componente:** `lib/avatars.ts`
+```typescript
+export const AVATAR_PATHS = {
+  permanent: (id: number) => `/images/avatars/permanentes/${id}.webp`,
+  default: '/images/avatars/default.webp',
+}
+```
+
+### UI del Selector de Avatares
+
+**Componente:** `app/profile/ProfileClient.tsx`
+
+**Características:**
+- **Carrusel horizontal** con scroll snap
+- **Navegación con flechas** (ChevronLeft/ChevronRight) solo en desktop
+- **Scroll con rueda del mouse** (onWheel handler convierte vertical a horizontal)
+- **Scrollbar estilizado** en desktop (oculto en mobile)
+- **Indicadores visuales:**
+  - Borde verde `border-fifaGreen` para avatar seleccionado
+  - Candado 🔒 para avatares bloqueados
+  - Opacidad reducida para avatares no disponibles
+  - Checkmark ✓ sobre avatar activo
+
+**Texto de requisitos:**
+```
+Requiere de X ptos o acertar Y marcadores exactos
+```
+
+**Padding ajustado:** `px-10 md:px-12` para que las flechas no tapen avatares
+
+### Configuración desde Admin
+
+**Panel Admin → Configuración → Avatares por Niveles**
+
+3 secciones:
+1. **Especiales** — Inputs para pts y exactos
+2. **Premium** — Inputs para pts y exactos
+3. **Leyendas** — Inputs para pts y exactos
+
+Guardado instantáneo al hacer clic en "Guardar".
+
+### Migración de Datos
+
+**Migración 046:** `configurable_avatar_tiers.sql`
+- Añade 6 columnas a `settings` (requisitos)
+- Añade `avatar_category` a `profiles`
+- Recrea view `leaderboard` con `exact_count`
+
+**Migración 047:** `fix_avatar_uniqueness_by_category.sql`
+- Elimina constraint `profiles_avatar_perm_id_unique`
+- Crea constraint `profiles_avatar_category_id_unique` sobre `(avatar_category, avatar_perm_id)`
+
+## Sistema de Banderas de País
+
+Los usuarios pueden seleccionar su país de origen desde su perfil (`/profile`):
+
+### Implementación
+
+**Tabla `profiles`:**
+- `country_code` (text): Código ISO alpha-2 del país (ej. 'mx', 'ar', 'us')
+
+**Componente:** `lib/countries.ts`
+```typescript
+export const COUNTRIES = [
+  { code: 'mx', name: 'México' },
+  { code: 'ar', name: 'Argentina' },
+  // ... 200+ países
+]
+```
+
+### Visualización
+
+- **En Perfil**: Dropdown con todos los países, preview de bandera al seleccionar
+- **En Ranking**: Bandera pequeña junto al avatar del usuario (usando `<Flag />` con `iso_code=country_code`)
+- **Formato:** Banderas de `flagcdn.com` con código ISO
+
+### Funcionalidad
+
+**Opcional:** El usuario puede dejar el campo vacío (sin país seleccionado)
+
+**Guardado:** Junto con `display_name` y `avatar_perm_id` al hacer clic en "Guardar cambios"
+
+**RLS:** Solo el propio usuario puede editar su `country_code`
+
+## Timestamp en Vivo
+
+**Componente:** `components/LiveTimestamp.tsx`
+
+Muestra la hora actual del dispositivo del usuario en formato `HH:mm`, actualizada cada minuto.
+
+**Uso:** Aparece en `/leaderboard` con el texto:
+```
+Actualizado: 14:32
+```
+
+**Implementación:**
+```typescript
+const [time, setTime] = useState('')
+
+useEffect(() => {
+  const updateTime = () => {
+    const now = new Date()
+    setTime(now.toLocaleTimeString('es-ES', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    }))
+  }
+  
+  updateTime()
+  const interval = setInterval(updateTime, 60000)
+  
+  return () => clearInterval(interval)
+}, [])
+```
+
+**Beneficio:** Los usuarios ven que el ranking está "vivo" y actualizado, sin necesidad de recargar manualmente.
+
+## Estadios Oficiales
+
+Los 104 partidos del Mundial 2026 tienen asignados sus estadios y ciudades oficiales según el calendario FIFA:
+
+### Implementación
+
+**Migración 048:** `populate_stadium_names.sql`
+- 104 sentencias `UPDATE matches SET stadium = '...' WHERE match_number = N`
+- Datos oficiales de: [FIFA.com](https://www.fifa.com/es/tournaments/mens/worldcup/canadamexicousa2026)
+
+**Formato del campo `stadium`:**
+```
+Estadio Nombre, Ciudad
+```
+
+**Ejemplos:**
+- `Estadio Ciudad de México, Ciudad de México`
+- `Estadio BC Place Vancouver, Vancouver`
+- `Estadio Nueva York Nueva Jersey, Nueva York/Nueva Jersey`
+
+### 16 Estadios en 3 Países
+
+**México (3):**
+- Ciudad de México (Estadio Azteca)
+- Guadalajara (Estadio Akron)
+- Monterrey (Estadio BBVA)
+
+**Canadá (2):**
+- Toronto (BMO Field)
+- Vancouver (BC Place)
+
+**USA (11):**
+- Los Ángeles (SoFi Stadium)
+- San Francisco Bay (Levi's Stadium)
+- Nueva York/Nueva Jersey (MetLife Stadium)
+- Boston (Gillette Stadium)
+- Houston (NRG Stadium)
+- Dallas (AT&T Stadium)
+- Filadelfia (Lincoln Financial Field)
+- Atlanta (Mercedes-Benz Stadium)
+- Seattle (Lumen Field)
+- Miami (Hard Rock Stadium)
+- Kansas City (Arrowhead Stadium)
+
+### Visualización
+
+**Componentes:**
+- **`FifaMatchRow`**: Muestra ciudad + estadio en columna derecha (desktop only)
+- **`CompactMatchRow`**: Muestra ciudad abreviada (desktop only)
+
+**Procesamiento:**
+```typescript
+const stadium = match.stadium || ''
+const stadiumParts = stadium.split(',').map(s => s.trim())
+const cityShort = stadiumParts[1] || stadiumParts[0] || ''
+const venueShort = stadiumParts[0] || ''
+```
+
+**Regla de visibilidad:** `hidden md:block` — Los estadios solo aparecen en pantallas medianas o mayores para no saturar la UI móvil.
+
+## Optimizaciones Técnicas
+
+### Eliminación de Errores de Hidratación
+
+**Problema:** Fechas y timestamps generados en servidor (`Date.now()`) no coinciden con cliente al milisegundo, causando warning #423.
+
+**Solución aplicada:**
+
+1. **AdminClient.tsx:**
+```typescript
+// ❌ ANTES
+const [currentTime, setCurrentTime] = useState(Date.now())
+
+// ✅ AHORA
+const [currentTime, setCurrentTime] = useState(0)
+
+useEffect(() => {
+  setCurrentTime(Date.now())  // Inicializa en cliente
+  const interval = setInterval(() => {
+    setCurrentTime(Date.now())
+  }, 1000)
+  return () => clearInterval(interval)
+}, [])
+```
+
+2. **ProfileClient.tsx:**
+```typescript
+// ❌ ANTES
+const podiumLocked = lockAt ? Date.now() > new Date(lockAt).getTime() : false
+
+// ✅ AHORA
+const [podiumLocked, setPodiumLocked] = useState(false)
+
+useEffect(() => {
+  if (lockAt) {
+    setPodiumLocked(Date.now() > new Date(lockAt).getTime())
+  }
+}, [lockAt])
+```
+
+**Resultado:** Consola del navegador sin errores de hidratación.
+
+### Fix de Passive Event Listeners
+
+**Problema:** Advertencia "Unable to preventDefault inside passive event listener" en carrusel de avatares.
+
+**Solución:**
+
+```typescript
+// ❌ ANTES
+onWheel={(e) => {
+  if (e.deltaY !== 0) {
+    e.preventDefault()  // ← Causa warning
+    e.currentTarget.scrollLeft += e.deltaY
+  }
+}}
+
+// ✅ AHORA
+className="... touch-pan-y"  // ← CSS para evitar preventDefault
+onWheel={(e) => {
+  if (e.deltaY !== 0) {
+    e.currentTarget.scrollLeft += e.deltaY  // Sin preventDefault
+  }
+}}
+```
+
+**Resultado:** No hay warnings de passive listeners.
+
+### Limpieza de Console.log
+
+**Eliminados:**
+- `console.log('[AdminClient] Settings actualizados vía Realtime:', payload.new)`
+
+**Verificado:** Ningún `console.log` residual en todo el código de producción.
+
+### Favicon SVG
+
+**Problema:** Error 404 de `favicon.ico` en consola.
+
+**Solución:** Añadido en `layout.tsx`:
+```tsx
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>" />
+```
+
+**Resultado:** Emoji de balón ⚽ como favicon, sin error 404.
+
 ## Modelo de datos clave
 
 ```

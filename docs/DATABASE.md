@@ -35,7 +35,12 @@ Extiende `auth.users`. Una fila por usuario, creada automáticamente por trigger
 | `favorite_team_id` | int | Opcional |
 | `paid` | bool | Legacy — ahora `paid` vive en `entries` |
 | `role` | text | `'participant'`, `'manager'` o `'admin'`. Hardcoded admin: email = `victorinovich@gmail.com` |
+| `avatar_perm_id` | int | ID del avatar seleccionado (1-75). NULL = avatar default |
+| `avatar_category` | text | Categoría del avatar: 'permanentes', 'especiales', 'premium', 'leyendas' |
+| `country_code` | text | Código ISO alpha-2 del país (ej. 'mx', 'ar'). Opcional. |
 | `created_at` | timestamptz | |
+
+**Constraint:** `profiles_avatar_category_id_unique` sobre `(avatar_category, avatar_perm_id)` — permite el mismo ID en diferentes categorías.
 
 ### `entries` (jugadas)
 Una jugada = una participación independiente en el ranking. Un usuario puede tener N entries.
@@ -75,7 +80,7 @@ Una jugada = una participación independiente en el ranking. Un usuario puede te
 | `phase` | text | `group`, `r32`, `r16`, `qf`, `sf`, `third`, `final` |
 | `group_code` | text | Solo para `group` (`A`–`L`) |
 | `match_number` | int | Único por phase. Numeración global 1–104. |
-| `kickoff_at` | timestamptz | UTC |
+| `kickoff_at` | timestamptz | UTC. Se usa para estado virtual (si `kickoff_at < now()` → `'live'`) |
 | `home_team_id` | int → teams | NULL en KO antes de saber el rival |
 | `away_team_id` | int → teams | NULL en KO antes de saber el rival |
 | `home_team_label` | text | Texto descriptivo p.ej. "Ganador M73" para KO |
@@ -83,9 +88,12 @@ Una jugada = una participación independiente en el ranking. Un usuario puede te
 | `home_score` | int | Resultado real (NULL si no jugado) |
 | `away_score` | int | |
 | `shootout_winner_team_id` | int | Si KO se define en penales |
-| `status` | text | `scheduled`, `live`, `finished` |
-| `stadium` | text | "Estadio Azteca, Ciudad de México" |
+| `status` | text | `scheduled`, `live`, `finished`. Sincronizado desde API. |
+| `stadium` | text | "Estadio Azteca, Ciudad de México" — Poblado desde migración 048 con datos oficiales FIFA |
+| `last_synced_at` | timestamptz | Timestamp de última actualización desde API |
 | `updated_at` | timestamptz | |
+
+**Estado Virtual:** Si `status='scheduled'` pero `kickoff_at <= now()`, la UI muestra el partido como "EN VIVO" con marcador 0-0.
 
 ### `predictions`
 Pronósticos de un usuario para un partido específico. PK compuesta `(entry_id, match_id)`.
@@ -112,12 +120,12 @@ Una fila por entry con todas sus predicciones especiales. PK = `entry_id`.
 | `updated_at` | timestamptz | |
 
 ### `settings`
-Single-row table (id=1). Configuración global + sistema de puntos + resultados oficiales especiales.
+Single-row table (id=1). Configuración global + sistema de puntos + resultados oficiales especiales + umbrales de avatares.
 
 | Columna | Tipo | Notas |
 |---------|------|-------|
 | `id` | smallint PK = 1 | Constraint `id = 1` |
-| `lock_at` | timestamptz | Cuándo se cierran pronósticos |
+| `lock_at` | timestamptz | Cuándo se cierran pronósticos (solo afecta podio) |
 | `pt_exact_group` | int | Default 5 |
 | `pt_winner_group` | int | Default 2 |
 | `pt_exact_ko` | int | Default 8 |
@@ -143,6 +151,16 @@ Single-row table (id=1). Configuración global + sistema de puntos + resultados 
 | `best_goalkeeper` | text | |
 | `revelation_team_id` | int | |
 | `disappointment_team_id` | int | |
+| `req_pts_special` | int | Pts requeridos para avatares Especiales (default 30) |
+| `req_exact_special` | int | Exactos requeridos para avatares Especiales (default 3) |
+| `req_pts_premium` | int | Pts requeridos para avatares Premium (default 70) |
+| `req_exact_premium` | int | Exactos requeridos para avatares Premium (default 7) |
+| `req_pts_legend` | int | Pts requeridos para avatares Leyendas (default 120) |
+| `req_exact_legend` | int | Exactos requeridos para avatares Leyendas (default 12) |
+| `sync_interval_minutes` | int | Intervalo de sincronización automática (default 10) |
+| `last_sync_at` | timestamptz | Timestamp de última sincronización exitosa |
+
+**Lógica de desbloqueo:** Se desbloquea si cumple **CUALQUIERA** de los dos requisitos (pts OR exactos).
 
 ### `invitations`
 
@@ -159,7 +177,23 @@ Single-row table (id=1). Configuración global + sistema de puntos + resultados 
 ## Views (security_invoker = true)
 
 ### `match_scores`
-Por `(entry_id, match_id, phase)` da los `points` del pronóstico contra el resultado real. Lógica:
+Por `(entry_id, match_id, phase)` da los `points` del pronóstico contra el resultado real. Lógica:, exact_count, avatar_category, display_avatar, country_code`.
+
+**Columnas adicionales:** + columna `is_exact = true`
+- Si solo el ganador es correcto: `pt_winner_group` o `pt_winner_ko` + `is_exact = false`
+- En KO con empate, mira `ko_winner_team_id` vs `shootout_winner_team_id`
+
+**Columna `is_exact`:** Boolean que indica si el marcador fue exacto. Usado por `leaderboard` para sumar `exact_count`.
+- `display_avatar`: Path dinámico construido como `/images/avatars/{category}/{id}.webp`, o `default.webp` si NULL
+- `country_code`: Código ISO del país del usuario (para bandera en ranking)
+
+**Construcción de `display_avatar`:**
+```sql
+CASE 
+  WHEN p.avatar_perm_id IS NULL THEN '/images/avatars/default.webp'
+  ELSE '/images/avatars/' || COALESCE(p.avatar_category, 'permanentes') || '/' || p.avatar_perm_id || '.webp'
+END as display_avatar
+```
 - Si match no está `finished`: 0
 - Si pronóstico exacto: `pt_exact_group` o `pt_exact_ko`
 - Si solo el ganador es correcto: `pt_winner_group` o `pt_winner_ko`

@@ -27,7 +27,22 @@
 
 ## Completados (histórico)
 
-- [x] **Flujo de Recuperación de Contraseña** (2026-05-04): Implementado flujo completo `/forgot-password` → email → `/reset-password`. Detección automática de URL (producción/local) usando `window.location.origin`. Mensajes de UX mejorados con mejor manejo de errores y enlaces expirados. Funcionalmente completo, pendiente solo configurar dominio verificado en Resend para uso con todos los participantes.
+- [x] **Sistema de Avatares por Niveles** (2026-05-12): Sistema completo de gamificación con 4 categorías (Básicos, Especiales, Premium, Leyendas) y desbloqueo basado en desempeño. Incluye carrusel con navegación por flechas, scrollbar estilizado, y requisitos configurables desde Admin.
+- [x] **Optimización de Imágenes a WebP** (2026-05-12): Migración completa de todos los avatares (75 imágenes) y assets de landing page a formato WebP. Reducción de ~30-50% en tamaño de archivos sin pérdida perceptible de calidad.
+- [x] **Estado Virtual de Partidos** (2026-05-12): Implementación de lógica de estado virtual donde partidos se marcan como "EN VIVO" exactamente a su `kickoff_at` sin depender de la API. Marcador 0-0 placeholder hasta que la API sincronice datos reales.
+- [x] **Sincronización Híbrida de Resultados** (2026-05-12): Sistema de 3 capas: Vercel Cron diario, Cron-job.org cada 10 min, y botón manual en Admin. Endpoint `/api/cron/sync-results` con autenticación vía CRON_SECRET.
+- [x] **Página de Resumen de Resultados** (2026-05-12): Nueva ruta `/predictions/summary` con vista de solo lectura de todos los partidos organizados por fase.
+- [x] **Estadios Oficiales FIFA** (2026-05-12): Migración 048 con los 104 estadios oficiales del Mundial 2026 poblados en la tabla `matches`. Visualización en `CompactMatchRow` (ciudad) y `FifaMatchRow` (estadio completo).
+- [x] **Limpieza de Errores de Hidratación** (2026-05-12): Eliminados todos los warnings de hidratación moviendo inicializaciones de `Date.now()` a `useEffect`. Componentes: AdminClient, ProfileClient.
+- [x] **Fix de Passive Event Listeners** (2026-05-12): Removido `preventDefault` de onWheel handlers. Añadida clase CSS `touch-pan-y` para permitir gestos táctiles sin warnings.
+- [x] **Limpieza de Console.log** (2026-05-12): Eliminados todos los `console.log` residuales del código de producción. Verificado vía grep search.
+- [x] **Favicon SVG** (2026-05-12): Añadido favicon SVG con emoji ⚽ para eliminar error 404 de `favicon.ico`.
+- [x] **LiveTimestamp Component** (2026-05-12): Componente que muestra hora actual actualizada cada minuto sin problemas de hidratación. Usado en `/leaderboard`.
+- [x] **Layout de Doble Columna para Grupos** (2026-05-12): Grid responsivo en `GroupStageTab` con partidos a la izquierda y tabla de posiciones sticky a la derecha en desktop.
+- [x] **Sistema de Bloqueo Dual** (2026-05-11): Bloqueo granular por partido (15 min antes de kickoff) para marcadores individuales. Bloqueo global solo afecta podio y borrado de jugadas.
+- [x] **Country Code en Perfiles** (2026-05-11): Añadida columna `country_code` a `profiles` para permitir a usuarios seleccionar su país de origen. Visualizado con bandera en ranking.
+- [x] **Fix de Unicidad de Avatares** (2026-05-11): Migración 047 que permite el mismo `avatar_perm_id` en diferentes `avatar_category`. Constraint compuesto sobre ambas columnas.
+- [x] **Flujo de Recuperación de Contraseña** (2026-05-04): Implementado flujo completo `/forgot-password` → email → `/reset-password`. Detección automática de URL (producción/local) usando `window.location.origin`. Mensajes de UX mejorados con mejor manejo de errores y enlaces expirados.
 - [x] **Página de Perfil de Usuario** (2026-05-04): Agregada ruta `/profile` con formulario para editar nombre de pantalla y cambiar contraseña. Accesible desde Navbar (desktop) y BottomNav (mobile).
 - [x] **Banderas en Admin** (2026-05-04): `AdminClient.tsx` muestra `<Flag />` junto a todos los nombres de equipos en las pestañas Equipos y Resultados. Emoji de banderas removido de la UI.
 - [x] **Terminología 'Mis Quinielas'** (2026-05-09): El término 'jugadas' fue reemplazado por 'quinielas' en toda la aplicación (navegación, mensajes, documentación) para mayor claridad conceptual. El modelo de datos (tabla `entries`) permanece sin cambios.

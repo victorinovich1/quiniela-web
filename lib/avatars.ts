@@ -4,6 +4,6 @@
 export const TOTAL_AVATARS = 39 // Total de avatares en /permanentes/
 
 export const AVATAR_PATHS = {
-  permanent: (id: number) => `/images/avatars/permanentes/${id}.png`,
-  default: '/images/avatars/default.png',
+  permanent: (id: number) => `/images/avatars/permanentes/${id}.webp`,
+  default: '/images/avatars/default.webp',
 } as const

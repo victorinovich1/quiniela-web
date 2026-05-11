@@ -28,8 +28,8 @@ export default function ProfileClient({
   const [avatarCategory, setAvatarCategory] = useState(profile?.avatar_category || 'permanentes')
   const [countryCode, setCountryCode] = useState(profile?.country_code || '')
   const [deletingAccount, setDeletingAccount] = useState(false)
+  const [podiumLocked, setPodiumLocked] = useState(false)
   const lockAt = settings?.lock_at || null
-  const podiumLocked = lockAt ? Date.now() > new Date(lockAt).getTime() : false
   
   // Estados de contraseña
   const [newPassword, setNewPassword] = useState('')
@@ -63,6 +63,13 @@ export default function ProfileClient({
   
   // Acordeón de seguridad
   const [securityOpen, setSecurityOpen] = useState(false)
+
+  // Verificar bloqueo de podio
+  useEffect(() => {
+    if (lockAt) {
+      setPodiumLocked(Date.now() > new Date(lockAt).getTime())
+    }
+  }, [lockAt])
 
   // Cargar avatares ocupados por categoría
   useEffect(() => {
@@ -628,14 +635,13 @@ function AvatarTierSection({
 
         <div
           ref={containerRef} 
-          className="flex flex-nowrap overflow-x-auto snap-x snap-mandatory gap-3 pb-4 px-10 md:px-12 -mx-1 cursor-grab active:cursor-grabbing scrollbar-hide md:scrollbar-styled"
-        onWheel={(e) => {
-          if (e.deltaY !== 0) {
-            e.preventDefault()
-            e.currentTarget.scrollLeft += e.deltaY
-          }
-        }}
-      >
+          className="flex flex-nowrap overflow-x-auto snap-x snap-mandatory gap-3 pb-4 px-10 md:px-12 -mx-1 cursor-grab active:cursor-grabbing scrollbar-hide md:scrollbar-styled touch-pan-y"
+          onWheel={(e) => {
+            if (e.deltaY !== 0) {
+              e.currentTarget.scrollLeft += e.deltaY
+            }
+          }}
+        >
         {avatarIds.map((id) => {
           const isOccupied = occupiedSet.has(id)
           const isSelected = currentId === id && currentCategory === category

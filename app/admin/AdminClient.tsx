@@ -800,7 +800,7 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
   const [syncError, setSyncError] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
   const [recentSyncs, setRecentSyncs] = useState<Match[]>([])
-  const [currentTime, setCurrentTime] = useState(Date.now())
+  const [currentTime, setCurrentTime] = useState(0)
 
   async function loadRecentSyncs() {
     const supabase = createClient()
@@ -828,7 +828,6 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
           filter: 'id=eq.1',
         },
         (payload) => {
-          console.log('[AdminClient] Settings actualizados vía Realtime:', payload.new)
           setS(payload.new as Settings)
           // Recargar partidos recientes si cambió last_sync_at
           if (payload.new.last_sync_at) {
@@ -845,6 +844,7 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
 
   // Timer: Actualizar currentTime cada segundo para cuenta regresiva
   useEffect(() => {
+    setCurrentTime(Date.now())
     const interval = setInterval(() => {
       setCurrentTime(Date.now())
     }, 1000)

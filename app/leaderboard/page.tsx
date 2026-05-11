@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import PageHeader from '@/components/PageHeader'
+import LiveTimestamp from '@/components/LiveTimestamp'
 import LeaderboardClient from './LeaderboardClient'
 import type { LeaderboardRow, Match, Team, Prediction } from '@/lib/types'
 
@@ -72,14 +73,12 @@ export default async function LeaderboardPage() {
     dataError = err instanceof Error ? err.message : 'Error desconocido al cargar datos'
   }
 
-  const updatedAt = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-
   return (
     <div className="pb-24">
       <PageHeader
         label="Clasificación general"
         title="Ranking"
-        subtitle={`Actualizado: ${updatedAt}`}
+        subtitle={<LiveTimestamp />}
       />
 
       <LeaderboardClient

@@ -5,7 +5,7 @@ export default function PageHeader({
   action,
 }: {
   title: string
-  subtitle?: string
+  subtitle?: string | React.ReactNode
   label?: string
   action?: React.ReactNode
 }) {

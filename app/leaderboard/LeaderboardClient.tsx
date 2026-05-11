@@ -27,8 +27,6 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
     return acc
   }, {} as Record<number, Record<number, Prediction>>)
 
-  const updatedAt = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
-
   return (
     <>
       {dataError && (

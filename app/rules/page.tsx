@@ -49,7 +49,7 @@ export default async function RulesPage() {
             {/* Imagen (arriba en móvil, derecha en desktop) */}
             <div className="lg:order-2">
               <img 
-                src="/images/rules/rules-puntos.jpg" 
+                src="/images/rules/rules-puntos.webp" 
                 alt="Sistema de puntos" 
                 className="w-full rounded-2xl border border-white/10 shadow-lg shadow-black/20"
               />
@@ -162,7 +162,7 @@ export default async function RulesPage() {
             {/* Banner Podio */}
             <div className="w-full">
               <img 
-                src="/images/rules/rules-podio.jpg" 
+                src="/images/rules/rules-podio.webp" 
                 alt="Podio del Mundial" 
                 className="w-full rounded-2xl border border-white/10 shadow-lg shadow-black/20"
               />
@@ -190,7 +190,7 @@ export default async function RulesPage() {
             {/* Imagen (arriba en móvil, izquierda en desktop) */}
             <div className="lg:order-1">
               <img 
-                src="/images/rules/rules-tiempo.jpg" 
+                src="/images/rules/rules-tiempo.webp" 
                 alt="Regla de los 15 minutos" 
                 className="w-full rounded-2xl border border-white/10 shadow-lg shadow-black/20"
               />
@@ -233,7 +233,7 @@ export default async function RulesPage() {
             {/* Imagen (arriba en móvil, izquierda en desktop) */}
             <div className="lg:order-1">
               <img 
-                src="/images/rules/rules-cierre.jpg" 
+                src="/images/rules/rules-cierre.webp" 
                 alt="Cierre Global" 
                 className="w-full rounded-2xl border border-white/10 shadow-lg shadow-black/20 object-cover"
               />
@@ -284,7 +284,7 @@ export default async function RulesPage() {
             {/* Imagen (arriba en móvil, derecha en desktop) */}
             <div className="lg:order-2">
               <img 
-                src="/images/rules/rules-ko.jpg" 
+                src="/images/rules/rules-ko.webp" 
                 alt="Fase Eliminatoria" 
                 className="w-full rounded-2xl border border-white/10 shadow-lg shadow-black/20 object-cover"
               />
@@ -331,7 +331,7 @@ export default async function RulesPage() {
             {/* Imagen (arriba en móvil, izquierda en desktop) */}
             <div className="lg:order-1">
               <img 
-                src="/images/rules/rules-penales.jpg" 
+                src="/images/rules/rules-penales.webp" 
                 alt="Sistema de Penales" 
                 className="w-full rounded-2xl border border-white/10 shadow-lg shadow-black/20 object-cover"
               />

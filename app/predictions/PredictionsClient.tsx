@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { computeGroupStandings } from '@/lib/standings'
 import Flag from '@/components/Flag'
-import { isMatchLocked, shouldShowLiveIndicator } from '@/lib/utils'
+import { isMatchLocked } from '@/lib/utils'
 import CompactMatchRow from './components/CompactMatchRow'
 import FifaMatchRow from './components/FifaMatchRow'
 import {

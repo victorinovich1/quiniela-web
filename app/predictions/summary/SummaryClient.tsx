@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Flag from '@/components/Flag'
 import { PHASE_LABELS, type Phase, type Team } from '@/lib/types'
+import { getMatchStatus, getMatchScores } from '@/lib/utils'
 
 interface MatchWithScore {
   id: number
@@ -203,7 +204,13 @@ export default function SummaryClient({
                 const isExact = isExactMatch(m)
                 const points = m.score?.points || 0
                 const hasPoints = points > 0
-                const isFinished = m.status === 'finished'
+                
+                // Usar funciones centralizadas para estado y marcador
+                const status = getMatchStatus(m)
+                const [homeScore, awayScore] = getMatchScores(m)
+                const isFinished = status === 'finished'
+                const isLive = status === 'live'
+                const hasScore = homeScore !== null && awayScore !== null
                 const hasPrediction = m.prediction && m.prediction.home_score !== null && m.prediction.away_score !== null
 
                 return (
@@ -223,6 +230,9 @@ export default function SummaryClient({
                         <div className="text-xs font-black text-white/40">
                           M{m.match_number}
                         </div>
+                        {isLive && (
+                          <div className="text-[9px] text-red-500 uppercase font-bold mt-1">EN VIVO</div>
+                        )}
                       </div>
 
                       {/* Equipos */}
@@ -265,10 +275,10 @@ export default function SummaryClient({
                           Resultado Real
                         </div>
                         <div className={`text-sm font-mono font-bold ${
-                          isFinished ? 'text-white' : 'text-white/20'
+                          hasScore ? (isLive ? 'text-red-500 animate-pulse' : 'text-white') : 'text-white/20'
                         }`}>
-                          {isFinished
-                            ? formatScore(m.home_score, m.away_score)
+                          {hasScore
+                            ? formatScore(homeScore, awayScore)
                             : '- : -'}
                         </div>
                         {m.shootout_winner_team_id && m.home_score === m.away_score && (

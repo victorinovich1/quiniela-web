@@ -104,6 +104,56 @@ export function getUserTimeZone(): string {
 }
 
 /**
+ * Determina el estado real de un partido considerando la hora actual
+ * - 'finished': status en DB es finished
+ * - 'live': status es live O (status es scheduled Y kickoff_at <= now())
+ * - 'scheduled': de lo contrario
+ */
+export function getMatchStatus(match: {
+  status: string
+  kickoff_at: string | null
+}): 'scheduled' | 'live' | 'finished' {
+  if (match.status === 'finished') return 'finished'
+  if (match.status === 'live') return 'live'
+  
+  // Partido virtualmente en vivo si llegó la hora del kickoff
+  if (match.status === 'scheduled' && match.kickoff_at) {
+    const kickoff = new Date(match.kickoff_at).getTime()
+    const now = Date.now()
+    if (now >= kickoff) return 'live'
+  }
+  
+  return 'scheduled'
+}
+
+/**
+ * Obtiene los marcadores de un partido
+ * - Devuelve scores reales si existen en la DB
+ * - Devuelve [0, 0] si el partido está virtualmente en vivo pero sin scores
+ * - Devuelve [null, null] si el partido aún no inició
+ */
+export function getMatchScores(match: {
+  status: string
+  kickoff_at: string | null
+  home_score: number | null
+  away_score: number | null
+}): [number | null, number | null] {
+  // Si hay scores reales en la DB, usarlos siempre
+  if (match.home_score !== null && match.away_score !== null) {
+    return [match.home_score, match.away_score]
+  }
+  
+  // Si el partido está virtualmente en vivo, mostrar 0-0
+  const status = getMatchStatus(match)
+  if (status === 'live' || status === 'finished') {
+    return [0, 0]
+  }
+  
+  // Partido aún no inició
+  return [null, null]
+}
+
+/**
  * Valida si un valor es un número entero válido >= 0
  */
 export function isValidScore(value: unknown): value is number {

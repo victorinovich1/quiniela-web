@@ -180,7 +180,11 @@ export default function ProfileClient({
                 } bg-white/10 mb-3 cursor-pointer transition-all hover:scale-105`}
               >
                 <img
-                  src={avatarPermId ? AVATAR_PATHS.permanent(avatarPermId) : AVATAR_PATHS.default}
+                  src={
+                    avatarPermId && avatarCategory
+                      ? `/images/avatars/${avatarCategory}/${avatarPermId}.webp`
+                      : AVATAR_PATHS.default
+                  }
                   alt="Avatar"
                   className="w-full h-full object-cover"
                   onError={(e) => {

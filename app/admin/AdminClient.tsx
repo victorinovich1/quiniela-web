@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { toLocalDateTimeInput } from '@/lib/utils'
+import { toLocalDateTimeInput, getMatchStatus, getMatchScores } from '@/lib/utils'
 import PageHeader from '@/components/PageHeader'
 import Flag from '@/components/Flag'
 import type { Team, Match, Profile, Invitation, Settings, Phase, Entry, Role } from '@/lib/types'
@@ -266,20 +266,31 @@ function MatchesTab({ initialMatches, teams, settings }: {
           const homeTeam = m.home_team_id ? teamById[m.home_team_id] : null
           const awayTeam = m.away_team_id ? teamById[m.away_team_id] : null
 
+          const effectiveStatus = getMatchStatus(m)
+          const isVirtualLive = effectiveStatus === 'live' && m.status === 'scheduled'
+          const [effectiveHomeScore, effectiveAwayScore] = getMatchScores(m)
+
           return (
             <div key={m.id} className="card p-3">
               <div className="flex items-center justify-between mb-2 text-xs text-white/60">
                 <span>M{m.match_number} · {PHASE_LABELS[m.phase]}{m.group_code ? ` · Grupo ${m.group_code}` : ''}</span>
-                <select
-                  value={m.status}
-                  onChange={(e) => update(m.id, { status: e.target.value as Match['status'] })}
-                  onBlur={() => save(m)}
-                  className="input text-xs [color-scheme:dark] bg-[#080b22] text-white"
-                >
-                  <option value="scheduled" className="bg-[#080b22] text-white">Programado</option>
-                  <option value="live" className="bg-[#080b22] text-white">En vivo</option>
-                  <option value="finished" className="bg-[#080b22] text-white">Finalizado</option>
-                </select>
+                <div className="flex items-center gap-2">
+                  {isVirtualLive && (
+                    <span className="px-2 py-0.5 rounded-full bg-fifaGreen/20 text-fifaGreen border border-fifaGreen/30 text-xs font-bold uppercase tracking-wider">
+                      VIVO (Virtual)
+                    </span>
+                  )}
+                  <select
+                    value={m.status}
+                    onChange={(e) => update(m.id, { status: e.target.value as Match['status'] })}
+                    onBlur={() => save(m)}
+                    className="input text-xs [color-scheme:dark] bg-[#080b22] text-white"
+                  >
+                    <option value="scheduled" className="bg-[#080b22] text-white">Programado</option>
+                    <option value="live" className="bg-[#080b22] text-white">En vivo</option>
+                    <option value="finished" className="bg-[#080b22] text-white">Finalizado</option>
+                  </select>
+                </div>
               </div>
 
               <div className="mb-2 flex items-center gap-2">
@@ -342,7 +353,8 @@ function MatchesTab({ initialMatches, teams, settings }: {
                   value={m.home_score ?? ''}
                   onChange={(e) => update(m.id, { home_score: e.target.value === '' ? null : Number(e.target.value) })}
                   onBlur={() => save(m)}
-                  className="input w-14 text-center"
+                  placeholder={m.home_score === null && effectiveStatus === 'live' ? '0' : ''}
+                  className={`input w-14 text-center ${m.home_score === null && effectiveStatus === 'live' ? 'placeholder:text-fifaGreen/60 placeholder:font-bold' : ''}`}
                 />
                 <span className="text-white/40">-</span>
                 <input
@@ -351,7 +363,8 @@ function MatchesTab({ initialMatches, teams, settings }: {
                   value={m.away_score ?? ''}
                   onChange={(e) => update(m.id, { away_score: e.target.value === '' ? null : Number(e.target.value) })}
                   onBlur={() => save(m)}
-                  className="input w-14 text-center"
+                  placeholder={m.away_score === null && effectiveStatus === 'live' ? '0' : ''}
+                  className={`input w-14 text-center ${m.away_score === null && effectiveStatus === 'live' ? 'placeholder:text-fifaGreen/60 placeholder:font-bold' : ''}`}
                 />
                 <div className="flex-1 flex items-center gap-1.5">
                   {awayTeam && <Flag team={awayTeam} size={14} />}

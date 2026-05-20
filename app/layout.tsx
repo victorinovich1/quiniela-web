@@ -7,6 +7,14 @@ import { createClient } from '@/lib/supabase/server'
 export const metadata: Metadata = {
   title: 'Quiniela Mundial 2026',
   description: 'Pronostica los partidos del Mundial 2026 y compite con tus amigos.',
+  manifest: '/manifest.webmanifest',
+  themeColor: '#04061a',
+  viewport: 'width=device-width, initial-scale=1',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
 }
 
 export default async function RootLayout({
@@ -32,7 +40,6 @@ export default async function RootLayout({
   return (
     <html lang="es" className="dark" style={{ colorScheme: 'dark' }}>
       <head>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

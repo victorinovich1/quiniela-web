@@ -389,6 +389,102 @@ export default async function RulesPage() {
           </div>
         </div>
 
+        {/* Reglas de Desempate */}
+        <div className="card">
+          <div className="flex items-start gap-4 mb-6">
+            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gold/20 flex items-center justify-center">
+              <div className="text-2xl">🏅</div>
+            </div>
+            <div className="flex-1">
+              <h2 className="text-2xl font-black uppercase tracking-tight text-white mb-2">
+                Reglas de Desempate
+              </h2>
+              <p className="text-white/60 text-sm">
+                Criterios para definir al ganador en caso de empate de puntos
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            {/* Imagen (arriba en móvil, izquierda en desktop) */}
+            <div className="lg:order-1">
+              <img 
+                src="/images/rules/rules-desempate.webp" 
+                alt="Reglas de Desempate" 
+                className="w-full rounded-2xl border border-white/10 shadow-lg shadow-black/20 object-cover"
+              />
+            </div>
+
+            {/* Contenido (abajo en móvil, derecha en desktop) */}
+            <div className="lg:order-2 space-y-4">
+              <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                <p className="text-white/80 text-sm leading-relaxed mb-4">
+                  En caso de empate en la clasificación general al finalizar el Mundial, 
+                  se aplicarán los siguientes <span className="text-gold font-bold">criterios de desempate en el orden indicado</span>:
+                </p>
+
+                <ol className="space-y-3 text-sm">
+                  <li className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-fifaGreen/20 flex items-center justify-center text-xs font-bold text-fifaGreen">
+                      1
+                    </span>
+                    <p className="text-white/80 pt-0.5">
+                      Mayor cantidad de <span className="font-bold text-fifaGreen">resultados exactos acertados</span> durante todo el torneo.
+                    </p>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-fifaGreen/20 flex items-center justify-center text-xs font-bold text-fifaGreen">
+                      2
+                    </span>
+                    <p className="text-white/80 pt-0.5">
+                      Mayor cantidad de <span className="font-bold text-fifaGreen">aciertos de ganador en partidos eliminatorios</span>.
+                    </p>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-fifaGreen/20 flex items-center justify-center text-xs font-bold text-fifaGreen">
+                      3
+                    </span>
+                    <p className="text-white/80 pt-0.5">
+                      Mayor cantidad de <span className="font-bold text-fifaGreen">resultados exactos en partidos eliminatorios</span>.
+                    </p>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-fifaGreen/20 flex items-center justify-center text-xs font-bold text-fifaGreen">
+                      4
+                    </span>
+                    <p className="text-white/80 pt-0.5">
+                      Mayor cantidad de <span className="font-bold text-fifaGreen">puntos obtenidos en la fase eliminatoria</span>.
+                    </p>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gold/20 flex items-center justify-center text-xs font-bold text-gold">
+                      5
+                    </span>
+                    <p className="text-white/80 pt-0.5">
+                      <span className="font-bold text-gold">Acierto del campeón</span> del Mundial.
+                    </p>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gold/20 flex items-center justify-center text-xs font-bold text-gold">
+                      6
+                    </span>
+                    <p className="text-white/80 pt-0.5">
+                      <span className="font-bold text-gold">Acierto del subcampeón</span> del Mundial.
+                    </p>
+                  </li>
+                </ol>
+              </div>
+
+              <div className="bg-gold/10 border border-gold/30 rounded-lg p-3">
+                <p className="text-white/60 text-xs">
+                  ⚖️ Si el empate persiste luego de aplicar todos los criterios anteriores, 
+                  el <span className="font-bold text-gold">premio será dividido equitativamente</span> entre los participantes empatados.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Nota Final */}
         <div className="bg-fifaGreen/10 border border-fifaGreen/30 rounded-xl p-4">
           <p className="text-white/80 text-sm text-center">

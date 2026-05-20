@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+import { Info } from 'lucide-react'
 import Flag from '@/components/Flag'
 import type { LeaderboardRow, Match, Team, Prediction } from '@/lib/types'
 import { AVATAR_PATHS } from '@/lib/avatars'
@@ -15,6 +17,8 @@ interface Props {
 }
 
 export default function LeaderboardClient({ user, rows, recentMatches, teams, predictions, dataError }: Props) {
+  const [showTooltip, setShowTooltip] = useState(false)
+
   const teamsById = teams.reduce((acc, t) => {
     if (t?.id) acc[t.id] = t
     return acc
@@ -40,6 +44,49 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
         </div>
       )}
 
+      {/* Tooltip de Reglas de Desempate */}
+      <div className="relative inline-block mb-4">
+        <button
+          className="flex items-center gap-2 text-white/60 hover:text-fifaGreen transition-colors text-xs uppercase tracking-wider"
+          onMouseEnter={() => setShowTooltip(true)}
+          onMouseLeave={() => setShowTooltip(false)}
+        >
+          <Info size={14} />
+          <span>Criterios de Desempate</span>
+        </button>
+        {showTooltip && (
+          <div className="absolute left-0 top-full mt-2 w-80 bg-navy-dark border border-fifaGreen/30 rounded-lg p-4 shadow-xl z-50">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-fifaGreen mb-3">Reglas de Desempate</h4>
+            <ol className="space-y-2 text-[10px] text-white/80">
+              <li className="flex items-start gap-2">
+                <span className="flex-shrink-0 text-fifaGreen font-bold">1.</span>
+                <span>Mayor cantidad de resultados exactos acertados durante todo el torneo.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="flex-shrink-0 text-fifaGreen font-bold">2.</span>
+                <span>Mayor cantidad de aciertos de ganador en partidos eliminatorios.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="flex-shrink-0 text-fifaGreen font-bold">3.</span>
+                <span>Mayor cantidad de resultados exactos en partidos eliminatorios.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="flex-shrink-0 text-fifaGreen font-bold">4.</span>
+                <span>Mayor cantidad de puntos obtenidos en la fase eliminatoria.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="flex-shrink-0 text-gold font-bold">5.</span>
+                <span>Acierto del campeón del Mundial.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="flex-shrink-0 text-gold font-bold">6.</span>
+                <span>Acierto del subcampeón del Mundial.</span>
+              </li>
+            </ol>
+          </div>
+        )}
+      </div>
+
       <div className="card p-2 sm:p-3">
         {rows.length === 0 ? (
           <div className="py-10 text-center text-white/40 uppercase tracking-wider text-sm">
@@ -47,13 +94,15 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <div className="min-w-[600px]">
+            <div className="min-w-[700px]">
               <div className={`grid items-center gap-2 px-2 py-2 label-up border-b border-white/10`}
                 style={{
-                  gridTemplateColumns: `36px 1fr 60px 60px 70px ${recentMatches.map(() => '72px').join(' ')}`
+                  gridTemplateColumns: `36px 1fr 40px 40px 60px 60px 70px ${recentMatches.map(() => '72px').join(' ')}`
                 }}>
                 <div>#</div>
                 <div>Jugada</div>
+                <div className="text-center hidden sm:block" title="Exactos totales">🎯</div>
+                <div className="text-center hidden sm:block" title="Aciertos en eliminatorias">🔥</div>
                 <div className="text-right hidden sm:block">Partidos</div>
                 <div className="text-right hidden sm:block">Esp.</div>
                 <div className="text-right">Total</div>
@@ -102,7 +151,7 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                       isMe ? 'bg-gold/10 rounded-lg' : ''
                     }`}
                     style={{
-                      gridTemplateColumns: `36px 1fr 60px 60px 70px ${recentMatches.map(() => '72px').join(' ')}`
+                      gridTemplateColumns: `36px 1fr 40px 40px 60px 60px 70px ${recentMatches.map(() => '72px').join(' ')}`
                     }}>
                     <div className={`text-base font-extrabold ${medal}`}>{idx + 1}</div>
                     <div className="flex items-center gap-3 min-w-0">
@@ -143,6 +192,8 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                         </div>
                       </div>
                     </div>
+                    <div className="text-center text-white/60 text-xs hidden sm:block" title="Exactos totales">{row?.total_exact ?? 0}</div>
+                    <div className="text-center text-white/60 text-xs hidden sm:block" title="Aciertos en eliminatorias">{row?.ko_winner_count ?? 0}</div>
                     <div className="text-right text-white/60 text-sm hidden sm:block">{row?.match_points ?? 0}</div>
                     <div className="text-right text-white/60 text-sm hidden sm:block">{row?.special_points ?? 0}</div>
                     <div className="text-right font-extrabold text-white text-base sm:text-lg">{row?.total_points ?? 0}</div>

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import Navbar from '@/components/Navbar'
 import BottomNav from '@/components/BottomNav'
+import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
 import { createClient } from '@/lib/supabase/server'
 
 export const metadata: Metadata = {
@@ -57,6 +58,7 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-screen flex flex-col">
+        <ServiceWorkerRegister />
         <Navbar isAuthed={!!user} isAdmin={isAdmin} />
         <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-6">
           {children}

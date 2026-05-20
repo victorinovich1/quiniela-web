@@ -45,7 +45,7 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
       )}
 
       {/* Tooltip de Reglas de Desempate */}
-      <div className="relative inline-block mb-4">
+      <div className="relative inline-block mb-6">
         <button
           className="flex items-center gap-2 text-white/60 hover:text-fifaGreen transition-colors text-xs uppercase tracking-wider"
           onMouseEnter={() => setShowTooltip(true)}
@@ -100,9 +100,9 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                   gridTemplateColumns: `36px 1fr 40px 40px 60px 60px 70px ${recentMatches.map(() => '72px').join(' ')}`
                 }}>
                 <div>#</div>
-                <div>Jugada</div>
-                <div className="text-center hidden sm:block" title="Exactos totales">🎯</div>
-                <div className="text-center hidden sm:block" title="Aciertos en eliminatorias">🔥</div>
+                <div>Quiniela</div>
+                <div className="text-center text-lg hidden sm:block" title="Exactos totales">🎯</div>
+                <div className="text-center text-lg hidden sm:block" title="Aciertos en eliminatorias">🔥</div>
                 <div className="text-right hidden sm:block">Partidos</div>
                 <div className="text-right hidden sm:block">Esp.</div>
                 <div className="text-right">Total</div>
@@ -192,8 +192,8 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                         </div>
                       </div>
                     </div>
-                    <div className="text-center text-white/60 text-xs hidden sm:block" title="Exactos totales">{row?.total_exact ?? 0}</div>
-                    <div className="text-center text-white/60 text-xs hidden sm:block" title="Aciertos en eliminatorias">{row?.ko_winner_count ?? 0}</div>
+                    <div className="text-center text-white/60 text-base font-semibold hidden sm:block" title="Exactos totales">{row?.total_exact ?? 0}</div>
+                    <div className="text-center text-white/60 text-base font-semibold hidden sm:block" title="Aciertos en eliminatorias">{row?.ko_winner_count ?? 0}</div>
                     <div className="text-right text-white/60 text-sm hidden sm:block">{row?.match_points ?? 0}</div>
                     <div className="text-right text-white/60 text-sm hidden sm:block">{row?.special_points ?? 0}</div>
                     <div className="text-right font-extrabold text-white text-base sm:text-lg">{row?.total_points ?? 0}</div>

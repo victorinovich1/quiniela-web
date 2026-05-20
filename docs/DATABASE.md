@@ -243,13 +243,18 @@ Setea `new.updated_at = now()`. Usado en triggers BEFORE UPDATE.
 ### `admin_delete_user(target_user_id uuid)` y `delete_user_self()`
 Funciones para eliminación de usuarios. `admin_delete_user` permite a admins eliminar cualquier usuario (y sus datos en cascada). `delete_user_self` permite a un usuario eliminarse a sí mismo. Security definer.
 
-## Blindaje de Seguridad (migración 034)
+## Blindaje de Seguridad (migraciones 034 + 050)
 
-Todas las funciones `SECURITY DEFINER` han sido blindadas contra ataques de path manipulation aplicando el siguiente patrón:
+Todas las funciones `SECURITY DEFINER` han sido blindadas contra ataques de path manipulation y ejecuciones no autorizadas.
+
+**Migración 050 (Final Security Lockdown):** Implementación robusta con bloque DO $$ que procesa las 8 funciones críticas de forma programática, garantizando:
 
 1. **REVOKE ALL** — Limpia permisos previos (PUBLIC, anon, authenticated)
 2. **ALTER FUNCTION ... SET search_path = public** — Corrige el warning "Search Path Mutable" del Security Advisor
 3. **GRANT EXECUTE** — Otorga permisos mínimos necesarios
+4. **ANALYZE** — Refresca estadísticas de BD tras cambios de permisos
+
+Esta migración resuelve permanentemente los 10 avisos de seguridad del Security Advisor de Supabase.
 
 ### Funciones blindadas
 

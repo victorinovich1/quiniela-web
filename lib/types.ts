@@ -117,7 +117,12 @@ export interface LeaderboardRow {
   match_points: number
   special_points: number
   total_points: number
-  exact_count: number
+  total_exact: number
+  ko_winner_count: number
+  ko_exact_count: number
+  ko_points: number
+  correct_champion: number
+  correct_runner_up: number
   rank: number
   display_avatar: string
 }

@@ -63,6 +63,37 @@ export default function ProfileClient({
   
   // Acordeón de seguridad
   const [securityOpen, setSecurityOpen] = useState(false)
+  
+  // PWA Install Prompt
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+  const [showInstallButton, setShowInstallButton] = useState(false)
+  
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+      setShowInstallButton(true)
+    }
+    
+    window.addEventListener('beforeinstallprompt', handler)
+    
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler)
+    }
+  }, [])
+  
+  async function handleInstallApp() {
+    if (!deferredPrompt) return
+    
+    deferredPrompt.prompt()
+    const { outcome } = await deferredPrompt.userChoice
+    
+    if (outcome === 'accepted') {
+      setShowInstallButton(false)
+    }
+    
+    setDeferredPrompt(null)
+  }
 
   // Verificar bloqueo de podio
   useEffect(() => {
@@ -303,6 +334,28 @@ export default function ProfileClient({
             </button>
           </div>
         </div>
+
+        {/* BOTÓN DE INSTALACIÓN PWA */}
+        {showInstallButton && (
+          <div className="card bg-gradient-to-r from-fifaGreen/20 to-blue-500/20 border border-fifaGreen/30 p-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-center sm:text-left">
+                <h3 className="font-extrabold uppercase tracking-tight text-white text-sm mb-1">
+                  📲 Instala la App
+                </h3>
+                <p className="text-xs text-white/70">
+                  Accede más rápido y recibe notificaciones instalando la aplicación en tu dispositivo
+                </p>
+              </div>
+              <button
+                onClick={handleInstallApp}
+                className="btn btn-primary whitespace-nowrap"
+              >
+                📲 INSTALAR APLICACIÓN
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* ZONA DE SEGURIDAD (fuera del grid) - Acordeón */}
         <div className="card border border-white/10">

@@ -7,5 +7,5 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Necesario para que sea instalable
+  event.respondWith(fetch(event.request));
 });

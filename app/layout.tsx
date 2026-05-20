@@ -25,6 +25,9 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
     title: 'Quiniela 2026',
   },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
 }
 
 export default async function RootLayout({

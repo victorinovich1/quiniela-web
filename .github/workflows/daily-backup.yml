@@ -39,6 +39,7 @@ jobs:
       - name: Ejecutar script de backup
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PGSSLMODE: require
         run: |
           bash scripts/backup-db.sh
       

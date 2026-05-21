@@ -11,20 +11,18 @@ if [ -z "$SUPABASE_DB_URL" ]; then
   exit 1
 fi
 
-# Asegurar que la URL use el puerto directo (5432) y no el pooler (6543)
-DB_URL="${SUPABASE_DB_URL//:6543/:5432}"
-
 echo "🔄 Iniciando backup de base de datos..."
 echo "📅 Fecha: $(date)"
+echo "🔌 Usando Supabase Pooler (puerto 6543) con SSL"
 
 # Probar conexión antes de continuar
 echo "🔍 Verificando conexión a Supabase..."
-if ! pg_isready -d "$DB_URL" -t 10 > /dev/null 2>&1; then
+if ! pg_isready -d "$SUPABASE_DB_URL" -t 10 > /dev/null 2>&1; then
   echo "❌ Error: No se pudo conectar a Supabase"
   echo "Verifica:"
   echo "  1. El Secret SUPABASE_DB_URL está configurado correctamente"
   echo "  2. La contraseña no contiene caracteres especiales sin codificar (@→%40, #→%23, etc.)"
-  echo "  3. La URL usa el puerto 5432 (conexión directa), no 6543 (pooler)"
+  echo "  3. La URL usa el puerto 6543 (pooler compatible con IPv4)"
   exit 1
 fi
 echo "✅ Conexión exitosa"
@@ -51,11 +49,12 @@ for table in "${TABLES[@]}"; do
   TABLE_OPTS="${TABLE_OPTS} -t public.${table}"
 done
 
-# Ejecutar pg_dump con la URL corregida
+# Ejecutar pg_dump usando Pooler (compatible con Pgbouncer)
 pg_dump \
-  "$DB_URL" \
+  "$SUPABASE_DB_URL" \
   --no-owner \
   --no-acl \
+  --no-privileges \
   --format=plain \
   --data-only \
   $TABLE_OPTS \

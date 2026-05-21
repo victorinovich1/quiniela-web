@@ -17,10 +17,24 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
       
-      - name: Instalar PostgreSQL client
+      - name: Debug - Verificar Secret
         run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "❌ SUPABASE_DB_URL no está configurado"
+            exit 1
+          fi
+          echo "✅ SUPABASE_DB_URL está presente"
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      
+      - name: Instalar PostgreSQL 16 client
+        run: |
+          # Añadir repositorio oficial de PostgreSQL para versión 16
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          wget -qO- https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo tee /etc/apt/trusted.gpg.d/pgdg.asc &>/dev/null
           sudo apt-get update
-          sudo apt-get install -y postgresql-client zip
+          sudo apt-get install -y postgresql-client-16 zip
+          psql --version
       
       - name: Ejecutar script de backup
         env:

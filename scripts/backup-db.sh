@@ -6,16 +6,32 @@
 set -e
 
 if [ -z "$SUPABASE_DB_URL" ]; then
-  echo "Error: SUPABASE_DB_URL no está definida"
+  echo "❌ Error: SUPABASE_DB_URL no está definida"
+  echo "Verifica que el Secret esté configurado en GitHub Settings → Secrets → Actions"
   exit 1
 fi
+
+# Asegurar que la URL use el puerto directo (5432) y no el pooler (6543)
+DB_URL="${SUPABASE_DB_URL//:6543/:5432}"
+
+echo "🔄 Iniciando backup de base de datos..."
+echo "📅 Fecha: $(date)"
+
+# Probar conexión antes de continuar
+echo "🔍 Verificando conexión a Supabase..."
+if ! pg_isready -d "$DB_URL" -t 10 > /dev/null 2>&1; then
+  echo "❌ Error: No se pudo conectar a Supabase"
+  echo "Verifica:"
+  echo "  1. El Secret SUPABASE_DB_URL está configurado correctamente"
+  echo "  2. La contraseña no contiene caracteres especiales sin codificar (@→%40, #→%23, etc.)"
+  echo "  3. La URL usa el puerto 5432 (conexión directa), no 6543 (pooler)"
+  exit 1
+fi
+echo "✅ Conexión exitosa"
 
 # Nombre del archivo con timestamp
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_FILE="quiniela_backup_${TIMESTAMP}.sql"
-
-echo "🔄 Iniciando backup de base de datos..."
-echo "📅 Fecha: $(date)"
 
 # Tablas a respaldar
 TABLES=(
@@ -35,9 +51,9 @@ for table in "${TABLES[@]}"; do
   TABLE_OPTS="${TABLE_OPTS} -t public.${table}"
 done
 
-# Ejecutar pg_dump
+# Ejecutar pg_dump con la URL corregida
 pg_dump \
-  "$SUPABASE_DB_URL" \
+  "$DB_URL" \
   --no-owner \
   --no-acl \
   --format=plain \

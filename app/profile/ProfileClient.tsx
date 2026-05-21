@@ -688,9 +688,11 @@ function AvatarTierSection({
 
         <div
           ref={containerRef} 
-          className="flex flex-nowrap overflow-x-auto snap-x snap-mandatory gap-3 pb-4 px-10 md:px-12 -mx-1 cursor-grab active:cursor-grabbing scrollbar-hide md:scrollbar-styled touch-pan-y"
+          className="flex flex-nowrap overflow-x-auto snap-x snap-mandatory gap-3 pb-6 px-10 md:px-12 -mx-1 cursor-grab active:cursor-grabbing scrollbar-hide md:scrollbar-styled touch-pan-x"
+          style={{ WebkitOverflowScrolling: 'touch' }}
           onWheel={(e) => {
-            if (e.deltaY !== 0) {
+            // Solo para PC, no interferir con touch en móviles
+            if (e.deltaY !== 0 && !('ontouchstart' in window)) {
               e.currentTarget.scrollLeft += e.deltaY
             }
           }}

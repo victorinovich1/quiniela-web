@@ -15,7 +15,7 @@ type MatchRow = {
   home_team_id: number | null
   away_team_id: number | null
   kickoff_at: string
-  stage: string
+  phase: string
   status: MatchStatus
   manual_override: boolean
 }
@@ -47,6 +47,29 @@ type FdMatch = {
 }
 
 const FOOTBALL_DATA_BASE = 'https://api.football-data.org/v4'
+
+// Mapeo de nombres de fase: API → BD
+function mapPhaseApiToDB(apiStage: string | null | undefined): string | null {
+  if (!apiStage) return null
+  const normalized = apiStage.toUpperCase()
+  
+  // Mapeo directo de football-data.org a nuestra BD
+  const mapping: Record<string, string> = {
+    'GROUP_STAGE': 'group',
+    'LAST_32': 'r32',
+    'ROUND_OF_32': 'r32',
+    'LAST_16': 'r16',
+    'ROUND_OF_16': 'r16',
+    'QUARTER_FINALS': 'qf',
+    'QUARTER_FINAL': 'qf',
+    'SEMI_FINALS': 'sf',
+    'SEMI_FINAL': 'sf',
+    'THIRD_PLACE': 'third',
+    'FINAL': 'final',
+  }
+  
+  return mapping[normalized] || null
+}
 
 function mapStatus(raw: string | null | undefined): MatchStatus {
   if (!raw) return 'scheduled'
@@ -152,7 +175,7 @@ export async function GET(request: NextRequest) {
 
     const [{ data: teams, error: teamsErr }, { data: matches, error: matchesErr }] = await Promise.all([
       supabase.from('teams').select('id, code'),
-      supabase.from('matches').select('id, match_number, home_team_id, away_team_id, kickoff_at, stage, status, manual_override'),
+      supabase.from('matches').select('id, match_number, home_team_id, away_team_id, kickoff_at, phase, status, manual_override'),
     ])
 
     if (teamsErr || matchesErr || !teams || !matches) {
@@ -170,9 +193,9 @@ export async function GET(request: NextRequest) {
     teamByCode.set(t.code.toUpperCase(), t.id)
   }
 
-  // MAPEO HÍBRIDO: Por equipos (grupos) + Por fecha/fase (eliminatorias)
+  // MAPEO HÍBRIDO: Por equipos (grupos) + Por fecha+fase (eliminatorias)
   const matchByTeams = new Map<string, MatchRow>()
-  const matchByDateStage = new Map<string, MatchRow>()
+  const matchByDatePhase = new Map<string, MatchRow>()
   
   for (const m of matches as MatchRow[]) {
     // Mapeo 1: Por equipos (cuando ambos asignados)
@@ -180,9 +203,10 @@ export async function GET(request: NextRequest) {
       matchByTeams.set(`${m.home_team_id}-${m.away_team_id}`, m)
     }
     // Mapeo 2: Por fecha+fase (para eliminatorias con equipos NULL)
+    // Usar ||| como separador para evitar conflictos con guiones en ISO date
     const dateKey = new Date(m.kickoff_at).toISOString()
-    const key = `${m.stage}-${dateKey}`
-    matchByDateStage.set(key, m)
+    const key = `${m.phase}|||${dateKey}`
+    matchByDatePhase.set(key, m)
   }
 
     // Construir URL y hacer llamada a la API
@@ -348,20 +372,29 @@ export async function GET(request: NextRequest) {
       // 2. Si no se encontró por equipos, intentar mapeo por fecha+fase
       if (!mapped && fm.utcDate && fm.stage) {
         const apiDate = new Date(fm.utcDate)
-        const apiStage = fm.stage.toUpperCase()
+        const dbPhase = mapPhaseApiToDB(fm.stage)
         
-        // Buscar match con margen de ±1 minuto en la fecha
-        for (const [key, m] of matchByDateStage) {
-          const [stage, dateStr] = key.split('-', 2)
-          if (stage !== apiStage) continue
+        if (!dbPhase) {
+          // Fase de API desconocida, omitir
+          continue
+        }
+        
+        // Buscar match con margen de ±3 horas en la fecha (para ajustes de horario)
+        for (const [key, m] of matchByDatePhase) {
+          const parts = key.split('|||')
+          if (parts.length !== 2) continue
+          
+          const [phase, dateStr] = parts
+          if (phase !== dbPhase) continue
           
           const dbDate = new Date(dateStr)
           const diffMinutes = Math.abs(apiDate.getTime() - dbDate.getTime()) / (1000 * 60)
           
-          if (diffMinutes <= 1) {
+          // Margen de 180 minutos (3 horas) para ajustes de horario
+          if (diffMinutes <= 180) {
             mapped = m
             matchingMethod = 'dateStage'
-            console.log(`[cron/sync-results] 🎯 EMPAREJADO POR FECHA/FASE: M${m.match_number} (${apiStage}) - ${homeName || homeCode || '???'} vs ${awayName || awayCode || '???'}`)
+            console.log(`[cron/sync-results] 🎯 EMPAREJADO POR FECHA/FASE: M${m.match_number} (${fm.stage} → ${dbPhase}) - ${homeName || homeCode || '???'} vs ${awayName || awayCode || '???'}`)
             break
           }
         }

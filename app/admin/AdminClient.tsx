@@ -910,7 +910,17 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
       }
       
       if (data.ok) {
-        setSyncMsg(`Sincronización completada: ${data.updated} partidos actualizados`)
+        const byTeams = data.matchedByTeams || 0
+        const byDateStage = data.matchedByDateStage || 0
+        const autoAssigned = data.autoAssignedTeams || 0
+        let msg = `✅ Sincronización exitosa: ${data.updated} partidos actualizados`
+        if (byTeams > 0 || byDateStage > 0) {
+          msg += ` (${byTeams} por equipos, ${byDateStage} por fecha/fase)`
+        }
+        if (autoAssigned > 0) {
+          msg += ` • ${autoAssigned} equipos auto-asignados`
+        }
+        setSyncMsg(msg)
         // Recargar settings para obtener last_sync_at actualizado
         const { data: updatedSettings } = await supabase.from('settings').select('*').eq('id', 1).single()
         if (updatedSettings) setS(updatedSettings)

@@ -88,6 +88,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         ok: true, 
         updated: data.updated || 0,
+        matchedByTeams: data.matchedByTeams || 0,
+        matchedByDateStage: data.matchedByDateStage || 0,
+        autoAssignedTeams: data.autoAssignedTeams || 0,
         details: data,
       })
     } else {

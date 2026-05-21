@@ -14,12 +14,15 @@ type MatchRow = {
   match_number: number
   home_team_id: number | null
   away_team_id: number | null
+  kickoff_at: string
+  stage: string
   status: MatchStatus
   manual_override: boolean
 }
 
 type FdTeam = {
   tla?: string | null
+  name?: string | null
 }
 
 type FdScore = {
@@ -36,6 +39,8 @@ type FdMatch = {
   status?: string | null
   utcDate?: string | null
   venue?: string | null
+  stage?: string | null
+  matchday?: number | null
   homeTeam?: FdTeam | null
   awayTeam?: FdTeam | null
   score?: FdScore | null
@@ -147,7 +152,7 @@ export async function GET(request: NextRequest) {
 
     const [{ data: teams, error: teamsErr }, { data: matches, error: matchesErr }] = await Promise.all([
       supabase.from('teams').select('id, code'),
-      supabase.from('matches').select('id, match_number, home_team_id, away_team_id, status, manual_override'),
+      supabase.from('matches').select('id, match_number, home_team_id, away_team_id, kickoff_at, stage, status, manual_override'),
     ])
 
     if (teamsErr || matchesErr || !teams || !matches) {
@@ -165,13 +170,19 @@ export async function GET(request: NextRequest) {
     teamByCode.set(t.code.toUpperCase(), t.id)
   }
 
-  // NOTA: Solo sincroniza partidos que YA tienen ambos equipos asignados
-  // Para eliminatorias con equipos NULL, el admin debe asignarlos primero manualmente
+  // MAPEO HÍBRIDO: Por equipos (grupos) + Por fecha/fase (eliminatorias)
   const matchByTeams = new Map<string, MatchRow>()
+  const matchByDateStage = new Map<string, MatchRow>()
+  
   for (const m of matches as MatchRow[]) {
+    // Mapeo 1: Por equipos (cuando ambos asignados)
     if (m.home_team_id && m.away_team_id) {
       matchByTeams.set(`${m.home_team_id}-${m.away_team_id}`, m)
     }
+    // Mapeo 2: Por fecha+fase (para eliminatorias con equipos NULL)
+    const dateKey = new Date(m.kickoff_at).toISOString()
+    const key = `${m.stage}-${dateKey}`
+    matchByDateStage.set(key, m)
   }
 
     // Construir URL y hacer llamada a la API
@@ -296,6 +307,9 @@ export async function GET(request: NextRequest) {
     }
 
     let updated = 0
+    let matchedByTeams = 0
+    let matchedByDateStage = 0
+    let autoAssignedTeams = 0
     let skippedNoTeams = 0
     let skippedNoMapping = 0
     let skippedUnknownCode = 0
@@ -304,31 +318,85 @@ export async function GET(request: NextRequest) {
     for (const fm of externalMatches) {
       const homeCode = fm.homeTeam?.tla?.toUpperCase()
       const awayCode = fm.awayTeam?.tla?.toUpperCase()
-      if (!homeCode || !awayCode) {
-        skippedNoTeams += 1
-        continue
-      }
-
-      const extHomeId = teamByCode.get(homeCode)
-      const extAwayId = teamByCode.get(awayCode)
-      if (!extHomeId || !extAwayId) {
-        skippedUnknownCode += 1
-        continue
-      }
-
-      let mapped = matchByTeams.get(`${extHomeId}-${extAwayId}`)
+      const homeName = fm.homeTeam?.name
+      const awayName = fm.awayTeam?.name
+      
+      // MAPEO HÍBRIDO
+      let mapped: MatchRow | undefined
       let swapped = false
-      if (!mapped) {
-        mapped = matchByTeams.get(`${extAwayId}-${extHomeId}`)
-        swapped = !!mapped
+      let matchingMethod: 'teams' | 'dateStage' | null = null
+      let extHomeId: number | undefined
+      let extAwayId: number | undefined
+
+      // 1. Intentar mapeo por equipos (si ambos códigos existen)
+      if (homeCode && awayCode) {
+        extHomeId = teamByCode.get(homeCode)
+        extAwayId = teamByCode.get(awayCode)
+        
+        if (extHomeId && extAwayId) {
+          mapped = matchByTeams.get(`${extHomeId}-${extAwayId}`)
+          if (!mapped) {
+            mapped = matchByTeams.get(`${extAwayId}-${extHomeId}`)
+            swapped = !!mapped
+          }
+          if (mapped) matchingMethod = 'teams'
+        } else if (!extHomeId || !extAwayId) {
+          skippedUnknownCode += 1
+        }
+      }
+
+      // 2. Si no se encontró por equipos, intentar mapeo por fecha+fase
+      if (!mapped && fm.utcDate && fm.stage) {
+        const apiDate = new Date(fm.utcDate)
+        const apiStage = fm.stage.toUpperCase()
+        
+        // Buscar match con margen de ±1 minuto en la fecha
+        for (const [key, m] of matchByDateStage) {
+          const [stage, dateStr] = key.split('-', 2)
+          if (stage !== apiStage) continue
+          
+          const dbDate = new Date(dateStr)
+          const diffMinutes = Math.abs(apiDate.getTime() - dbDate.getTime()) / (1000 * 60)
+          
+          if (diffMinutes <= 1) {
+            mapped = m
+            matchingMethod = 'dateStage'
+            console.log(`[cron/sync-results] 🎯 EMPAREJADO POR FECHA/FASE: M${m.match_number} (${apiStage}) - ${homeName || homeCode || '???'} vs ${awayName || awayCode || '???'}`)
+            break
+          }
+        }
       }
 
       if (!mapped) {
         skippedNoMapping += 1
-        if (sampleUnmapped.length < 10) {
-          sampleUnmapped.push({ home: homeCode, away: awayCode, status: fm.status })
+        if ((homeCode || homeName) && (awayCode || awayName) && sampleUnmapped.length < 10) {
+          sampleUnmapped.push({ home: homeCode || homeName || '???', away: awayCode || awayName || '???', status: fm.status })
         }
         continue
+      }
+
+      // Contadores por método de mapeo
+      if (matchingMethod === 'teams') matchedByTeams += 1
+      if (matchingMethod === 'dateStage') matchedByDateStage += 1
+
+      // AUTO-ASIGNACIÓN: Si BD tiene NULL pero API tiene equipos, asignar
+      if ((!mapped.home_team_id || !mapped.away_team_id) && homeCode && awayCode && extHomeId && extAwayId) {
+        const assignPatch: { home_team_id: number; away_team_id: number } = {
+          home_team_id: swapped ? extAwayId : extHomeId,
+          away_team_id: swapped ? extHomeId : extAwayId,
+        }
+        
+        const { error: assignErr } = await supabase
+          .from('matches')
+          .update(assignPatch)
+          .eq('id', mapped.id)
+        
+        if (!assignErr) {
+          autoAssignedTeams += 1
+          mapped.home_team_id = assignPatch.home_team_id
+          mapped.away_team_id = assignPatch.away_team_id
+          console.log(`[cron/sync-results] ✅ AUTO-ASIGNADO M${mapped.match_number}: ${homeCode} vs ${awayCode}`)
+        }
       }
 
       // No actualizar si el Admin fijó el resultado manualmente
@@ -340,15 +408,15 @@ export async function GET(request: NextRequest) {
       const awayScore = swapped ? rawHome : rawAway
 
       let shootoutWinner: number | null = null
-      if (fm.score?.duration === 'PENALTY_SHOOTOUT') {
-        if (fm.score.winner === 'HOME_TEAM') shootoutWinner = extHomeId
-        if (fm.score.winner === 'AWAY_TEAM') shootoutWinner = extAwayId
+      if (fm.score?.duration === 'PENALTY_SHOOTOUT' && mapped.home_team_id && mapped.away_team_id) {
+        if (fm.score.winner === 'HOME_TEAM') shootoutWinner = swapped ? mapped.away_team_id : mapped.home_team_id
+        if (fm.score.winner === 'AWAY_TEAM') shootoutWinner = swapped ? mapped.home_team_id : mapped.away_team_id
       }
 
-      // Actualiza scores, status y stadium desde la API
+      // Actualiza scores, status, stadium y labels desde la API
       // Si la API marca el partido como FINISHED, el status pasa a 'finished' automáticamente
       // y las views de puntos (entry_scores, etc.) recalculan los puntajes
-      const updatePatch = {
+      const updatePatch: Record<string, unknown> = {
         home_score: homeScore,
         away_score: awayScore,
         shootout_winner_team_id: shootoutWinner,
@@ -356,6 +424,10 @@ export async function GET(request: NextRequest) {
         stadium: fm.venue ?? null,
         last_synced_at: new Date().toISOString(),
       }
+
+      // Guardar team labels si vienen de la API (TBD, Winner SF1, etc.)
+      if (homeName) updatePatch.home_team_label = swapped ? awayName : homeName
+      if (awayName) updatePatch.away_team_label = swapped ? homeName : awayName
 
       const { error: updateErr } = await supabase
         .from('matches')
@@ -388,6 +460,9 @@ export async function GET(request: NextRequest) {
     // LOG DETALLADO: Resumen de sincronización
     console.log('[cron/sync-results] ✅ === SINCRONIZACIÓN COMPLETADA ===')
     console.log('[cron/sync-results] Partidos actualizados:', updated)
+    console.log('[cron/sync-results] Emparejados por EQUIPOS:', matchedByTeams)
+    console.log('[cron/sync-results] Emparejados por FECHA/FASE:', matchedByDateStage)
+    console.log('[cron/sync-results] Equipos auto-asignados:', autoAssignedTeams)
     console.log('[cron/sync-results] Partidos recibidos de la API:', externalMatches.length)
     console.log('[cron/sync-results] Omitidos (sin equipos):', skippedNoTeams)
     console.log('[cron/sync-results] Omitidos (código desconocido):', skippedUnknownCode)
@@ -405,6 +480,9 @@ export async function GET(request: NextRequest) {
       fallbackMode: currentSeason !== season,
       upstreamCount: externalMatches.length,
       updated,
+      matchedByTeams,
+      matchedByDateStage,
+      autoAssignedTeams,
       skippedNoTeams,
       skippedUnknownCode,
       skippedNoMapping,

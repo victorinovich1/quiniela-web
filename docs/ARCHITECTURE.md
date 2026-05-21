@@ -347,6 +347,92 @@ SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key
 CRON_SECRET=un_secreto_aleatorio_largo
 ```
 
+### Mapeo Híbrido de Partidos
+
+El sistema usa una **estrategia dual** para emparejar partidos de la API con la base de datos, permitiendo sincronizar los 104 partidos del torneo (72 de grupos + 32 de eliminatorias):
+
+#### 1. Mapeo por Equipos (Fase de Grupos)
+- **Condición:** Ambos equipos asignados en BD (`home_team_id` y `away_team_id` no NULL)
+- **Clave:** `${home_team_id}-${away_team_id}`
+- **Cobertura:** 72 partidos de fase de grupos
+- **Ventaja:** Preciso y rápido (hash map directo)
+
+#### 2. Mapeo por Fecha + Fase (Eliminatorias)
+- **Condición:** Cuando mapeo por equipos falla (equipos NULL o no encontrados)
+- **Clave:** `${stage}-${kickoff_at}` (con margen de ±1 minuto)
+- **Cobertura:** 32 partidos de eliminatorias
+- **Ventaja:** Funciona incluso antes de que se definan los clasificados
+
+**Lógica de selección:**
+```typescript
+// 1. Intentar mapeo por equipos (si ambos códigos existen en la API)
+if (homeCode && awayCode && extHomeId && extAwayId) {
+  mapped = matchByTeams.get(`${extHomeId}-${extAwayId}`)
+}
+
+// 2. Si falla, intentar mapeo por fecha+fase
+if (!mapped && fm.utcDate && fm.stage) {
+  for (const [key, m] of matchByDateStage) {
+    const [stage, dateStr] = key.split('-', 2)
+    if (stage !== apiStage) continue
+    
+    const diffMinutes = Math.abs(apiDate - dbDate) / (1000 * 60)
+    if (diffMinutes <= 1) {
+      mapped = m
+      break
+    }
+  }
+}
+```
+
+#### 3. Auto-Asignación de Equipos
+
+**Gatillo:** Cuando un partido en BD tiene equipos NULL pero la API ya definió los clasificados
+
+**Proceso:**
+1. Detecta que `mapped.home_team_id` o `mapped.away_team_id` son NULL
+2. API devuelve códigos de equipos (ej: 'ARG', 'BRA')
+3. Busca IDs en tabla `teams` usando `teamByCode` Map
+4. Ejecuta UPDATE en tabla `matches`:
+   ```sql
+   UPDATE matches 
+   SET home_team_id = ?, away_team_id = ?
+   WHERE id = ?
+   ```
+5. Incrementa contador `autoAssignedTeams` en la respuesta
+
+**Resultado:**
+- ✅ Los pronósticos se habilitan automáticamente para ese partido
+- ✅ Los usuarios ven los equipos reales en lugar de "Por definir"
+- ✅ El ranking recalcula incluyendo ese partido
+- ✅ No requiere intervención manual del admin
+
+**Ejemplo de flujo:**
+
+```mermaid
+graph TD
+    A[API devuelve 104 partidos] --> B{¿Equipos asignados en BD?}
+    B -->|Sí| C[Mapeo por equipos]
+    B -->|No| D[Mapeo por fecha+fase]
+    C --> E{¿Partido encontrado?}
+    D --> E
+    E -->|No| F[Omitir partido]
+    E -->|Sí| G{¿Equipos NULL en BD?}
+    G -->|No| H[Sincronizar scores]
+    G -->|Sí| I{¿API tiene equipos?}
+    I -->|No| H
+    I -->|Sí| J[Auto-asignar equipos]
+    J --> H
+    H --> K[Actualizar last_synced_at]
+```
+
+**Estadísticas de sincronización:**
+- `upstreamCount`: Total de partidos recibidos de la API (104)
+- `updated`: Partidos sincronizados (scores/status actualizados)
+- `autoAssignedTeams`: Equipos auto-asignados en eliminatorias
+- `skippedNoMapping`: Partidos no encontrados en BD
+- `skippedUnknownCode`: Equipos con códigos desconocidos
+
 ### Configuración en Admin
 
 El panel de administración muestra:

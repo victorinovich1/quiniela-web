@@ -14,6 +14,8 @@ type MatchRow = {
   match_number: number
   home_team_id: number | null
   away_team_id: number | null
+  kickoff_at: string
+  stage: string
   status: MatchStatus
   manual_override: boolean
 }
@@ -36,6 +38,8 @@ type FdMatch = {
   status?: string | null
   utcDate?: string | null
   venue?: string | null
+  stage?: string | null
+  matchday?: number | null
   homeTeam?: FdTeam | null
   awayTeam?: FdTeam | null
   score?: FdScore | null
@@ -147,7 +151,7 @@ export async function GET(request: NextRequest) {
 
     const [{ data: teams, error: teamsErr }, { data: matches, error: matchesErr }] = await Promise.all([
       supabase.from('teams').select('id, code'),
-      supabase.from('matches').select('id, match_number, home_team_id, away_team_id, status, manual_override'),
+      supabase.from('matches').select('id, match_number, home_team_id, away_team_id, kickoff_at, stage, status, manual_override'),
     ])
 
     if (teamsErr || matchesErr || !teams || !matches) {
@@ -165,13 +169,21 @@ export async function GET(request: NextRequest) {
     teamByCode.set(t.code.toUpperCase(), t.id)
   }
 
-  // NOTA: Solo sincroniza partidos que YA tienen ambos equipos asignados
-  // Para eliminatorias con equipos NULL, el admin debe asignarlos primero manualmente
+  // MAPEO HÍBRIDO:
+  // 1. Por equipos: para fase de grupos (ya asignados)
   const matchByTeams = new Map<string, MatchRow>()
   for (const m of matches as MatchRow[]) {
     if (m.home_team_id && m.away_team_id) {
       matchByTeams.set(`${m.home_team_id}-${m.away_team_id}`, m)
     }
+  }
+
+  // 2. Por fecha+fase: para eliminatorias (equipos NULL hasta que clasifiquen)
+  const matchByDateStage = new Map<string, MatchRow>()
+  for (const m of matches as MatchRow[]) {
+    const dateKey = new Date(m.kickoff_at).toISOString()
+    const key = `${m.stage}-${dateKey}`
+    matchByDateStage.set(key, m)
   }
 
     // Construir URL y hacer llamada a la API
@@ -296,6 +308,7 @@ export async function GET(request: NextRequest) {
     }
 
     let updated = 0
+    let autoAssignedTeams = 0
     let skippedNoTeams = 0
     let skippedNoMapping = 0
     let skippedUnknownCode = 0
@@ -304,31 +317,73 @@ export async function GET(request: NextRequest) {
     for (const fm of externalMatches) {
       const homeCode = fm.homeTeam?.tla?.toUpperCase()
       const awayCode = fm.awayTeam?.tla?.toUpperCase()
-      if (!homeCode || !awayCode) {
-        skippedNoTeams += 1
-        continue
-      }
-
-      const extHomeId = teamByCode.get(homeCode)
-      const extAwayId = teamByCode.get(awayCode)
-      if (!extHomeId || !extAwayId) {
-        skippedUnknownCode += 1
-        continue
-      }
-
-      let mapped = matchByTeams.get(`${extHomeId}-${extAwayId}`)
+      
+      // Intentar mapeo por equipos (si ambos existen en la API)
+      let mapped: MatchRow | undefined
       let swapped = false
-      if (!mapped) {
-        mapped = matchByTeams.get(`${extAwayId}-${extHomeId}`)
-        swapped = !!mapped
+      let extHomeId: number | undefined
+      let extAwayId: number | undefined
+
+      if (homeCode && awayCode) {
+        extHomeId = teamByCode.get(homeCode)
+        extAwayId = teamByCode.get(awayCode)
+        
+        if (extHomeId && extAwayId) {
+          mapped = matchByTeams.get(`${extHomeId}-${extAwayId}`)
+          if (!mapped) {
+            mapped = matchByTeams.get(`${extAwayId}-${extHomeId}`)
+            swapped = !!mapped
+          }
+        } else if (!extHomeId || !extAwayId) {
+          skippedUnknownCode += 1
+        }
+      }
+
+      // Si no se encontró por equipos, intentar mapeo por fecha+fase
+      if (!mapped && fm.utcDate && fm.stage) {
+        const apiDate = new Date(fm.utcDate)
+        const apiStage = fm.stage.toUpperCase()
+        
+        // Buscar match con margen de ±1 minuto en la fecha
+        for (const [key, m] of matchByDateStage) {
+          const [stage, dateStr] = key.split('-', 2)
+          if (stage !== apiStage) continue
+          
+          const dbDate = new Date(dateStr)
+          const diffMinutes = Math.abs(apiDate.getTime() - dbDate.getTime()) / (1000 * 60)
+          
+          if (diffMinutes <= 1) {
+            mapped = m
+            break
+          }
+        }
       }
 
       if (!mapped) {
         skippedNoMapping += 1
-        if (sampleUnmapped.length < 10) {
+        if (homeCode && awayCode && sampleUnmapped.length < 10) {
           sampleUnmapped.push({ home: homeCode, away: awayCode, status: fm.status })
         }
         continue
+      }
+
+      // AUTO-ASIGNACIÓN: Si BD tiene NULL pero API tiene equipos, asignar
+      if ((!mapped.home_team_id || !mapped.away_team_id) && homeCode && awayCode && extHomeId && extAwayId) {
+        const assignPatch = {
+          home_team_id: swapped ? extAwayId : extHomeId,
+          away_team_id: swapped ? extHomeId : extAwayId,
+        }
+        
+        const { error: assignErr } = await supabase
+          .from('matches')
+          .update(assignPatch)
+          .eq('id', mapped.id)
+        
+        if (!assignErr) {
+          autoAssignedTeams += 1
+          mapped.home_team_id = assignPatch.home_team_id
+          mapped.away_team_id = assignPatch.away_team_id
+        }
       }
 
       // No actualizar si el Admin fijó el resultado manualmente
@@ -340,9 +395,9 @@ export async function GET(request: NextRequest) {
       const awayScore = swapped ? rawHome : rawAway
 
       let shootoutWinner: number | null = null
-      if (fm.score?.duration === 'PENALTY_SHOOTOUT') {
-        if (fm.score.winner === 'HOME_TEAM') shootoutWinner = extHomeId
-        if (fm.score.winner === 'AWAY_TEAM') shootoutWinner = extAwayId
+      if (fm.score?.duration === 'PENALTY_SHOOTOUT' && mapped.home_team_id && mapped.away_team_id) {
+        if (fm.score.winner === 'HOME_TEAM') shootoutWinner = swapped ? mapped.away_team_id : mapped.home_team_id
+        if (fm.score.winner === 'AWAY_TEAM') shootoutWinner = swapped ? mapped.home_team_id : mapped.away_team_id
       }
 
       // Actualiza scores, status y stadium desde la API
@@ -388,6 +443,7 @@ export async function GET(request: NextRequest) {
     // LOG DETALLADO: Resumen de sincronización
     console.log('[cron/sync-results] ✅ === SINCRONIZACIÓN COMPLETADA ===')
     console.log('[cron/sync-results] Partidos actualizados:', updated)
+    console.log('[cron/sync-results] Equipos auto-asignados:', autoAssignedTeams)
     console.log('[cron/sync-results] Partidos recibidos de la API:', externalMatches.length)
     console.log('[cron/sync-results] Omitidos (sin equipos):', skippedNoTeams)
     console.log('[cron/sync-results] Omitidos (código desconocido):', skippedUnknownCode)
@@ -405,6 +461,7 @@ export async function GET(request: NextRequest) {
       fallbackMode: currentSeason !== season,
       upstreamCount: externalMatches.length,
       updated,
+      autoAssignedTeams,
       skippedNoTeams,
       skippedUnknownCode,
       skippedNoMapping,

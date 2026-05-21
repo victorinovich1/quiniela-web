@@ -657,6 +657,85 @@ useEffect(() => {
 }, [])
 ```
 
+2. **LeaderboardClient.tsx:** Mismo patrón para evitar mismatch server/client en timestamps.
+
+**Resultado:** Eliminación total de errores de hidratación relacionados con tiempo.
+
+## Estrategia de Backups
+
+La quiniela implementa un sistema de respaldo automático que opera independientemente de máquinas locales, garantizando la preservación de datos críticos.
+
+### Sistema de Backups Diarios
+
+**Implementación:** GitHub Actions (`.github/workflows/daily-backup.yml`)
+
+**Configuración:**
+- **Frecuencia:** Diario a las 03:00 AM UTC
+- **Retención:** 90 días
+- **Almacenamiento:** GitHub Artifacts
+- **Ejecución:** Servidor de GitHub (ubuntu-latest)
+
+**Proceso automatizado:**
+
+1. GitHub Actions inicia el flujo de trabajo según el cron schedule
+2. Instala el cliente de PostgreSQL en la VM temporal
+3. Ejecuta `scripts/backup-db.sh` con la connection string de Supabase
+4. El script exporta solo las tablas críticas del esquema `public`:
+   - `profiles` — Usuarios y configuración de perfil
+   - `entries` — Quinielas/participaciones
+   - `matches` — Calendario de partidos
+   - `teams` — Equipos del torneo
+   - `predictions` — Pronósticos de todos los partidos
+   - `special_predictions` — Predicciones especiales (campeón, subcampeón, etc.)
+   - `settings` — Configuración global
+   - `invitations` — Códigos de invitación
+5. Comprime el dump en formato `.zip` con timestamp
+6. Almacena el archivo como artifact de GitHub con nombre `quiniela-backup-{run_number}`
+
+**Tamaño estimado:** ~500 KB - 2 MB (comprimido) dependiendo de la cantidad de pronósticos.
+
+### Acceso a los Backups
+
+**Para restaurar o consultar un backup:**
+
+1. Ir a: `https://github.com/{tu-usuario}/quiniela-web/actions/workflows/daily-backup.yml`
+2. Seleccionar la ejecución deseada (por fecha)
+3. Descargar el artifact desde la sección "Artifacts"
+4. Descomprimir el archivo `.zip`
+5. Restaurar con: `psql $SUPABASE_DB_URL < quiniela_backup_YYYYMMDD_HHMMSS.sql`
+
+**Ejecución manual:** El workflow puede dispararse manualmente desde la pestaña "Actions" en GitHub usando el botón "Run workflow".
+
+### Configuración Requerida
+
+**Secret de GitHub:** `SUPABASE_DB_URL`
+
+El workflow requiere acceso a la connection string de la base de datos de Supabase. Esta debe configurarse como un secret del repositorio (ver sección de configuración abajo).
+
+**Seguridad:**
+- La connection string nunca se expone en logs
+- Los backups son privados (solo accesibles con permisos del repositorio)
+- El script usa `--data-only` (no incluye schemas ni funciones, solo datos)
+
+### Limitaciones
+
+- **Plan gratuito de GitHub:** 500 MB de storage para artifacts, 2000 minutos/mes de Actions
+- **Estimación:** ~60 backups mensuales = ~120 MB (dentro del límite gratuito)
+- **Sin backups automáticos de imágenes** (avatares, banderas) — estas están en CDNs públicos
+
+### Ventajas del Enfoque
+
+✅ **Independiente:** No requiere computadora local encendida
+✅ **Automatizado:** Cero intervención manual
+✅ **Versionado:** Múltiples puntos de restauración
+✅ **Gratuito:** Dentro del tier free de GitHub
+✅ **Auditable:** Historial completo de ejecuciones visible en GitHub
+    setCurrentTime(Date.now())
+  }, 1000)
+  return () => clearInterval(interval)
+}, [])
+```
+
 2. **ProfileClient.tsx:**
 ```typescript
 // ❌ ANTES

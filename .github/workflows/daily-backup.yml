@@ -1,0 +1,45 @@
+name: Backup Diario de Base de Datos
+
+on:
+  schedule:
+    # Todos los días a las 03:00 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch: # Permite ejecutar manualmente desde GitHub
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+      
+      - name: Instalar PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client zip
+      
+      - name: Ejecutar script de backup
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          chmod +x scripts/backup-db.sh
+          cd scripts
+          ./backup-db.sh
+      
+      - name: Subir backup como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: quiniela-backup-${{ github.run_number }}
+          path: scripts/quiniela_backup_*.zip
+          retention-days: 90
+          compression-level: 0 # Ya está comprimido
+      
+      - name: Notificar éxito
+        if: success()
+        run: |
+          echo "✅ Backup completado y almacenado por 90 días"
+          echo "📁 Artifact: quiniela-backup-${{ github.run_number }}"

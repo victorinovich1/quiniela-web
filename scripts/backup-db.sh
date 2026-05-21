@@ -49,8 +49,12 @@ for table in "${TABLES[@]}"; do
   TABLE_OPTS="${TABLE_OPTS} -t public.${table}"
 done
 
+# Verificar versión de pg_dump
+echo "🔍 Versión de pg_dump:"
+/usr/lib/postgresql/17/bin/pg_dump --version
+
 # Ejecutar pg_dump usando Pooler (compatible con Pgbouncer)
-pg_dump \
+/usr/lib/postgresql/17/bin/pg_dump \
   "$SUPABASE_DB_URL" \
   --no-owner \
   --no-acl \

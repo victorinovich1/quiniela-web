@@ -913,9 +913,14 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
         const byTeams = data.matchedByTeams || 0
         const byDateStage = data.matchedByDateStage || 0
         const autoAssigned = data.autoAssignedTeams || 0
+        const fromAPI = data.upstreamCount || 0
+        
         let msg = `✅ Sincronización exitosa: ${data.updated} partidos actualizados`
+        if (fromAPI > 0) {
+          msg += ` de ${fromAPI} recibidos de la API`
+        }
         if (byTeams > 0 || byDateStage > 0) {
-          msg += ` (${byTeams} por equipos, ${byDateStage} por fecha/fase)`
+          msg += ` • Emparejados: ${byTeams} por equipos, ${byDateStage} por fecha/fase`
         }
         if (autoAssigned > 0) {
           msg += ` • ${autoAssigned} equipos auto-asignados`

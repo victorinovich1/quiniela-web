@@ -322,7 +322,36 @@ export async function GET(request: NextRequest) {
     
     // LOG DETALLADO: Estructura de respuesta
     console.log('[cron/sync-results] ✅ Respuesta JSON recibida correctamente')
-    console.log('[cron/sync-results] Partidos en respuesta:', externalMatches.length)
+    console.log('[cron/sync-results] 📊 TOTAL PARTIDOS RECIBIDOS DE LA API:', externalMatches.length)
+    
+    if (externalMatches.length > 0) {
+      // Mostrar primer partido
+      const first = externalMatches[0]
+      console.log('[cron/sync-results] 🥇 PRIMER PARTIDO:', {
+        home: first.homeTeam?.name || first.homeTeam?.tla || '???',
+        away: first.awayTeam?.name || first.awayTeam?.tla || '???',
+        stage: first.stage,
+        date: first.utcDate,
+      })
+      
+      // Mostrar último partido
+      const last = externalMatches[externalMatches.length - 1]
+      console.log('[cron/sync-results] 🏁 ÚLTIMO PARTIDO:', {
+        home: last.homeTeam?.name || last.homeTeam?.tla || '???',
+        away: last.awayTeam?.name || last.awayTeam?.tla || '???',
+        stage: last.stage,
+        date: last.utcDate,
+      })
+      
+      // Desglose por fase
+      const byStage: Record<string, number> = {}
+      externalMatches.forEach((m: FdMatch) => {
+        const stage = m.stage || 'UNKNOWN'
+        byStage[stage] = (byStage[stage] || 0) + 1
+      })
+      console.log('[cron/sync-results] 📋 DESGLOSE POR FASE:', byStage)
+    }
+    
     if (externalMatches.length === 0) {
       console.warn('[cron/sync-results] ⚠️  La API devolvió 0 partidos. Posibles causas:')
       console.warn('[cron/sync-results]    - La temporada aún no tiene fixture cargado')

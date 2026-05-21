@@ -67,9 +67,10 @@ echo "🔍 Versión de pg_dump:"
 echo "✅ Backup creado: $BACKUP_FILE"
 echo "📊 Tamaño: $(du -h "$BACKUP_FILE" | cut -f1)"
 
-# Comprimir
-zip "${BACKUP_FILE}.zip" "$BACKUP_FILE"
+# Comprimir con nombre fijo para facilitar artifact upload
+zip "quiniela_backup.zip" "$BACKUP_FILE"
 rm "$BACKUP_FILE"
 
-echo "📦 Archivo comprimido: ${BACKUP_FILE}.zip"
+echo "📦 Archivo comprimido: quiniela_backup.zip"
+echo "📂 Ubicación: $(pwd)/quiniela_backup.zip"
 echo "✅ Backup completado exitosamente"

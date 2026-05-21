@@ -44,11 +44,16 @@ jobs:
         run: |
           bash scripts/backup-db.sh
       
+      - name: Debug - Verificar archivos generados
+        run: |
+          echo "📁 Contenido del directorio:"
+          ls -lh quiniela_backup.zip || echo "❌ No se encontró quiniela_backup.zip"
+      
       - name: Subir backup como artifact
         uses: actions/upload-artifact@v4
         with:
           name: quiniela-backup-${{ github.run_number }}
-          path: scripts/quiniela_backup_*.zip
+          path: quiniela_backup.zip
           retention-days: 90
           compression-level: 0 # Ya está comprimido
       

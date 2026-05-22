@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createClient as createServerClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,9 +10,32 @@ export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
   
-  // Verificar autenticación
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+  // Verificar autenticación: puede ser cron job O admin
+  let isAuthorized = false
+  
+  // Opción 1: Cron job con secret
+  if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
+    isAuthorized = true
+  }
+  
+  // Opción 2: Usuario admin desde frontend
+  if (!isAuthorized) {
+    const serverClient = createServerClient()
+    const { data: { user } } = await serverClient.auth.getUser()
+    
+    if (user) {
+      const { data: isAdmin } = await serverClient.rpc('is_admin', { user_id: user.id })
+      if (isAdmin) {
+        isAuthorized = true
+      }
+    }
+  }
+  
+  if (!isAuthorized) {
+    return NextResponse.json(
+      { ok: false, error: 'Solo administradores pueden ejecutar pruebas' },
+      { status: 403 }
+    )
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -55,16 +79,16 @@ export async function GET(request: NextRequest) {
       if (!entries || entries.length === 0) continue
 
       for (const entry of entries) {
-        // Verificar si ya tiene predicción para este partido
+        // Verificar si ya tiene predicción para este partido (home_score null = no pronosticado)
         const { data: existingPrediction } = await supabase
           .from('predictions')
-          .select('id')
+          .select('id, home_score')
           .eq('entry_id', entry.id)
           .eq('match_id', match.id)
-          .single()
+          .maybeSingle()
 
-        // Si ya tiene predicción, skip
-        if (existingPrediction) continue
+        // Si ya tiene predicción con score, skip
+        if (existingPrediction && existingPrediction.home_score !== null) continue
 
         // Verificar si ya se envió recordatorio reciente (últimas 2 horas)
         const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000)

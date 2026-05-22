@@ -10,22 +10,25 @@ export default function NotificationBell({ userId }: { userId: string }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [showDropdown, setShowDropdown] = useState(false)
   const [audioEnabled, setAudioEnabled] = useState(false)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
   const dropdownRef = useRef<HTMLDivElement | null>(null)
   const supabase = createClient()
 
-  // Inicializar audio (desbloquear permisos del navegador)
-  function initAudio() {
-    if (!audioEnabled && audioRef.current) {
-      // Reproducir y pausar inmediatamente para desbloquear
-      audioRef.current.play().then(() => {
-        audioRef.current?.pause()
-        audioRef.current!.currentTime = 0
-        setAudioEnabled(true)
-        console.log('✅ Audio desbloqueado')
-      }).catch(() => {
-        setAudioEnabled(true) // Marcar como habilitado de todas formas
-      })
+  // Pre-desbloquear audio en el primer clic del usuario
+  function unlockAudio() {
+    if (!audioEnabled) {
+      const audioEl = document.getElementById('notification-sound') as HTMLAudioElement
+      if (audioEl) {
+        audioEl.volume = 0.5 // Configurar volumen
+        audioEl.play().then(() => {
+          audioEl.pause()
+          audioEl.currentTime = 0
+          setAudioEnabled(true)
+          console.log('✅ Audio desbloqueado (pre-carga exitosa)')
+        }).catch((err) => {
+          console.warn('⚠️ No se pudo pre-cargar audio:', err.message)
+          setAudioEnabled(true) // Marcar como intentado
+        })
+      }
     }
   }
 
@@ -39,12 +42,6 @@ export default function NotificationBell({ userId }: { userId: string }) {
 
     init()
 
-    // Crear audio element
-    if (typeof window !== 'undefined') {
-      audioRef.current = new Audio('/sounds/notification.mp3')
-      audioRef.current.volume = 0.5
-    }
-
     // Cerrar dropdown al hacer clic fuera
     function handleClickOutside(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -55,7 +52,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
 
     // Desbloquear audio en el primer clic del usuario
     function handleFirstClick() {
-      initAudio()
+      unlockAudio()
       document.removeEventListener('click', handleFirstClick)
     }
     document.addEventListener('click', handleFirstClick)
@@ -103,13 +100,19 @@ export default function NotificationBell({ userId }: { userId: string }) {
           setNotifications((prev) => [newNotif, ...prev.slice(0, 9)])
           
           // Reproducir sonido si está habilitado
-          if (profile?.notifications_enabled && profile?.notifications_sound && audioEnabled && audioRef.current) {
-            console.log('🔔 Intentando reproducir sonido de notificación...')
-            audioRef.current.play()
-              .then(() => console.log('✅ Sonido reproducido correctamente'))
-              .catch((err) => {
-                console.warn('⚠️ Autoplay bloqueado:', err.message)
-              })
+          if (profile?.notifications_enabled && profile?.notifications_sound && audioEnabled) {
+            const audioEl = document.getElementById('notification-sound') as HTMLAudioElement
+            if (audioEl) {
+              console.log('🔔 Intentando reproducir sonido de notificación...')
+              audioEl.volume = 0.5 // Configurar volumen
+              audioEl.play()
+                .then(() => console.log('✅ Sonido reproducido correctamente'))
+                .catch((err) => {
+                  console.warn('⚠️ Autoplay bloqueado:', err.message)
+                })
+            } else {
+              console.warn('⚠️ Elemento de audio no encontrado')
+            }
           }
         }
       )
@@ -174,10 +177,15 @@ export default function NotificationBell({ userId }: { userId: string }) {
 
   return (
     <div className="relative" ref={dropdownRef}>
+      {/* Elemento de audio oculto con pre-carga */}
+      <audio id="notification-sound" preload="auto" className="hidden">
+        <source src="/sounds/notification.mp3" type="audio/mpeg" />
+      </audio>
+
       <button
         onClick={() => {
           setShowDropdown(!showDropdown)
-          initAudio()
+          unlockAudio()
         }}
         className="relative p-2 text-white/60 hover:text-white transition-colors"
         aria-label="Notificaciones"

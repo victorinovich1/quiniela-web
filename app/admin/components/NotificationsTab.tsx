@@ -88,7 +88,7 @@ export default function NotificationsTab() {
 
   async function handleTestReminders() {
     setTestingReminders(true)
-    setResult(null)
+    setResult({ type: 'success', text: '🔍 Iniciando escaneo de partidos cercanos...' })
 
     try {
       const res = await fetch('/api/cron/check-reminders', {

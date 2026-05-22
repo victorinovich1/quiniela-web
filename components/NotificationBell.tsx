@@ -14,6 +14,21 @@ export default function NotificationBell({ userId }: { userId: string }) {
   const dropdownRef = useRef<HTMLDivElement | null>(null)
   const supabase = createClient()
 
+  // Inicializar audio (desbloquear permisos del navegador)
+  function initAudio() {
+    if (!audioEnabled && audioRef.current) {
+      // Reproducir y pausar inmediatamente para desbloquear
+      audioRef.current.play().then(() => {
+        audioRef.current?.pause()
+        audioRef.current!.currentTime = 0
+        setAudioEnabled(true)
+        console.log('✅ Audio desbloqueado')
+      }).catch(() => {
+        setAudioEnabled(true) // Marcar como habilitado de todas formas
+      })
+    }
+  }
+
   // Cargar notificaciones y perfil
   useEffect(() => {
     async function init() {
@@ -37,7 +52,18 @@ export default function NotificationBell({ userId }: { userId: string }) {
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+
+    // Desbloquear audio en el primer clic del usuario
+    function handleFirstClick() {
+      initAudio()
+      document.removeEventListener('click', handleFirstClick)
+    }
+    document.addEventListener('click', handleFirstClick)
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('click', handleFirstClick)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId])
 
@@ -73,6 +99,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
         },
         (payload) => {
           const newNotif = payload.new as Notification
+          console.log('[Realtime] Notificación recibida:', newNotif.title)
           setNotifications((prev) => [newNotif, ...prev.slice(0, 9)])
           
           // Reproducir sonido si está habilitado
@@ -81,7 +108,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
             audioRef.current.play()
               .then(() => console.log('✅ Sonido reproducido correctamente'))
               .catch((err) => {
-                console.warn('⚠️ Autoplay bloqueado por el navegador:', err.message)
+                console.warn('⚠️ Autoplay bloqueado:', err.message)
               })
           }
         }
@@ -134,10 +161,6 @@ export default function NotificationBell({ userId }: { userId: string }) {
     }
   }
 
-  function enableAudio() {
-    setAudioEnabled(true)
-  }
-
   const unreadCount = notifications.filter((n) => !n.read).length
 
   const notificationTypeStyles = {
@@ -154,7 +177,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
       <button
         onClick={() => {
           setShowDropdown(!showDropdown)
-          enableAudio()
+          initAudio()
         }}
         className="relative p-2 text-white/60 hover:text-white transition-colors"
         aria-label="Notificaciones"

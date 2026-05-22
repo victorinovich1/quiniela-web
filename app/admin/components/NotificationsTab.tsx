@@ -17,6 +17,7 @@ export default function NotificationsTab() {
   const [title, setTitle] = useState('')
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
+  const [testingReminders, setTestingReminders] = useState(false)
   const [result, setResult] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   useEffect(() => {
@@ -83,6 +84,33 @@ export default function NotificationsTab() {
     }
 
     setSending(false)
+  }
+
+  async function handleTestReminders() {
+    setTestingReminders(true)
+    setResult(null)
+
+    try {
+      const res = await fetch('/api/cron/check-reminders', {
+        method: 'GET',
+      })
+
+      const data = await res.json()
+
+      if (data.ok) {
+        setResult({
+          type: 'success',
+          text: `✅ Recordatorios enviados: ${data.remindersSent || 0} (${data.matchesChecked || 0} partidos revisados)`,
+        })
+      } else {
+        setResult({ type: 'error', text: `Error: ${data.error || 'Unknown'}` })
+      }
+    } catch (err) {
+      setResult({ type: 'error', text: 'Error al ejecutar prueba de recordatorios' })
+    }
+
+    setTestingReminders(false)
+    setTimeout(() => setResult(null), 6000)
   }
 
   return (
@@ -177,20 +205,36 @@ export default function NotificationsTab() {
                   ? 'bg-fifaGreen/20 text-fifaGreen border border-fifaGreen/30'
                   : 'bg-danger/20 text-danger border border-danger/30'
               }`}
-            >
-              {result.text}
+            >              {result.text}
             </div>
           )}
 
-          {/* Botón enviar */}
+          {/* Botón de envío */}
           <button
             onClick={handleSendNotification}
-            disabled={sending || !title.trim() || !message.trim()}
-            className="btn btn-primary w-full"
+            disabled={sending}
+            className="btn btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {sending ? 'Enviando...' : '📨 ENVIAR NOTIFICACIÓN'}
+            {sending ? 'Enviando...' : '📤 ENVIAR NOTIFICACIÓN'}
           </button>
         </div>
+      </div>
+
+      {/* Herramienta de prueba de recordatorios */}
+      <div className="card p-6 max-w-2xl mt-6">
+        <h3 className="font-extrabold uppercase tracking-tight text-white text-lg mb-4">
+          🧪 Prueba de Recordatorios
+        </h3>
+        <p className="text-sm text-white/70 mb-4">
+          Ejecuta manualmente la lógica de recordatorios de partidos cercanos. Envía alertas a usuarios que no han pronosticado partidos que comienzan en menos de 45 minutos.
+        </p>
+        <button
+          onClick={handleTestReminders}
+          disabled={testingReminders}
+          className="btn btn-outline w-full disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {testingReminders ? 'Ejecutando...' : '🧪 PROBAR RECORDATORIOS DE 30 MIN'}
+        </button>
       </div>
     </div>
   )

@@ -671,6 +671,129 @@ Solo usa contenedores más pequeños (`max-w-2xl`, `max-w-3xl`) para **elementos
 ```tsx
 // ❌ MAL — duplica contenedor
 export default function MyPage() {
+
+## Componente NotificationBell
+
+**Ubicación:** `components/NotificationBell.tsx` (integrado en `Navbar.tsx`)
+
+### Diseño Visual
+
+```
+┌────────────────────────────────────────┐
+│  🔔  [5]  ← Badge rojo con contador    │
+└────┬───────────────────────────────────┘
+     │ Al hacer click, abre dropdown:
+     ▼
+┌──────────────────────────────────────────┐
+│ NOTIFICACIONES                   [header]│
+├──────────────────────────────────────────┤
+│ ⚽ Partido finalizado         🟢          │
+│ MEX 2-1 ARG                              │
+│ 22 may 14:30                             │
+├──────────────────────────────────────────┤
+│ 📢 Actualización importante              │
+│ El sistema está funcionando...           │
+│ 21 may 10:15                             │
+├──────────────────────────────────────────┤
+│                  ...                      │
+├──────────────────────────────────────────┤
+│ Marcar todas como leídas        [footer]│
+└──────────────────────────────────────────┘
+```
+
+### Estilo
+
+**Badge (contador no leídas):**
+- Círculo rojo: `bg-danger`
+- Tamaño: `w-5 h-5`
+- Posición: `absolute -top-1 -right-1`
+- Texto: `text-xs font-bold`
+- Máximo: Si > 9, muestra "9+"
+
+**Dropdown:**
+- Ancho fijo: `w-80`
+- Fondo: `bg-navy-deep`
+- Borde: `border border-white/15`
+- Sombra: `shadow-xl`
+- Altura máxima: `max-h-96` con scroll interno
+
+**Header:**
+- Fondo: `bg-navy-medium`
+- Padding: `px-4 py-3`
+- Texto: `font-bold uppercase tracking-wider text-sm`
+
+**Items de notificación:**
+- Padding: `p-3`
+- Borde inferior: `border-b border-white/10`
+- Hover: `hover:bg-navy-medium/60`
+- No leídas: `bg-navy-medium/20` (fondo más claro)
+- **Borde lateral por tipo:**
+  - `match_update`: `border-l-4 border-fifaGreen`
+  - `ranking_update`: `border-l-4 border-yellow-400`
+  - `info`: `border-l-4 border-blue-400`
+  - `success`: `border-l-4 border-fifaGreen`
+  - `warning`: `border-l-4 border-yellow-500`
+  - `error`: `border-l-4 border-danger`
+
+**Indicador de no leída:**
+- Círculo verde: `w-2 h-2 bg-fifaGreen rounded-full`
+- Posición: Esquina superior derecha del item
+
+**Footer (Marcar todas):**
+- Fondo: `bg-navy-medium`
+- Botón: `text-xs text-fifaGreen hover:text-fifaGreen/80`
+- Estilo: `font-bold uppercase tracking-wider`
+
+### Interactividad
+
+**Campana:**
+- Color default: `text-white/60`
+- Hover: `text-white`
+- Transición: `transition-colors`
+
+**Notificaciones:**
+- Click en item → marca como leída (UPDATE) y navega a `link` si existe
+- Click en "Marcar todas" → UPDATE masivo de todas las no leídas
+
+**Audio:**
+- Archivo: `/sounds/notification.mp3`
+- Volumen: 50% (`audioRef.current.volume = 0.5`)
+- Se activa solo después del primer click en campana (bypass de autoplay block)
+- Solo reproduce si `notifications_enabled && notifications_sound`
+
+### Realtime
+
+**Suscripción:**
+```typescript
+const channel = supabase
+  .channel('notifications')
+  .on('postgres_changes', {
+    event: 'INSERT',
+    schema: 'public',
+    table: 'notifications',
+    filter: `user_id=eq.${userId}`,
+  }, (payload) => {
+    // Actualizar estado + reproducir sonido
+  })
+  .subscribe()
+```
+
+**Cleanup:** El canal se desuscribe en el `return` del `useEffect`
+
+### Accesibilidad
+
+- Botón tiene `aria-label="Notificaciones"`
+- Badge tiene contador visible para screen readers
+- Dropdown se cierra al hacer click fuera (event listener `mousedown`)
+
+### Responsive
+
+**Desktop:** Campana visible en `Navbar` junto a botón "Salir"
+
+**Mobile:** Campana visible en mismo lugar (el `BottomNav` no la incluye)
+
+**Nota:** El dropdown siempre abre alineado a la derecha (`absolute right-0`)
+
   return (
     <div className="max-w-5xl mx-auto px-4">  {/* NO HACER */}
       <PageHeader title="..." />

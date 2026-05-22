@@ -7,8 +7,9 @@ import PageHeader from '@/components/PageHeader'
 import Flag from '@/components/Flag'
 import type { Team, Match, Profile, Invitation, Settings, Phase, Entry, Role } from '@/lib/types'
 import { PHASE_LABELS, KO_PHASES, GROUP_CODES } from '@/lib/types'
+import NotificationsTab from './components/NotificationsTab'
 
-type Tab = 'teams' | 'matches' | 'invitations' | 'participants' | 'settings'
+type Tab = 'teams' | 'matches' | 'invitations' | 'participants' | 'settings' | 'notifications'
 
 export default function AdminClient({
   userRole,
@@ -35,6 +36,7 @@ export default function AdminClient({
     { key: 'matches', label: 'Resultados' },
     { key: 'invitations', label: 'Invitaciones' },
     { key: 'participants', label: 'Participantes' },
+    { key: 'notifications', label: 'Notificaciones' },
     { key: 'settings', label: 'Configuración' },
   ]
 
@@ -70,6 +72,7 @@ export default function AdminClient({
       {tab === 'matches' && !isManager && <MatchesTab initialMatches={initialMatches} teams={initialTeams} settings={initialSettings} />}
       {tab === 'invitations' && <InvitationsTab initialInvitations={initialInvitations} />}
       {tab === 'participants' && <ParticipantsTab initialProfiles={initialProfiles} initialEntries={initialEntries} isManager={isManager} />}
+      {tab === 'notifications' && !isManager && <NotificationsTab />}
       {tab === 'settings' && !isManager && <SettingsTab initialSettings={initialSettings} teams={initialTeams} />}
     </div>
   )

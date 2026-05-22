@@ -64,6 +64,11 @@ export default function ProfileClient({
   // Acordeón de seguridad
   const [securityOpen, setSecurityOpen] = useState(false)
   
+  // Preferencias de notificaciones
+  const [notificationsEnabled, setNotificationsEnabled] = useState(profile?.notifications_enabled ?? true)
+  const [notificationsSound, setNotificationsSound] = useState(profile?.notifications_sound ?? true)
+  const [savingNotifications, setSavingNotifications] = useState(false)
+  
   // PWA Install Prompt
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [showInstallButton, setShowInstallButton] = useState(false)
@@ -182,6 +187,20 @@ export default function ProfileClient({
       setNewPassword('')
       setConfirmPassword('')
       setTimeout(() => setPasswordMsg(null), 3000)
+    }
+  }
+
+  async function updateNotificationPreference(field: 'notifications_enabled' | 'notifications_sound', value: boolean) {
+    if (!user) return
+    setSavingNotifications(true)
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('profiles')
+      .update({ [field]: value })
+      .eq('id', user.id)
+    setSavingNotifications(false)
+    if (error) {
+      console.error('Error actualizando preferencias:', error)
     }
   }
 
@@ -356,6 +375,74 @@ export default function ProfileClient({
             </div>
           </div>
         )}
+
+        {/* AJUSTES DE NOTIFICACIONES */}
+        <div className="card border border-white/10 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            <h2 className="font-extrabold uppercase tracking-tight text-white text-lg">Notificaciones</h2>
+          </div>
+
+          <div className="space-y-4">
+            {/* Switch: Recibir notificaciones */}
+            <div className="flex items-center justify-between p-4 bg-navy-medium/30 rounded-lg">
+              <div className="flex-1">
+                <h3 className="font-bold text-white text-sm mb-1">Recibir notificaciones</h3>
+                <p className="text-xs text-white/60">Recibe alertas sobre partidos, ranking y actualizaciones</p>
+              </div>
+              <button
+                onClick={() => {
+                  const newValue = !notificationsEnabled
+                  setNotificationsEnabled(newValue)
+                  updateNotificationPreference('notifications_enabled', newValue)
+                }}
+                disabled={savingNotifications}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  notificationsEnabled ? 'bg-fifaGreen' : 'bg-white/20'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    notificationsEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Switch: Sonido de alerta */}
+            <div className="flex items-center justify-between p-4 bg-navy-medium/30 rounded-lg">
+              <div className="flex-1">
+                <h3 className="font-bold text-white text-sm mb-1">Sonido de alerta</h3>
+                <p className="text-xs text-white/60">Reproduce un sonido al recibir notificaciones</p>
+              </div>
+              <button
+                onClick={() => {
+                  const newValue = !notificationsSound
+                  setNotificationsSound(newValue)
+                  updateNotificationPreference('notifications_sound', newValue)
+                }}
+                disabled={savingNotifications || !notificationsEnabled}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  notificationsSound && notificationsEnabled ? 'bg-fifaGreen' : 'bg-white/20'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    notificationsSound ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {!notificationsEnabled && (
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-sm text-yellow-400">
+                ⚠️ Las notificaciones están desactivadas. No recibirás alertas.
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* ZONA DE SEGURIDAD (fuera del grid) - Acordeón */}
         <div className="card border border-white/10">

@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Notification, Profile } from '@/lib/types'
-import { Bell } from 'lucide-react'
+import { Bell, Trash2 } from 'lucide-react'
 
 export default function NotificationBell({ userId }: { userId: string }) {
   const [notifications, setNotifications] = useState<Notification[]>([])
@@ -76,10 +76,13 @@ export default function NotificationBell({ userId }: { userId: string }) {
           setNotifications((prev) => [newNotif, ...prev.slice(0, 9)])
           
           // Reproducir sonido si está habilitado
-          if (profile?.notifications_enabled && profile?.notifications_sound && audioEnabled) {
-            audioRef.current?.play().catch(() => {
-              // Autoplay bloqueado, ignorar silenciosamente
-            })
+          if (profile?.notifications_enabled && profile?.notifications_sound && audioEnabled && audioRef.current) {
+            console.log('🔔 Intentando reproducir sonido de notificación...')
+            audioRef.current.play()
+              .then(() => console.log('✅ Sonido reproducido correctamente'))
+              .catch((err) => {
+                console.warn('⚠️ Autoplay bloqueado por el navegador:', err.message)
+              })
           }
         }
       )
@@ -88,6 +91,27 @@ export default function NotificationBell({ userId }: { userId: string }) {
     return () => {
       supabase.removeChannel(channel)
     }
+  }
+
+  async function deleteNotification(notifId: string, e?: React.MouseEvent) {
+    if (e) {
+      e.stopPropagation()
+    }
+    await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', notifId)
+    
+    setNotifications((prev) => prev.filter((n) => n.id !== notifId))
+  }
+
+  async function deleteAllNotifications() {
+    await supabase
+      .from('notifications')
+      .delete()
+      .eq('user_id', userId)
+    
+    setNotifications([])
   }
 
   async function markAsRead(notifId: string) {
@@ -117,12 +141,12 @@ export default function NotificationBell({ userId }: { userId: string }) {
   const unreadCount = notifications.filter((n) => !n.read).length
 
   const notificationTypeStyles = {
-    info: 'bg-navy-medium/40 border-l-4 border-blue-400',
-    success: 'bg-navy-medium/40 border-l-4 border-fifaGreen',
-    warning: 'bg-navy-medium/40 border-l-4 border-yellow-500',
-    error: 'bg-navy-medium/40 border-l-4 border-danger',
-    match_update: 'bg-navy-medium/40 border-l-4 border-fifaGreen',
-    ranking_update: 'bg-navy-medium/40 border-l-4 border-yellow-400',
+    info: 'border-l-4 border-blue-400',
+    success: 'border-l-4 border-fifaGreen',
+    warning: 'border-l-4 border-yellow-500',
+    error: 'border-l-4 border-danger',
+    match_update: 'border-l-4 border-fifaGreen',
+    ranking_update: 'border-l-4 border-yellow-400',
   }
 
   return (
@@ -144,8 +168,8 @@ export default function NotificationBell({ userId }: { userId: string }) {
       </button>
 
       {showDropdown && (
-        <div className="absolute right-0 mt-2 w-80 bg-navy-deep border border-white/15 rounded-lg shadow-xl overflow-hidden z-50">
-          <div className="bg-navy-medium px-4 py-3 border-b border-white/15">
+        <div className="absolute right-0 mt-2 w-80 bg-[#0f1437] border border-white/10 rounded-lg shadow-2xl overflow-hidden z-50">
+          <div className="bg-[#080b22] px-4 py-3 border-b border-white/15">
             <h3 className="font-bold text-white uppercase tracking-wider text-sm">
               Notificaciones
             </h3>
@@ -158,37 +182,50 @@ export default function NotificationBell({ userId }: { userId: string }) {
               </div>
             ) : (
               notifications.map((notif) => (
-                <button
+                <div
                   key={notif.id}
-                  onClick={() => handleNotificationClick(notif)}
-                  className={`w-full text-left p-3 border-b border-white/10 transition-colors hover:bg-navy-medium/60 ${
-                    !notif.read ? 'bg-navy-medium/20' : ''
+                  className={`relative group border-b border-white/10 transition-colors ${
+                    !notif.read ? 'bg-[#1a2050]' : 'bg-transparent hover:bg-white/5'
                   } ${notificationTypeStyles[notif.type]}`}
                 >
-                  <div className="flex items-start gap-2">
-                    <div className="flex-1">
-                      <h4 className="font-bold text-white text-sm">{notif.title}</h4>
-                      <p className="text-xs text-white/70 mt-1">{notif.message}</p>
-                      <p className="text-xs text-white/40 mt-1">
-                        {new Date(notif.created_at).toLocaleDateString('es-MX', {
-                          day: 'numeric',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </p>
+                  <button
+                    onClick={() => handleNotificationClick(notif)}
+                    className="w-full text-left p-3 pr-10"
+                  >
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1">
+                        <h4 className="font-bold text-white text-sm">{notif.title}</h4>
+                        <p className="text-xs text-white/70 mt-1">{notif.message}</p>
+                        <p className="text-xs text-white/40 mt-1">
+                          {new Date(notif.created_at).toLocaleDateString('es-MX', {
+                            day: 'numeric',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </p>
+                      </div>
+                      {!notif.read && (
+                        <div className="w-2.5 h-2.5 bg-fifaGreen rounded-full flex-shrink-0 mt-1 shadow-lg shadow-fifaGreen/50" />
+                      )}
                     </div>
-                    {!notif.read && (
-                      <div className="w-2 h-2 bg-fifaGreen rounded-full flex-shrink-0 mt-1" />
-                    )}
-                  </div>
-                </button>
+                  </button>
+                  
+                  {/* Botón de borrado individual */}
+                  <button
+                    onClick={(e) => deleteNotification(notif.id, e)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-white/40 hover:text-danger hover:bg-danger/10 rounded transition-colors opacity-0 group-hover:opacity-100"
+                    aria-label="Eliminar notificación"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               ))
             )}
           </div>
 
           {notifications.length > 0 && (
-            <div className="bg-navy-medium px-4 py-2 border-t border-white/15">
+            <div className="bg-[#080b22] px-4 py-2 border-t border-white/15 flex items-center justify-between gap-2">
               <button
                 onClick={async () => {
                   const unread = notifications.filter((n) => !n.read)
@@ -200,9 +237,16 @@ export default function NotificationBell({ userId }: { userId: string }) {
                     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
                   }
                 }}
-                className="text-xs text-fifaGreen hover:text-fifaGreen/80 font-bold uppercase tracking-wider"
+                className="text-xs text-fifaGreen hover:text-fifaGreen/80 font-bold uppercase tracking-wider transition-colors"
               >
-                Marcar todas como leídas
+                Marcar leídas
+              </button>
+              
+              <button
+                onClick={deleteAllNotifications}
+                className="text-xs text-danger hover:text-danger/80 font-bold uppercase tracking-wider transition-colors"
+              >
+                Limpiar todo
               </button>
             </div>
           )}

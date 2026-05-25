@@ -199,7 +199,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
       </button>
 
       {showDropdown && (
-        <div className="absolute right-0 mt-2 w-80 bg-[#0f1437] border border-white/10 rounded-lg shadow-2xl overflow-hidden z-50">
+        <div className="absolute right-0 mt-2 w-screen max-w-[calc(100vw-2rem)] sm:w-80 sm:max-w-sm bg-[#0f1437] border border-white/10 rounded-lg shadow-2xl overflow-hidden z-50">
           <div className="bg-[#080b22] px-4 py-3 border-b border-white/15">
             <h3 className="font-bold text-white uppercase tracking-wider text-sm">
               Notificaciones
@@ -245,10 +245,10 @@ export default function NotificationBell({ userId }: { userId: string }) {
                   {/* Botón de borrado individual */}
                   <button
                     onClick={(e) => deleteNotification(notif.id, e)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-white/40 hover:text-danger hover:bg-danger/10 rounded transition-colors opacity-0 group-hover:opacity-100"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-white/40 hover:text-danger hover:bg-danger/10 rounded transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                     aria-label="Eliminar notificación"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={16} />
                   </button>
                 </div>
               ))

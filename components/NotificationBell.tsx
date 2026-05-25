@@ -37,10 +37,10 @@ export default function NotificationBell({ userId }: { userId: string }) {
     async function init() {
       await loadNotifications()
       await loadProfile()
-      subscribeToNotifications()
     }
 
     init()
+    const cleanup = subscribeToNotifications()
 
     // Cerrar dropdown al hacer clic fuera
     function handleClickOutside(e: MouseEvent) {
@@ -58,6 +58,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
     document.addEventListener('click', handleFirstClick)
 
     return () => {
+      cleanup() // Limpiar suscripción Realtime
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('click', handleFirstClick)
     }
@@ -85,7 +86,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
 
   function subscribeToNotifications() {
     const channel = supabase
-      .channel('notifications')
+      .channel('realtime_notifications')
       .on(
         'postgres_changes',
         {
@@ -96,7 +97,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
         },
         (payload) => {
           const newNotif = payload.new as Notification
-          console.log('[Realtime] Notificación recibida:', newNotif.title)
+          console.log('✅ [Realtime] ¡Mensaje recibido en tiempo real!', newNotif)
           setNotifications((prev) => [newNotif, ...prev.slice(0, 9)])
           
           // Reproducir sonido si está habilitado
@@ -104,7 +105,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
             const audioEl = document.getElementById('notification-sound') as HTMLAudioElement
             if (audioEl) {
               console.log('🔔 Intentando reproducir sonido de notificación...')
-              audioEl.volume = 0.5 // Configurar volumen
+              audioEl.volume = 0.5
               audioEl.play()
                 .then(() => console.log('✅ Sonido reproducido correctamente'))
                 .catch((err) => {
@@ -116,9 +117,18 @@ export default function NotificationBell({ userId }: { userId: string }) {
           }
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ [Realtime] Suscripción activa para notificaciones del usuario:', userId)
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ [Realtime] Error en la suscripción')
+        } else if (status === 'TIMED_OUT') {
+          console.warn('⚠️ [Realtime] Timeout en la suscripción')
+        }
+      })
 
     return () => {
+      console.log('🔌 [Realtime] Desuscribiendo del canal de notificaciones')
       supabase.removeChannel(channel)
     }
   }

@@ -4,7 +4,10 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
-const REMINDER_MARGIN_MINUTES = 45
+// Margen de búsqueda: 30-50 minutos
+// Con cron job cada 10 min, siempre 'caza' el partido
+const REMINDER_MIN_MINUTES = 30
+const REMINDER_MAX_MINUTES = 50
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -76,17 +79,21 @@ export async function GET(request: NextRequest) {
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
   try {
-    // Calcular ventana de tiempo: ahora + REMINDER_MARGIN_MINUTES
+    // Generar batch_id único para este lote de recordatorios
+    const batchId = `auto-reminder-${new Date().toISOString()}`
+    
+    // Calcular ventana de tiempo: ahora + 30 a 50 minutos
     const now = new Date()
-    const futureLimit = new Date(now.getTime() + REMINDER_MARGIN_MINUTES * 60 * 1000)
+    const futureStart = new Date(now.getTime() + REMINDER_MIN_MINUTES * 60 * 1000)
+    const futureEnd = new Date(now.getTime() + REMINDER_MAX_MINUTES * 60 * 1000)
 
-    // Obtener partidos que empiezan pronto y aún no han comenzado
+    // Obtener partidos que empiezan en la ventana de tiempo
     const { data: upcomingMatches, error: matchesError } = await supabase
       .from('matches')
       .select('id, match_number, kickoff_at, home_team_id, away_team_id')
       .eq('status', 'scheduled')
-      .gte('kickoff_at', now.toISOString())
-      .lte('kickoff_at', futureLimit.toISOString())
+      .gte('kickoff_at', futureStart.toISOString())
+      .lte('kickoff_at', futureEnd.toISOString())
 
     if (matchesError || !upcomingMatches) {
       console.error('Error fetching upcoming matches:', matchesError)
@@ -123,20 +130,18 @@ export async function GET(request: NextRequest) {
         // Si ya tiene predicción con score, skip
         if (existingPrediction && existingPrediction.home_score !== null) continue
 
-        // Verificar si ya se envió recordatorio reciente (últimas 2 horas)
+        // ANTI-SPAM: Verificar si ya se envió recordatorio para este partido/usuario
+        // Búsqueda robusta: user_id + match_number en mensaje + últimas 2 horas
         const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000)
-        const reminderTitle = `⏰ Partido por comenzar`
         const { data: recentReminder } = await supabase
           .from('notifications')
           .select('id')
           .eq('user_id', entry.user_id)
-          .eq('title', reminderTitle)
           .ilike('message', `%Partido #${match.match_number}%`)
           .gte('created_at', twoHoursAgo.toISOString())
-          .limit(1)
-          .single()
+          .maybeSingle()
 
-        // Si ya se envió, skip
+        // Si ya se envió recordatorio para este partido, skip
         if (recentReminder) continue
 
         // Verificar si el usuario tiene notificaciones habilitadas
@@ -152,17 +157,18 @@ export async function GET(request: NextRequest) {
         const matchTime = new Date(match.kickoff_at)
         const minutesLeft = Math.round((matchTime.getTime() - now.getTime()) / (60 * 1000))
 
-        // Crear notificación
+        // Crear notificación con batch_id para historial admin
         const message = `Partido #${match.match_number} comienza en ${minutesLeft} minutos. ¡No olvides pronosticar con tu jugada "${entry.alias}"!`
 
         const { error: insertError } = await supabase
           .from('notifications')
           .insert({
             user_id: entry.user_id,
-            title: reminderTitle,
+            title: '⏰ Partido por comenzar',
             message,
             type: 'warning',
             link: '/predictions',
+            batch_id: batchId, // ← Compartido por todos los recordatorios de esta ejecución
           })
 
         if (!insertError) {

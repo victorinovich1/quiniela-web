@@ -392,37 +392,50 @@ export default function NotificationsTab() {
                 <tr className="border-b border-white/10">
                   <th className="text-left py-3 px-4 text-sm font-bold text-white/70 uppercase tracking-wider">Título</th>
                   <th className="text-left py-3 px-4 text-sm font-bold text-white/70 uppercase tracking-wider">Mensaje</th>
+                  <th className="text-center py-3 px-4 text-sm font-bold text-white/70 uppercase tracking-wider">Origen</th>
                   <th className="text-center py-3 px-4 text-sm font-bold text-white/70 uppercase tracking-wider">Usuarios</th>
                   <th className="text-center py-3 px-4 text-sm font-bold text-white/70 uppercase tracking-wider">Fecha</th>
                   <th className="text-center py-3 px-4 text-sm font-bold text-white/70 uppercase tracking-wider">Acción</th>
                 </tr>
               </thead>
               <tbody>
-                {sentBatches.map((batch) => (
-                  <tr key={batch.batch_id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="py-3 px-4 text-sm text-white font-medium">{batch.title}</td>
-                    <td className="py-3 px-4 text-sm text-white/70 max-w-md truncate">{batch.message}</td>
-                    <td className="py-3 px-4 text-sm text-white/70 text-center">{batch.sent_count}</td>
-                    <td className="py-3 px-4 text-sm text-white/70 text-center">
-                      {new Date(batch.created_at).toLocaleDateString('es-MX', {
-                        day: 'numeric',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <button
-                        onClick={() => handleDeleteBatch(batch.batch_id)}
-                        disabled={deleting === batch.batch_id}
-                        className="text-danger hover:text-danger/70 disabled:opacity-50 text-sm font-bold"
-                        title="Eliminar lote"
-                      >
-                        {deleting === batch.batch_id ? '...' : '✕'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {sentBatches.map((batch) => {
+                  const isAutomatic = batch.batch_id.startsWith('auto-reminder-')
+                  return (
+                    <tr key={batch.batch_id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                      <td className="py-3 px-4 text-sm text-white font-medium">{batch.title}</td>
+                      <td className="py-3 px-4 text-sm text-white/70 max-w-md truncate">{batch.message}</td>
+                      <td className="py-3 px-4 text-center">
+                        <span className={`inline-block px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${
+                          isAutomatic 
+                            ? 'bg-blue-500/20 text-blue-400 border border-blue-400/30' 
+                            : 'bg-fifaGreen/20 text-fifaGreen border border-fifaGreen/30'
+                        }`}>
+                          {isAutomatic ? '🤖 Automático' : '👤 Manual'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-sm text-white/70 text-center">{batch.sent_count}</td>
+                      <td className="py-3 px-4 text-sm text-white/70 text-center">
+                        {new Date(batch.created_at).toLocaleDateString('es-MX', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <button
+                          onClick={() => handleDeleteBatch(batch.batch_id)}
+                          disabled={deleting === batch.batch_id}
+                          className="text-danger hover:text-danger/70 disabled:opacity-50 text-sm font-bold"
+                          title="Eliminar lote"
+                        >
+                          {deleting === batch.batch_id ? '...' : '✕'}
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

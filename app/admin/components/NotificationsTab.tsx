@@ -49,13 +49,25 @@ export default function NotificationsTab() {
   async function loadSentBatches() {
     const supabase = createClient()
     
+    console.log('[DEBUG] Cargando historial de notificaciones...')
+    
     // Query agrupada por batch_id para mostrar solo una fila por envío
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('notifications')
       .select('batch_id, title, message, created_at')
       .not('batch_id', 'is', null)
       .order('created_at', { ascending: false })
       .limit(100)
+    
+    if (error) {
+      console.error('[ERROR] Fallo al cargar historial:', error)
+      console.error('[ERROR] Código:', error.code)
+      console.error('[ERROR] Mensaje:', error.message)
+      console.error('[ERROR] Detalles:', error.details)
+      return
+    }
+    
+    console.log('[DEBUG] Historial cargado:', data?.length || 0, 'notificaciones')
     
     if (data) {
       // Agrupar por batch_id y contar
@@ -75,6 +87,7 @@ export default function NotificationsTab() {
         return acc
       }, [] as NotificationBatch[])
       
+      console.log('[DEBUG] Lotes agrupados:', grouped.length)
       setSentBatches(grouped)
     }
   }
@@ -392,37 +405,50 @@ export default function NotificationsTab() {
                 <tr className="border-b border-white/10">
                   <th className="text-left py-3 px-4 text-sm font-bold text-white/70 uppercase tracking-wider">Título</th>
                   <th className="text-left py-3 px-4 text-sm font-bold text-white/70 uppercase tracking-wider">Mensaje</th>
+                  <th className="text-center py-3 px-4 text-sm font-bold text-white/70 uppercase tracking-wider">Origen</th>
                   <th className="text-center py-3 px-4 text-sm font-bold text-white/70 uppercase tracking-wider">Usuarios</th>
                   <th className="text-center py-3 px-4 text-sm font-bold text-white/70 uppercase tracking-wider">Fecha</th>
                   <th className="text-center py-3 px-4 text-sm font-bold text-white/70 uppercase tracking-wider">Acción</th>
                 </tr>
               </thead>
               <tbody>
-                {sentBatches.map((batch) => (
-                  <tr key={batch.batch_id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="py-3 px-4 text-sm text-white font-medium">{batch.title}</td>
-                    <td className="py-3 px-4 text-sm text-white/70 max-w-md truncate">{batch.message}</td>
-                    <td className="py-3 px-4 text-sm text-white/70 text-center">{batch.sent_count}</td>
-                    <td className="py-3 px-4 text-sm text-white/70 text-center">
-                      {new Date(batch.created_at).toLocaleDateString('es-MX', {
-                        day: 'numeric',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <button
-                        onClick={() => handleDeleteBatch(batch.batch_id)}
-                        disabled={deleting === batch.batch_id}
-                        className="text-danger hover:text-danger/70 disabled:opacity-50 text-sm font-bold"
-                        title="Eliminar lote"
-                      >
-                        {deleting === batch.batch_id ? '...' : '✕'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {sentBatches.map((batch) => {
+                  const isAutomatic = batch.batch_id.startsWith('auto-reminder-')
+                  return (
+                    <tr key={batch.batch_id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                      <td className="py-3 px-4 text-sm text-white font-medium">{batch.title}</td>
+                      <td className="py-3 px-4 text-sm text-white/70 max-w-md truncate">{batch.message}</td>
+                      <td className="py-3 px-4 text-center">
+                        <span className={`inline-block px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${
+                          isAutomatic 
+                            ? 'bg-blue-500/20 text-blue-400 border border-blue-400/30' 
+                            : 'bg-fifaGreen/20 text-fifaGreen border border-fifaGreen/30'
+                        }`}>
+                          {isAutomatic ? '🤖 Automático' : '👤 Manual'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-sm text-white/70 text-center">{batch.sent_count}</td>
+                      <td className="py-3 px-4 text-sm text-white/70 text-center">
+                        {new Date(batch.created_at).toLocaleDateString('es-MX', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <button
+                          onClick={() => handleDeleteBatch(batch.batch_id)}
+                          disabled={deleting === batch.batch_id}
+                          className="text-danger hover:text-danger/70 disabled:opacity-50 text-sm font-bold"
+                          title="Eliminar lote"
+                        >
+                          {deleting === batch.batch_id ? '...' : '✕'}
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

@@ -174,6 +174,50 @@ Single-row table (id=1). Configuración global + sistema de puntos + resultados 
 | `created_at` | timestamptz | |
 | `expires_at` | timestamptz | NULL si nunca expira |
 
+### `notifications`
+Sistema de notificaciones en tiempo real (Realtime habilitado). Cada usuario puede tener hasta 15 notificaciones; las más antiguas se eliminan automáticamente.
+
+| Columna | Tipo | Notas |
+|---------|------|-------|
+| `id` | uuid PK | `gen_random_uuid()` |
+| `user_id` | uuid → profiles | FK CASCADE. Usuario destinatario |
+| `title` | text | Título de la notificación |
+| `message` | text | Cuerpo del mensaje |
+| `type` | text | `info`, `success`, `warning`, `error`, `match_update`, `ranking_update` |
+| `read` | bool | Default `false`. Marca si el usuario la leyó |
+| `link` | text | URL opcional a la que redirigir al hacer clic |
+| `batch_id` | uuid | Agrupa envíos masivos. NULL si es individual |
+| `created_at` | timestamptz | Default `now()` |
+
+**Realtime:** Tabla habilitada en `supabase_realtime` publication. Los clientes pueden suscribirse con:
+```ts
+supabase
+  .channel('notifications')
+  .on('postgres_changes', {
+    event: 'INSERT',
+    schema: 'public',
+    table: 'notifications',
+    filter: `user_id=eq.${userId}`
+  }, (payload) => {
+    // Recibir notificación en tiempo real
+  })
+  .subscribe()
+```
+
+**Auto-limpieza:** Trigger `cleanup_notification_trigger` ejecuta `cleanup_old_notifications()` tras cada INSERT. Si el usuario supera 15 notificaciones, elimina las más antiguas.
+
+**batch_id:** UUID compartido por todas las notificaciones enviadas en un mismo lote (ej: envío masivo a todos los usuarios). Permite eliminar todo el lote de una vez.
+
+**Funciones Admin:**
+- `admin_delete_notification_batch(p_batch_id uuid)`: Elimina todas las notificaciones con ese `batch_id`. Solo admin/manager.
+- `admin_clear_all_notifications()`: Vacía la tabla completa. Solo admin/manager. Requiere doble confirmación en UI.
+
+**RLS:**
+- `SELECT`: Usuario solo ve sus propias notificaciones
+- `UPDATE`: Usuario solo puede actualizar (`read = true`) sus propias notificaciones
+- `DELETE`: Usuario solo puede eliminar sus propias notificaciones
+- `INSERT`: Service role puede insertar (usado por funciones SECURITY DEFINER)
+
 ## Views (security_invoker = true)
 
 ### `match_scores`

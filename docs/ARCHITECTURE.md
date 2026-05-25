@@ -794,6 +794,129 @@ La quiniela implementa un sistema de respaldo automático que opera independient
 
 ### Configuración Requerida
 
+## Sistema de Notificaciones
+
+**Objetivo:** Mantener a los usuarios informados sobre eventos importantes del torneo mediante alertas en tiempo real.
+
+### Arquitectura
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    FUENTES DE NOTIFICACIONES                 │
+├─────────────────────────────────────────────────────────────┤
+│ 1. Admin manual (NotificationsTab)                          │
+│ 2. Sync automático (partidos finalizados)                   │
+│ 3. Futuros: Recordatorios, ranking updates, etc.            │
+└──────────────────────┬──────────────────────────────────────┘
+                       │ INSERT
+                       ▼
+        ┌──────────────────────────────┐
+        │  TABLE: notifications        │
+        │  - user_id (FK profiles)     │
+        │  - title, message, type      │
+        │  - read (boolean)            │
+        │  - created_at                │
+        └──────────────┬───────────────┘
+                       │ Supabase Realtime (broadcast)
+                       ▼
+        ┌──────────────────────────────┐
+        │  NotificationBell.tsx        │
+        │  - Suscripción vía channel   │
+        │  - Badge con contador        │
+        │  - Dropdown con últimas 10   │
+        │  - Audio opcional            │
+        └──────────────────────────────┘
+```
+
+### Componentes Principales
+
+#### 1. **Tabla `notifications`**
+- **RLS:** Usuarios solo ven sus propias notificaciones
+- **Auto-limpieza:** Trigger que mantiene máximo 15 notificaciones por usuario
+- **Realtime:** Habilitado vía `alter publication supabase_realtime add table notifications`
+
+#### 2. **Preferencias de Usuario**
+- `profiles.notifications_enabled`: Activar/desactivar alertas
+- `profiles.notifications_sound`: Reproducir sonido al recibir
+
+#### 3. **NotificationBell (components/NotificationBell.tsx)**
+- **Campana en Navbar:** Icono con badge rojo mostrando cantidad no leídas
+- **Realtime:** Suscripción a `postgres_changes` en tabla notifications
+- **Dropdown:** Lista de últimas 10 notificaciones (leídas + no leídas)
+- **Audio:** Reproduce `/sounds/notification.mp3` al recibir nueva (solo si habilitado)
+- **Interacción:** Click → marca como leída, navega a `link` si existe
+
+#### 4. **Panel Admin (NotificationsTab)**
+- **Envío masivo:** Opción "Todos" o "Usuario específico"
+- **Campos:** Título, mensaje
+- **Lógica:** INSERT directo a tabla `notifications` con `user_id` destino
+
+#### 5. **Notificaciones Automáticas**
+- **Partido finalizado:** Cuando sync-results detecta `status='finished'` por primera vez, inserta notificación a todos los usuarios con `notifications_enabled=true`
+- **Mensaje:** "⚽ Partido finalizado: {equipo_local} {score} {equipo_visitante}"
+- **Link:** `/leaderboard` para ver cambios en ranking
+
+### Flujo de una Notificación
+
+1. **Evento disparador:**
+   - Admin envía notificación desde panel
+   - Sync detecta partido finalizado
+   - (Futuro) Cron detecta partido próximo sin pronóstico
+
+2. **INSERT a `notifications`:**
+   ```sql
+   INSERT INTO notifications (user_id, title, message, type, link)
+   VALUES ('uuid-usuario', '⚽ Partido finalizado', 'MEX 2-1 ARG', 'match_update', '/leaderboard')
+   ```
+
+3. **Trigger auto-limpieza:**
+   - Si usuario tiene > 15 notificaciones, borra las más antiguas
+
+4. **Supabase Realtime:**
+   - Emite evento a todos los clientes suscritos
+   - Solo el cliente con `userId` coincidente lo recibe
+
+5. **NotificationBell recibe:**
+   - Actualiza badge (contador +1)
+   - Añade notificación al dropdown
+   - Si `notifications_enabled && notifications_sound`, reproduce audio
+   - **Nota:** Audio solo funciona tras interacción del usuario (click en campana habilita)
+
+6. **Usuario hace click:**
+   - Marca notificación como leída (`UPDATE notifications SET read=true`)
+   - Navega a `link` si existe
+
+### Tipos de Notificaciones
+
+```typescript
+type NotificationType = 
+  | 'info'             // Mensajes generales
+  | 'success'          // Confirmaciones (ej: pronóstico guardado)
+  | 'warning'          // Advertencias
+  | 'error'            // Errores críticos
+  | 'match_update'     // Partido finalizado
+  | 'ranking_update'   // Cambios en el ranking
+```
+
+Cada tipo tiene estilo visual diferente (borde de color) en el dropdown.
+
+### Restricciones de Autoplay
+
+Los navegadores modernos bloquean reproducción de audio sin interacción del usuario. **Solución:**
+- Al hacer primer click en campana, se habilita audio: `setAudioEnabled(true)`
+- Notificaciones posteriores sí reproducen sonido
+- Si no hay interacción previa, audio falla silenciosamente (sin error visible)
+
+### Configuración Requerida
+
+**Archivo de sonido:** Colocar un MP3 corto (<50KB, 1-2 segundos) en:
+```
+public/sounds/notification.mp3
+```
+
+Fuentes libres: freesound.org, zapsplat.com (licencia gratuita)
+
+
 **Secret de GitHub:** `SUPABASE_DB_URL`
 
 El workflow requiere acceso a la connection string de la base de datos de Supabase. Esta debe configurarse como un secret del repositorio (ver sección de configuración abajo).

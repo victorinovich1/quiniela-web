@@ -506,6 +506,34 @@ export async function GET(request: NextRequest) {
         )
       }
 
+      // NOTIFICACIÓN AUTOMÁTICA: Si el partido cambió a 'finished', notificar usuarios
+      const newStatus = mapStatus(fm.status)
+      if (newStatus === 'finished' && mapped.status !== 'finished') {
+        const teamHome = homeName || homeCode || 'Equipo A'
+        const teamAway = awayName || awayCode || 'Equipo B'
+        const scoreText = homeScore !== null && awayScore !== null
+          ? `${homeScore}-${awayScore}`
+          : 'Resultado actualizado'
+
+        // Obtener usuarios con notificaciones habilitadas
+        const { data: usersToNotify } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('notifications_enabled', true)
+
+        if (usersToNotify && usersToNotify.length > 0) {
+          const notifications = usersToNotify.map((u) => ({
+            user_id: u.id,
+            title: '⚽ Partido finalizado',
+            message: `${teamHome} ${scoreText} ${teamAway}`,
+            type: 'match_update',
+            link: '/leaderboard',
+          }))
+
+          await supabase.from('notifications').insert(notifications)
+        }
+      }
+
       updated += 1
     }
 

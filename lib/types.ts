@@ -1,6 +1,7 @@
 export type Phase = 'group' | 'r32' | 'r16' | 'qf' | 'sf' | 'third' | 'final'
 export type MatchStatus = 'scheduled' | 'live' | 'finished'
 export type Role = 'participant' | 'admin' | 'manager'
+export type NotificationType = 'info' | 'success' | 'warning' | 'error' | 'match_update' | 'ranking_update'
 
 export interface Profile {
   id: string
@@ -13,6 +14,19 @@ export interface Profile {
   avatar_perm_id: number | null
   avatar_category: string | null
   country_code: string | null
+  notifications_enabled: boolean
+  notifications_sound: boolean
+}
+
+export interface Notification {
+  id: string
+  user_id: string
+  title: string
+  message: string
+  type: NotificationType
+  read: boolean
+  link: string | null
+  created_at: string
 }
 
 export interface Team {

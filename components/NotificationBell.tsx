@@ -32,8 +32,14 @@ export default function NotificationBell({ userId }: { userId: string }) {
     }
   }
 
-  // Cargar notificaciones y perfil
+  // Cargar notificaciones y suscribirse
   useEffect(() => {
+    console.log('[NotificationBell] Montando componente para userId:', userId)
+    
+    // CRÍTICO: Limpiar todos los canales anteriores antes de suscribirse
+    supabase.removeAllChannels()
+    console.log('[NotificationBell] Canales anteriores eliminados')
+    
     async function init() {
       await loadNotifications()
       await loadProfile()
@@ -58,7 +64,8 @@ export default function NotificationBell({ userId }: { userId: string }) {
     document.addEventListener('click', handleFirstClick)
 
     return () => {
-      cleanup() // Limpiar suscripción Realtime
+      console.log('[NotificationBell] Desmontando componente')
+      cleanup()
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('click', handleFirstClick)
     }
@@ -85,10 +92,10 @@ export default function NotificationBell({ userId }: { userId: string }) {
   }
 
   function subscribeToNotifications() {
-    // Canal único por usuario para evitar conflictos
-    const channelName = `notifications-${userId}`
+    console.log('[Realtime] Iniciando suscripción para userId:', userId)
+    
     const channel = supabase
-      .channel(channelName)
+      .channel('room1')
       .on(
         'postgres_changes',
         {
@@ -98,30 +105,32 @@ export default function NotificationBell({ userId }: { userId: string }) {
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          const newNotif = payload.new as Notification
-          console.log('✅ [Realtime] Nueva notificación recibida:', newNotif)
+          console.log('🔥 [Realtime] NUEVA NOTIFICACIÓN:', payload.new)
           
-          // 1. Añadir a la lista local
-          setNotifications((prev) => [newNotif, ...prev.slice(0, 9)])
+          // Actualizaciones funcionales puras
+          setNotifications(prev => {
+            const newNotif = payload.new as Notification
+            console.log('[Realtime] Agregando a lista. Antes:', prev.length)
+            return [newNotif, ...prev]
+          })
           
-          // 2. Reproducir sonido (sin depender de profile para evitar closures obsoletos)
           playNotificationSound()
         }
       )
       .subscribe((status) => {
+        console.log(`[Realtime Status]: ${status}`)
+        
         if (status === 'SUBSCRIBED') {
-          console.log(`✅ [Realtime] Canal '${channelName}' suscrito correctamente`)
+          console.log('✅ [Realtime] ¡Conectado exitosamente!')
         } else if (status === 'CHANNEL_ERROR') {
-          console.error(`❌ [Realtime] Error en canal '${channelName}'`)
+          console.error('❌ [Realtime] Error de conexión')
         } else if (status === 'TIMED_OUT') {
-          console.warn(`⚠️ [Realtime] Timeout en canal '${channelName}'`)
-        } else {
-          console.log(`🔄 [Realtime] Estado del canal '${channelName}': ${status}`)
+          console.warn('⚠️ [Realtime] Timeout de conexión')
         }
       })
 
     return () => {
-      console.log(`🔌 [Realtime] Desuscribiendo canal '${channelName}'`)
+      console.log('[Realtime] Limpiando canal')
       supabase.removeChannel(channel)
     }
   }

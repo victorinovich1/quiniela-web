@@ -2,9 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import NotificationBell from '@/components/NotificationBell'
 
 export default function BottomNav({
   isAuthed,
@@ -14,15 +11,6 @@ export default function BottomNav({
   isAdmin: boolean
 }) {
   const pathname = usePathname()
-  const [userId, setUserId] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!isAuthed) return
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setUserId(data.user.id)
-    })
-  }, [isAuthed])
 
   if (!isAuthed) return null
 
@@ -37,13 +25,6 @@ export default function BottomNav({
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-navy-deepest/95 backdrop-blur-md border-t border-white/10 z-50">
-      {/* Campanita flotante en esquina superior derecha */}
-      {userId && (
-        <div className="absolute -top-12 right-4 bg-navy-deepest/95 backdrop-blur-md border border-white/10 rounded-full shadow-lg">
-          <NotificationBell userId={userId} />
-        </div>
-      )}
-      
       <div className="grid h-16" style={{ gridTemplateColumns: `repeat(${items.length}, 1fr)` }}>
         {items.map((item) => {
           const Icon = item.icon

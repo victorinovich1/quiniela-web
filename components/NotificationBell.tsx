@@ -7,10 +7,11 @@ import { Bell, Trash2 } from 'lucide-react'
 
 export default function NotificationBell({ userId }: { userId: string }) {
   const [notifications, setNotifications] = useState<Notification[]>([])
-  const [profile, setProfile] = useState<Profile | null>(null)
   const [showDropdown, setShowDropdown] = useState(false)
   const [audioEnabled, setAudioEnabled] = useState(false)
   const dropdownRef = useRef<HTMLDivElement | null>(null)
+  const channelRef = useRef<any>(null)
+  const isSubscribedRef = useRef(false)
   
   // Cliente estable de Supabase (no cambia en cada render)
   const supabase = useMemo(() => createClient(), [])
@@ -20,35 +21,28 @@ export default function NotificationBell({ userId }: { userId: string }) {
     if (!audioEnabled) {
       const audioEl = document.getElementById('notification-sound') as HTMLAudioElement
       if (audioEl) {
-        audioEl.volume = 0.5 // Configurar volumen
+        audioEl.volume = 0.5
         audioEl.play().then(() => {
           audioEl.pause()
           audioEl.currentTime = 0
           setAudioEnabled(true)
-          console.log('✅ Audio desbloqueado (pre-carga exitosa)')
-        }).catch((err) => {
-          console.warn('⚠️ No se pudo pre-cargar audio:', err.message)
-          setAudioEnabled(true) // Marcar como intentado
+        }).catch(() => {
+          setAudioEnabled(true)
         })
       }
     }
   }
 
-  // Cargar notificaciones y suscribirse
+  // Cargar notificaciones y suscribirse UNA SOLA VEZ
   useEffect(() => {
-    console.log('[NotificationBell] Montando componente para userId:', userId)
-    
-    // CRÍTICO: Limpiar todos los canales anteriores antes de suscribirse
-    supabase.removeAllChannels()
-    console.log('[NotificationBell] Canales anteriores eliminados')
+    if (!userId || isSubscribedRef.current) return
     
     async function init() {
       await loadNotifications()
-      await loadProfile()
+      await subscribeToNotifications()
     }
 
     init()
-    const cleanup = subscribeToNotifications()
 
     // Cerrar dropdown al hacer clic fuera
     function handleClickOutside(e: MouseEvent) {
@@ -66,22 +60,15 @@ export default function NotificationBell({ userId }: { userId: string }) {
     document.addEventListener('click', handleFirstClick)
 
     return () => {
-      console.log('[NotificationBell] Desmontando componente')
-      cleanup()
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current)
+        channelRef.current = null
+        isSubscribedRef.current = false
+      }
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('click', handleFirstClick)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId])
-
-  async function loadProfile() {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    setProfile(data)
-  }
+  }, [userId, supabase])
 
   async function loadNotifications() {
     const { data } = await supabase
@@ -93,10 +80,9 @@ export default function NotificationBell({ userId }: { userId: string }) {
     if (data) setNotifications(data)
   }
 
-  function subscribeToNotifications() {
-    console.log('[Realtime] Iniciando suscripción para userId:', userId)
+  async function subscribeToNotifications() {
+    if (isSubscribedRef.current) return
     
-    // Canal único por usuario para evitar colisiones
     const channelName = `unique-notifs-${userId}`
     const channel = supabase
       .channel(channelName)
@@ -109,54 +95,30 @@ export default function NotificationBell({ userId }: { userId: string }) {
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          console.log('🔥 [Realtime] NUEVA NOTIFICACIÓN:', payload.new)
-          
-          // Actualizaciones funcionales puras
-          setNotifications(prev => {
-            const newNotif = payload.new as Notification
-            console.log('[Realtime] Agregando a lista. Antes:', prev.length)
-            return [newNotif, ...prev]
-          })
-          
+          const newNotif = payload.new as Notification
+          setNotifications(prev => [newNotif, ...prev])
           playNotificationSound()
         }
       )
       .subscribe((status) => {
-        console.log(`[Realtime Status '${channelName}']: ${status}`)
-        
         if (status === 'SUBSCRIBED') {
-          console.log(`✅ [Realtime] Canal '${channelName}' conectado exitosamente`)
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error(`❌ [Realtime] Error en canal '${channelName}'`)
-        } else if (status === 'TIMED_OUT') {
-          console.warn(`⚠️ [Realtime] Timeout en canal '${channelName}'`)
+          isSubscribedRef.current = true
+          channelRef.current = channel
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error(`❌ [Realtime] Error: ${status}`)
         }
       })
-
-    return () => {
-      console.log(`[Realtime] Limpiando canal '${channelName}'`)
-      supabase.removeChannel(channel)
-    }
   }
 
   function playNotificationSound() {
-    if (!audioEnabled) {
-      console.log('🔇 Audio aún no desbloqueado')
-      return
-    }
+    if (!audioEnabled) return
     
     const audioEl = document.getElementById('notification-sound') as HTMLAudioElement
-    if (!audioEl) {
-      console.warn('⚠️ Elemento de audio no encontrado')
-      return
-    }
+    if (!audioEl) return
 
-    console.log('🔔 Intentando reproducir sonido...')
     audioEl.volume = 0.5
-    audioEl.currentTime = 0 // Reiniciar para permitir repetición rápida
-    audioEl.play()
-      .then(() => console.log('✅ Sonido reproducido'))
-      .catch((err) => console.warn('⚠️ Autoplay bloqueado:', err.message))
+    audioEl.currentTime = 0
+    audioEl.play().catch(() => {})
   }
 
   async function deleteNotification(notifId: string, e?: React.MouseEvent) {

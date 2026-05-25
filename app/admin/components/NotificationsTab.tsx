@@ -18,6 +18,7 @@ export default function NotificationsTab() {
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [testingReminders, setTestingReminders] = useState(false)
+  const [testingSound, setTestingSound] = useState(false)
   const [result, setResult] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   useEffect(() => {
@@ -111,6 +112,34 @@ export default function NotificationsTab() {
 
     setTestingReminders(false)
     setTimeout(() => setResult(null), 6000)
+  }
+
+  async function handleTestSound() {
+    setTestingSound(true)
+    setResult({ type: 'success', text: '🔊 Intentando reproducir sonido...' })
+
+    try {
+      const audioEl = document.getElementById('notification-sound') as HTMLAudioElement
+      
+      if (!audioEl) {
+        setResult({ 
+          type: 'error', 
+          text: '❌ Elemento de audio no encontrado. Asegúrate de que NotificationBell esté en la página.' 
+        })
+      } else {
+        audioEl.volume = 0.5
+        await audioEl.play()
+        setResult({ type: 'success', text: '✅ Sonido reproducido correctamente' })
+      }
+    } catch (err: any) {
+      setResult({ 
+        type: 'error', 
+        text: `⚠️ Error: ${err.message || 'No se pudo reproducir'}. Verifica la ruta del archivo.` 
+      })
+    }
+
+    setTestingSound(false)
+    setTimeout(() => setResult(null), 4000)
   }
 
   return (
@@ -234,6 +263,23 @@ export default function NotificationsTab() {
           className="btn btn-outline w-full disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {testingReminders ? 'Ejecutando...' : '🧪 PROBAR RECORDATORIOS DE 30 MIN'}
+        </button>
+      </div>
+
+      {/* Herramienta de prueba de sonido */}
+      <div className="card p-6 max-w-2xl mt-6">
+        <h3 className="font-extrabold uppercase tracking-tight text-white text-lg mb-4">
+          🔔 Prueba de Sonido
+        </h3>
+        <p className="text-sm text-white/70 mb-4">
+          Verifica que el audio de notificaciones funcione correctamente. Este botón reproducirá el sonido directamente.
+        </p>
+        <button
+          onClick={handleTestSound}
+          disabled={testingSound}
+          className="btn btn-outline w-full disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {testingSound ? 'Reproduciendo...' : '🔔 PROBAR SONIDO'}
         </button>
       </div>
     </div>

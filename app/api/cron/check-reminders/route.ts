@@ -10,30 +10,63 @@ export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
   
-  // Verificar autenticación: puede ser cron job O admin
+  // Verificar autenticación: puede ser cron job O admin/manager
   let isAuthorized = false
+  let debugInfo = { userId: '', role: '', method: '' }
   
   // Opción 1: Cron job con secret
   if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
     isAuthorized = true
+    debugInfo.method = 'cron-secret'
+    console.log('[Auth Success] Cron job autorizado')
   }
   
-  // Opción 2: Usuario admin desde frontend
+  // Opción 2: Usuario admin/manager desde frontend
   if (!isAuthorized) {
     const serverClient = createServerClient()
-    const { data: { user } } = await serverClient.auth.getUser()
+    const { data: { user }, error: userError } = await serverClient.auth.getUser()
+    
+    if (userError) {
+      console.error('[Auth Error] Error al obtener usuario:', userError.message)
+    }
     
     if (user) {
-      const { data: isAdmin } = await serverClient.rpc('is_admin', { user_id: user.id })
-      if (isAdmin) {
-        isAuthorized = true
+      debugInfo.userId = user.id
+      debugInfo.method = 'session'
+      
+      // Obtener perfil del usuario para verificar rol
+      const { data: profile, error: profileError } = await serverClient
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+      
+      if (profileError) {
+        console.error('[Auth Error] Error al obtener perfil:', profileError.message)
       }
+      
+      if (profile) {
+        debugInfo.role = profile.role || 'ninguno'
+        
+        // Permitir tanto admin como manager
+        if (profile.role === 'admin' || profile.role === 'manager') {
+          isAuthorized = true
+          console.log(`[Auth Success] Usuario autorizado - User: ${user.id}, Role: ${profile.role}`)
+        } else {
+          console.warn(`[Auth Error] Rol insuficiente - User: ${user.id}, Role: ${profile.role}`)
+        }
+      } else {
+        console.warn(`[Auth Error] Perfil no encontrado - User: ${user.id}`)
+      }
+    } else {
+      console.warn('[Auth Error] Usuario no autenticado')
     }
   }
   
   if (!isAuthorized) {
+    console.error('[Auth Error] Acceso denegado:', debugInfo)
     return NextResponse.json(
-      { ok: false, error: 'Solo administradores pueden ejecutar pruebas' },
+      { ok: false, error: 'Solo administradores pueden ejecutar pruebas', debug: debugInfo },
       { status: 403 }
     )
   }

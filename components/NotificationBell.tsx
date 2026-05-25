@@ -1,50 +1,25 @@
 'use client'
 
-import { useEffect, useState, useRef, useMemo } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import type { Notification, Profile } from '@/lib/types'
+import { useState, useRef, useEffect } from 'react'
+import { useNotifications } from '@/components/NotificationProvider'
+import type { Notification } from '@/lib/types'
 import { Bell, Trash2 } from 'lucide-react'
 
-export default function NotificationBell({ userId }: { userId: string }) {
-  const [notifications, setNotifications] = useState<Notification[]>([])
+export default function NotificationBell() {
   const [showDropdown, setShowDropdown] = useState(false)
-  const [audioEnabled, setAudioEnabled] = useState(false)
   const dropdownRef = useRef<HTMLDivElement | null>(null)
-  const channelRef = useRef<any>(null)
-  const isSubscribedRef = useRef(false)
   
-  // Cliente estable de Supabase (no cambia en cada render)
-  const supabase = useMemo(() => createClient(), [])
+  const {
+    notifications,
+    unreadCount,
+    deleteNotification,
+    deleteAllNotifications,
+    markAsRead,
+    markAllAsRead,
+    unlockAudio,
+  } = useNotifications()
 
-  // Pre-desbloquear audio en el primer clic del usuario
-  function unlockAudio() {
-    if (!audioEnabled) {
-      const audioEl = document.getElementById('notification-sound') as HTMLAudioElement
-      if (audioEl) {
-        audioEl.volume = 0.5
-        audioEl.play().then(() => {
-          audioEl.pause()
-          audioEl.currentTime = 0
-          setAudioEnabled(true)
-        }).catch(() => {
-          setAudioEnabled(true)
-        })
-      }
-    }
-  }
-
-  // Cargar notificaciones y suscribirse UNA SOLA VEZ
   useEffect(() => {
-    if (!userId || isSubscribedRef.current) return
-    
-    async function init() {
-      await loadNotifications()
-      await subscribeToNotifications()
-    }
-
-    init()
-
-    // Cerrar dropdown al hacer clic fuera
     function handleClickOutside(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setShowDropdown(false)
@@ -52,7 +27,6 @@ export default function NotificationBell({ userId }: { userId: string }) {
     }
     document.addEventListener('mousedown', handleClickOutside)
 
-    // Desbloquear audio en el primer clic del usuario
     function handleFirstClick() {
       unlockAudio()
       document.removeEventListener('click', handleFirstClick)
@@ -60,98 +34,10 @@ export default function NotificationBell({ userId }: { userId: string }) {
     document.addEventListener('click', handleFirstClick)
 
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current)
-        channelRef.current = null
-        isSubscribedRef.current = false
-      }
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('click', handleFirstClick)
     }
-  }, [userId, supabase])
-
-  async function loadNotifications() {
-    const { data } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(10)
-    if (data) setNotifications(data)
-  }
-
-  async function subscribeToNotifications() {
-    if (isSubscribedRef.current) return
-    
-    const channelName = `unique-notifs-${userId}`
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          const newNotif = payload.new as Notification
-          setNotifications(prev => [newNotif, ...prev])
-          playNotificationSound()
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          isSubscribedRef.current = true
-          channelRef.current = channel
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          console.error(`❌ [Realtime] Error: ${status}`)
-        }
-      })
-  }
-
-  function playNotificationSound() {
-    if (!audioEnabled) return
-    
-    const audioEl = document.getElementById('notification-sound') as HTMLAudioElement
-    if (!audioEl) return
-
-    audioEl.volume = 0.5
-    audioEl.currentTime = 0
-    audioEl.play().catch(() => {})
-  }
-
-  async function deleteNotification(notifId: string, e?: React.MouseEvent) {
-    if (e) {
-      e.stopPropagation()
-    }
-    await supabase
-      .from('notifications')
-      .delete()
-      .eq('id', notifId)
-    
-    setNotifications((prev) => prev.filter((n) => n.id !== notifId))
-  }
-
-  async function deleteAllNotifications() {
-    await supabase
-      .from('notifications')
-      .delete()
-      .eq('user_id', userId)
-    
-    setNotifications([])
-  }
-
-  async function markAsRead(notifId: string) {
-    await supabase
-      .from('notifications')
-      .update({ read: true })
-      .eq('id', notifId)
-    
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === notifId ? { ...n, read: true } : n))
-    )
-  }
+  }, [unlockAudio])
 
   async function handleNotificationClick(notif: Notification) {
     if (!notif.read) {
@@ -161,8 +47,6 @@ export default function NotificationBell({ userId }: { userId: string }) {
       window.location.href = notif.link
     }
   }
-
-  const unreadCount = notifications.filter((n) => !n.read).length
 
   const notificationTypeStyles = {
     info: 'border-l-4 border-blue-400',
@@ -175,11 +59,6 @@ export default function NotificationBell({ userId }: { userId: string }) {
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Elemento de audio oculto con pre-carga */}
-      <audio id="notification-sound" preload="auto" className="hidden">
-        <source src="/sounds/notification.mp3" type="audio/mpeg" />
-      </audio>
-
       <button
         onClick={() => {
           setShowDropdown(!showDropdown)
@@ -240,9 +119,11 @@ export default function NotificationBell({ userId }: { userId: string }) {
                     </div>
                   </button>
                   
-                  {/* Botón de borrado individual */}
                   <button
-                    onClick={(e) => deleteNotification(notif.id, e)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      deleteNotification(notif.id)
+                    }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-white/40 hover:text-danger hover:bg-danger/10 rounded transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                     aria-label="Eliminar notificación"
                   >
@@ -256,16 +137,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
           {notifications.length > 0 && (
             <div className="bg-[#080b22] px-4 py-2 border-t border-white/15 flex items-center justify-between gap-2">
               <button
-                onClick={async () => {
-                  const unread = notifications.filter((n) => !n.read)
-                  if (unread.length > 0) {
-                    await supabase
-                      .from('notifications')
-                      .update({ read: true })
-                      .in('id', unread.map((n) => n.id))
-                    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-                  }
-                }}
+                onClick={markAllAsRead}
                 className="text-xs text-fifaGreen hover:text-fifaGreen/80 font-bold uppercase tracking-wider transition-colors"
               >
                 Marcar leídas

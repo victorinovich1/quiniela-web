@@ -16,16 +16,7 @@ export default function Navbar({
   const router = useRouter()
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
-  const [userId, setUserId] = useState<string | null>(null)
   const isHomePage = pathname === '/' && !isAuthed
-
-  useEffect(() => {
-    if (!isAuthed) return
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setUserId(data.user.id)
-    })
-  }, [isAuthed])
 
   useEffect(() => {
     if (!isHomePage) return
@@ -82,7 +73,7 @@ export default function Navbar({
               {isAdmin && (
                 <Link href="/admin" className={linkClass('/admin')}>Admin</Link>
               )}
-              {userId && <NotificationBell userId={userId} />}
+              <NotificationBell />
               <button
                 onClick={handleLogout}
                 className="ml-2 px-3 py-2 text-xs font-bold uppercase tracking-wider text-white/60 hover:text-danger"
@@ -103,7 +94,7 @@ export default function Navbar({
 
           {isAuthed && (
             <div className="md:hidden flex items-center gap-2">
-              {userId && <NotificationBell userId={userId} />}
+              <NotificationBell />
               <button
                 onClick={handleLogout}
                 className="text-xs text-white/60 hover:text-white px-2 py-1 font-bold uppercase tracking-wider"

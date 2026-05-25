@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Notification, Profile } from '@/lib/types'
 import { Bell, Trash2 } from 'lucide-react'
@@ -11,7 +11,9 @@ export default function NotificationBell({ userId }: { userId: string }) {
   const [showDropdown, setShowDropdown] = useState(false)
   const [audioEnabled, setAudioEnabled] = useState(false)
   const dropdownRef = useRef<HTMLDivElement | null>(null)
-  const supabase = createClient()
+  
+  // Cliente estable de Supabase (no cambia en cada render)
+  const supabase = useMemo(() => createClient(), [])
 
   // Pre-desbloquear audio en el primer clic del usuario
   function unlockAudio() {
@@ -95,7 +97,7 @@ export default function NotificationBell({ userId }: { userId: string }) {
     console.log('[Realtime] Iniciando suscripción para userId:', userId)
     
     // Canal único por usuario para evitar colisiones
-    const channelName = `notifs-${userId}`
+    const channelName = `unique-notifs-${userId}`
     const channel = supabase
       .channel(channelName)
       .on(

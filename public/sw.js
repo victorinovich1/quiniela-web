@@ -7,8 +7,10 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // CRÍTICO: Ignorar WebSockets (wss://) y cualquier petición que no sea HTTP/HTTPS
-  if (!event.request.url.startsWith('http')) {
+  const url = event.request.url;
+  
+  // IGNORAR COMPLETAMENTE SUPABASE Y WEBSOCKETS
+  if (url.includes('supabase.co') || url.includes('realtime') || !url.startsWith('http')) {
     return;
   }
   

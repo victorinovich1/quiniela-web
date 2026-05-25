@@ -103,6 +103,7 @@ export default function Navbar({
 
           {isAuthed && (
             <div className="md:hidden flex items-center gap-2">
+              {userId && <NotificationBell userId={userId} />}
               <button
                 onClick={handleLogout}
                 className="text-xs text-white/60 hover:text-white px-2 py-1 font-bold uppercase tracking-wider"

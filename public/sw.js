@@ -7,8 +7,8 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // No interceptar peticiones de audio
-  if (event.request.url.includes('/sounds/') || event.request.url.endsWith('.mp3')) {
+  // CRÍTICO: Ignorar WebSockets (wss://) y cualquier petición que no sea HTTP/HTTPS
+  if (!event.request.url.startsWith('http')) {
     return;
   }
   

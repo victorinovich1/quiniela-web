@@ -85,8 +85,10 @@ export default function NotificationBell({ userId }: { userId: string }) {
   }
 
   function subscribeToNotifications() {
+    // Canal único por usuario para evitar conflictos
+    const channelName = `notifications-${userId}`
     const channel = supabase
-      .channel('realtime_notifications')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -119,16 +121,18 @@ export default function NotificationBell({ userId }: { userId: string }) {
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          console.log('✅ [Realtime] Suscripción activa para notificaciones del usuario:', userId)
+          console.log(`✅ [Realtime] Canal '${channelName}' suscrito correctamente`)
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ [Realtime] Error en la suscripción')
+          console.error(`❌ [Realtime] Error en canal '${channelName}'`)
         } else if (status === 'TIMED_OUT') {
-          console.warn('⚠️ [Realtime] Timeout en la suscripción')
+          console.warn(`⚠️ [Realtime] Timeout en canal '${channelName}'`)
+        } else {
+          console.log(`🔄 [Realtime] Estado del canal '${channelName}': ${status}`)
         }
       })
 
     return () => {
-      console.log('🔌 [Realtime] Desuscribiendo del canal de notificaciones')
+      console.log(`🔌 [Realtime] Desuscribiendo canal '${channelName}'`)
       supabase.removeChannel(channel)
     }
   }

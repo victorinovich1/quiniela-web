@@ -99,24 +99,13 @@ export default function NotificationBell({ userId }: { userId: string }) {
         },
         (payload) => {
           const newNotif = payload.new as Notification
-          console.log('✅ [Realtime] ¡Mensaje recibido en tiempo real!', newNotif)
+          console.log('✅ [Realtime] Nueva notificación recibida:', newNotif)
+          
+          // 1. Añadir a la lista local
           setNotifications((prev) => [newNotif, ...prev.slice(0, 9)])
           
-          // Reproducir sonido si está habilitado
-          if (profile?.notifications_enabled && profile?.notifications_sound && audioEnabled) {
-            const audioEl = document.getElementById('notification-sound') as HTMLAudioElement
-            if (audioEl) {
-              console.log('🔔 Intentando reproducir sonido de notificación...')
-              audioEl.volume = 0.5
-              audioEl.play()
-                .then(() => console.log('✅ Sonido reproducido correctamente'))
-                .catch((err) => {
-                  console.warn('⚠️ Autoplay bloqueado:', err.message)
-                })
-            } else {
-              console.warn('⚠️ Elemento de audio no encontrado')
-            }
-          }
+          // 2. Reproducir sonido (sin depender de profile para evitar closures obsoletos)
+          playNotificationSound()
         }
       )
       .subscribe((status) => {
@@ -135,6 +124,26 @@ export default function NotificationBell({ userId }: { userId: string }) {
       console.log(`🔌 [Realtime] Desuscribiendo canal '${channelName}'`)
       supabase.removeChannel(channel)
     }
+  }
+
+  function playNotificationSound() {
+    if (!audioEnabled) {
+      console.log('🔇 Audio aún no desbloqueado')
+      return
+    }
+    
+    const audioEl = document.getElementById('notification-sound') as HTMLAudioElement
+    if (!audioEl) {
+      console.warn('⚠️ Elemento de audio no encontrado')
+      return
+    }
+
+    console.log('🔔 Intentando reproducir sonido...')
+    audioEl.volume = 0.5
+    audioEl.currentTime = 0 // Reiniciar para permitir repetición rápida
+    audioEl.play()
+      .then(() => console.log('✅ Sonido reproducido'))
+      .catch((err) => console.warn('⚠️ Autoplay bloqueado:', err.message))
   }
 
   async function deleteNotification(notifId: string, e?: React.MouseEvent) {

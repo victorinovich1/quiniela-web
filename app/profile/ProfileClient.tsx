@@ -232,6 +232,11 @@ export default function ProfileClient({
   }, [])
 
   async function handlePushSubscription() {
+    console.log('[Push] Iniciando suscripción...')
+    console.log('[Push] serviceWorker disponible:', 'serviceWorker' in navigator)
+    console.log('[Push] PushManager disponible:', 'PushManager' in window)
+    console.log('[Push] Permiso actual:', Notification.permission)
+    
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       alert('Tu navegador no soporta notificaciones push')
       return
@@ -240,19 +245,25 @@ export default function ProfileClient({
     try {
       // Pedir permiso
       const permission = await Notification.requestPermission()
+      console.log('[Push] Permiso obtenido:', permission)
+      
       if (permission !== 'granted') {
         alert('Necesitas dar permisos de notificaciones para continuar')
         return
       }
 
       // Obtener registro del Service Worker
+      console.log('[Push] Esperando Service Worker...')
       const registration = await navigator.serviceWorker.ready
+      console.log('[Push] Service Worker ready:', registration.active?.state)
 
       // Suscribirse a push
+      console.log('[Push] VAPID Key:', process.env.NEXT_PUBLIC_VAPID_KEY?.substring(0, 20) + '...')
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: process.env.NEXT_PUBLIC_VAPID_KEY,
       })
+      console.log('[Push] Suscripción creada:', subscription.endpoint.substring(0, 50) + '...')
 
       // Guardar suscripción en BD
       const { error } = await supabase
@@ -263,17 +274,18 @@ export default function ProfileClient({
         })
 
       if (error) {
-        console.error('Error guardando suscripción:', error)
+        console.error('[Push] Error guardando suscripción:', error)
         alert('Error al activar notificaciones. Intenta de nuevo.')
         return
       }
 
+      console.log('[Push] Suscripción guardada en BD')
       setPushSubscribed(true)
       alert('✅ Notificaciones push activadas. Ahora recibirás alertas incluso con la web cerrada.')
 
     } catch (err) {
-      console.error('Error subscribing to push:', err)
-      alert('Error al activar notificaciones push')
+      console.error('[Push] Error subscribing to push:', err)
+      alert('Error al activar notificaciones push: ' + (err as Error).message)
     }
   }
 
@@ -542,9 +554,26 @@ export default function ProfileClient({
                     <h3 className="font-bold text-white text-sm mb-1">
                       Notificaciones en el móvil
                     </h3>
-                    <p className="text-xs text-white/60 mb-3">
+                    <p className="text-xs text-white/60 mb-2">
                       Recibe alertas incluso con la web cerrada
                     </p>
+                    
+                    {/* Estado del permiso */}
+                    <div className="text-xs mb-3">
+                      <span className="text-white/50">Estado del permiso: </span>
+                      {typeof Notification !== 'undefined' && (
+                        <span className={`font-mono ${
+                          Notification.permission === 'granted' ? 'text-fifaGreen' :
+                          Notification.permission === 'denied' ? 'text-red-400' :
+                          'text-yellow-400'
+                        }`}>
+                          {Notification.permission === 'granted' ? '✅ Permitido' :
+                           Notification.permission === 'denied' ? '❌ Bloqueado' :
+                           '⏸️ No solicitado'}
+                        </span>
+                      )}
+                    </div>
+                    
                     {pushSubscribed ? (
                       <button
                         onClick={handlePushUnsubscription}
@@ -555,7 +584,7 @@ export default function ProfileClient({
                     ) : (
                       <button
                         onClick={handlePushSubscription}
-                        disabled={!notificationsEnabled}
+                        disabled={!notificationsEnabled || (typeof Notification !== 'undefined' && Notification.permission === 'denied')}
                         className="btn btn-primary text-xs py-1.5 px-3"
                       >
                         ACTIVAR AHORA
@@ -566,6 +595,11 @@ export default function ProfileClient({
                 {!pushSubscribed && !notificationsEnabled && (
                   <div className="text-xs text-white/40 mt-2">
                     Primero debes activar &quot;Recibir notificaciones&quot;
+                  </div>
+                )}
+                {typeof Notification !== 'undefined' && Notification.permission === 'denied' && (
+                  <div className="bg-red-500/10 border border-red-500/30 rounded p-2 text-xs text-red-400 mt-2">
+                    ⚠️ Los permisos de notificación están bloqueados. Ve a la configuración del navegador para habilitarlos.
                   </div>
                 )}
               </div>

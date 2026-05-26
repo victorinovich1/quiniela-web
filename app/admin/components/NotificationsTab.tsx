@@ -28,6 +28,7 @@ export default function NotificationsTab() {
   const [sending, setSending] = useState(false)
   const [testingReminders, setTestingReminders] = useState(false)
   const [testingSound, setTestingSound] = useState(false)
+  const [testingPush, setTestingPush] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [clearingAll, setClearingAll] = useState(false)
   const [result, setResult] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -203,6 +204,48 @@ export default function NotificationsTab() {
 
     setTestingSound(false)
     setTimeout(() => setResult(null), 4000)
+  }
+
+  async function handleTestPush() {
+    setTestingPush(true)
+    setResult({ type: 'success', text: '🧪 Enviando notificación push de prueba...' })
+
+    try {
+      const res = await fetch('/api/admin/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: '🧪 Prueba de Web Push',
+          message: 'Si recibes esto, las notificaciones push están funcionando correctamente',
+          link: '/admin',
+          userIds: [], // Enviar a todos los usuarios activos
+          sendPush: true,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        setResult({
+          type: 'success',
+          text: `✅ Push enviado a ${data.notificationsSent || 0} usuario(s). Revisa tu móvil.`,
+        })
+      } else if (res.status === 403) {
+        setResult({ type: 'error', text: '❌ Error 403: Credenciales VAPID incorrectas o expiradas' })
+      } else if (res.status === 410) {
+        setResult({ type: 'error', text: '❌ Error 410: Suscripciones expiradas (se limpiaron automáticamente)' })
+      } else {
+        setResult({ type: 'error', text: `❌ Error ${res.status}: ${data.error || 'Unknown'}` })
+      }
+    } catch (err: any) {
+      setResult({ 
+        type: 'error', 
+        text: `❌ Error de red: ${err.message}. Verifica que las VAPID keys estén en las variables de entorno.` 
+      })
+    }
+
+    setTestingPush(false)
+    setTimeout(() => setResult(null), 8000)
   }
 
   async function handleDeleteBatch(batchId: string) {
@@ -393,6 +436,32 @@ export default function NotificationsTab() {
           {testingReminders ? 'Ejecutando...' : '🧪 PROBAR RECORDATORIOS DE 30 MIN'}
         </button>
       </div>
+
+      {/* Herramienta de prueba de Web Push */}
+      <div className="card p-6 max-w-2xl mt-6">
+        <h3 className="font-extrabold uppercase tracking-tight text-white text-lg mb-4">
+          📲 Prueba de Web Push
+        </h3>
+        <p className="text-sm text-white/70 mb-4">
+          Envía una notificación push real a todos los usuarios suscritos. Útil para verificar que las VAPID keys están configuradas correctamente y que las suscripciones funcionan.
+        </p>
+        <button
+          onClick={handleTestPush}
+          disabled={testingPush}
+          className="btn btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {testingPush ? 'Enviando...' : '🧪 ENVIAR PUSH DE PRUEBA'}
+        </button>
+        <div className="mt-3 text-xs text-white/50">
+          <strong>Diagnostica errores comunes:</strong>
+          <ul className="list-disc list-inside mt-1 space-y-1">
+            <li>403 Forbidden → VAPID keys incorrectas o no configuradas</li>
+            <li>410 Gone → Suscripciones expiradas (se limpian automáticamente)</li>
+            <li>400 Bad Request → Formato de suscripción inválido</li>
+          </ul>
+        </div>
+      </div>
+      
       {/* Historial de Envíos */}
       {sentBatches.length > 0 && (
         <div className="card p-6 max-w-4xl mt-6">

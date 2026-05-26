@@ -11,9 +11,15 @@ self.addEventListener('fetch', (event) => {
 
 // Listener de notificaciones push
 self.addEventListener('push', (event) => {
-  if (!event.data) return
+  console.log('[SW] Notificación recibida', event)
+  
+  if (!event.data) {
+    console.warn('[SW] Evento push sin datos')
+    return
+  }
   
   const data = event.data.json()
+  console.log('[SW] Datos de la notificación:', data)
   
   event.waitUntil(
     self.registration.showNotification(data.title || 'Quiniela Mundial', {
@@ -23,6 +29,10 @@ self.addEventListener('push', (event) => {
       data: { url: data.link || '/' },
       vibrate: [200, 100, 200],
       tag: 'notification-' + Date.now()
+    }).then(() => {
+      console.log('[SW] Notificación mostrada exitosamente')
+    }).catch(err => {
+      console.error('[SW] Error mostrando notificación:', err)
     })
   )
 })

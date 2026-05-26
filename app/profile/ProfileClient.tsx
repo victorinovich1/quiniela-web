@@ -69,6 +69,11 @@ export default function ProfileClient({
   const [notificationsSound, setNotificationsSound] = useState(profile?.notifications_sound ?? true)
   const [savingNotifications, setSavingNotifications] = useState(false)
   
+  // Web Push Notifications
+  const [pushSubscribed, setPushSubscribed] = useState(false)
+  const [checkingPushStatus, setCheckingPushStatus] = useState(true)
+  const supabase = createClient()
+  
   // PWA Install Prompt
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [showInstallButton, setShowInstallButton] = useState(false)
@@ -201,6 +206,98 @@ export default function ProfileClient({
     setSavingNotifications(false)
     if (error) {
       console.error('Error actualizando preferencias:', error)
+    }
+  }
+
+  // Verificar estado de suscripción push al montar
+  useEffect(() => {
+    async function checkPushStatus() {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        setCheckingPushStatus(false)
+        return
+      }
+
+      try {
+        const registration = await navigator.serviceWorker.ready
+        const subscription = await registration.pushManager.getSubscription()
+        setPushSubscribed(!!subscription)
+      } catch (err) {
+        console.error('Error checking push status:', err)
+      } finally {
+        setCheckingPushStatus(false)
+      }
+    }
+
+    checkPushStatus()
+  }, [])
+
+  async function handlePushSubscription() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      alert('Tu navegador no soporta notificaciones push')
+      return
+    }
+
+    try {
+      // Pedir permiso
+      const permission = await Notification.requestPermission()
+      if (permission !== 'granted') {
+        alert('Necesitas dar permisos de notificaciones para continuar')
+        return
+      }
+
+      // Obtener registro del Service Worker
+      const registration = await navigator.serviceWorker.ready
+
+      // Suscribirse a push
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_KEY,
+      })
+
+      // Guardar suscripción en BD
+      const { error } = await supabase
+        .from('push_subscriptions')
+        .insert({
+          user_id: user.id,
+          subscription: subscription.toJSON(),
+        })
+
+      if (error) {
+        console.error('Error guardando suscripción:', error)
+        alert('Error al activar notificaciones. Intenta de nuevo.')
+        return
+      }
+
+      setPushSubscribed(true)
+      alert('✅ Notificaciones push activadas. Ahora recibirás alertas incluso con la web cerrada.')
+
+    } catch (err) {
+      console.error('Error subscribing to push:', err)
+      alert('Error al activar notificaciones push')
+    }
+  }
+
+  async function handlePushUnsubscription() {
+    try {
+      const registration = await navigator.serviceWorker.ready
+      const subscription = await registration.pushManager.getSubscription()
+
+      if (subscription) {
+        await subscription.unsubscribe()
+      }
+
+      // Eliminar de BD
+      await supabase
+        .from('push_subscriptions')
+        .delete()
+        .eq('user_id', user.id)
+
+      setPushSubscribed(false)
+      alert('Notificaciones push desactivadas')
+
+    } catch (err) {
+      console.error('Error unsubscribing from push:', err)
+      alert('Error al desactivar notificaciones push')
     }
   }
 
@@ -435,6 +532,44 @@ export default function ProfileClient({
                 />
               </button>
             </div>
+
+            {/* Botón: Activar Web Push */}
+            {!checkingPushStatus && 'serviceWorker' in navigator && 'PushManager' in window && (
+              <div className="p-4 bg-navy-medium/30 rounded-lg">
+                <div className="flex items-start gap-3 mb-3">
+                  <span className="text-2xl">📲</span>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-white text-sm mb-1">
+                      Notificaciones en el móvil
+                    </h3>
+                    <p className="text-xs text-white/60 mb-3">
+                      Recibe alertas incluso con la web cerrada
+                    </p>
+                    {pushSubscribed ? (
+                      <button
+                        onClick={handlePushUnsubscription}
+                        className="btn btn-outline text-xs py-1.5 px-3"
+                      >
+                        ✅ ACTIVADAS · Desactivar
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handlePushSubscription}
+                        disabled={!notificationsEnabled}
+                        className="btn btn-primary text-xs py-1.5 px-3"
+                      >
+                        ACTIVAR AHORA
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {!pushSubscribed && !notificationsEnabled && (
+                  <div className="text-xs text-white/40 mt-2">
+                    Primero debes activar &quot;Recibir notificaciones&quot;
+                  </div>
+                )}
+              </div>
+            )}
 
             {!notificationsEnabled && (
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-sm text-yellow-400">

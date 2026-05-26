@@ -27,6 +27,21 @@ export interface Notification {
   read: boolean
   link: string | null
   created_at: string
+  batch_id?: string | null
+}
+
+export interface PushSubscription {
+  id: number
+  user_id: string
+  subscription: {
+    endpoint: string
+    keys: {
+      p256dh: string
+      auth: string
+    }
+  }
+  created_at: string
+  updated_at: string
 }
 
 export interface Team {

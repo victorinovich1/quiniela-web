@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
+import webpush from 'web-push'
+
+// Configurar VAPID keys
+if (process.env.VAPID_PRIVATE_KEY && process.env.NEXT_PUBLIC_VAPID_KEY) {
+  webpush.setVapidDetails(
+    'mailto:admin@quinielamundial.com',
+    process.env.NEXT_PUBLIC_VAPID_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  )
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -173,6 +183,36 @@ export async function GET(request: NextRequest) {
 
         if (!insertError) {
           totalSent += 1
+
+          // Enviar Web Push si el usuario está suscrito
+          const { data: pushSubs } = await supabase
+            .from('push_subscriptions')
+            .select('*')
+            .eq('user_id', entry.user_id)
+
+          if (pushSubs && pushSubs.length > 0) {
+            for (const sub of pushSubs) {
+              try {
+                await webpush.sendNotification(
+                  sub.subscription as any,
+                  JSON.stringify({
+                    title: '⏰ Partido por comenzar',
+                    message,
+                    link: '/predictions',
+                  })
+                )
+              } catch (pushError: any) {
+                // Si el endpoint ya no es válido (410 Gone), eliminar la suscripción
+                if (pushError.statusCode === 410) {
+                  await supabase
+                    .from('push_subscriptions')
+                    .delete()
+                    .eq('id', sub.id)
+                }
+                console.error('Push error:', pushError)
+              }
+            }
+          }
         }
       }
     }

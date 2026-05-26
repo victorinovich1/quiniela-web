@@ -33,10 +33,45 @@ export default function NotificationProvider({
   children: React.ReactNode
 }) {
   const [notifications, setNotifications] = useState<Notification[]>([])
-  const [audioEnabled, setAudioEnabled] = useState(false)
   const channelRef = useRef<any>(null)
   const isSubscribedRef = useRef(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const audioUnlockedRef = useRef(false)
   const supabase = useMemo(() => createClient(), [])
+
+  // Inicializar audio y desbloquear con primer click
+  useEffect(() => {
+    // Crear instancia única de Audio
+    audioRef.current = new Audio('/sounds/notification.mp3')
+    audioRef.current.volume = 1
+    
+    // Desbloquear audio con primer click/touchstart
+    function unlockAudioOnInteraction() {
+      if (!audioUnlockedRef.current && audioRef.current) {
+        audioRef.current.play()
+          .then(() => {
+            audioRef.current!.pause()
+            audioRef.current!.currentTime = 0
+            audioRef.current!.volume = 1
+            audioUnlockedRef.current = true
+          })
+          .catch(() => {
+            audioUnlockedRef.current = true
+          })
+        
+        document.removeEventListener('click', unlockAudioOnInteraction)
+        document.removeEventListener('touchstart', unlockAudioOnInteraction)
+      }
+    }
+    
+    document.addEventListener('click', unlockAudioOnInteraction)
+    document.addEventListener('touchstart', unlockAudioOnInteraction)
+    
+    return () => {
+      document.removeEventListener('click', unlockAudioOnInteraction)
+      document.removeEventListener('touchstart', unlockAudioOnInteraction)
+    }
+  }, [])
 
   useEffect(() => {
     if (!userId || isSubscribedRef.current) return
@@ -90,28 +125,14 @@ export default function NotificationProvider({
   }, [userId, supabase])
 
   function unlockAudio() {
-    if (!audioEnabled) {
-      const audioEl = document.getElementById('notification-sound') as HTMLAudioElement
-      if (audioEl) {
-        audioEl.volume = 0.5
-        audioEl.play().then(() => {
-          audioEl.pause()
-          audioEl.currentTime = 0
-          setAudioEnabled(true)
-        }).catch(() => {
-          setAudioEnabled(true)
-        })
-      }
-    }
+    // Ya no es necesario - se desbloquea automáticamente con el primer click
   }
 
   function playSound() {
-    if (!audioEnabled) return
-    const audioEl = document.getElementById('notification-sound') as HTMLAudioElement
-    if (!audioEl) return
-    audioEl.volume = 0.5
-    audioEl.currentTime = 0
-    audioEl.play().catch(() => {})
+    if (!audioUnlockedRef.current || !audioRef.current) return
+    
+    audioRef.current.currentTime = 0
+    audioRef.current.play().catch(() => {})
   }
 
   async function deleteNotification(id: string) {
@@ -153,9 +174,6 @@ export default function NotificationProvider({
 
   return (
     <NotificationContext.Provider value={value}>
-      <audio id="notification-sound" preload="auto" className="hidden">
-        <source src="/sounds/notification.mp3" type="audio/mpeg" />
-      </audio>
       {children}
     </NotificationContext.Provider>
   )

@@ -8,15 +8,16 @@ create table if not exists public.push_subscriptions (
   user_id uuid not null references public.profiles(id) on delete cascade,
   subscription jsonb not null,
   created_at timestamptz default now(),
-  updated_at timestamptz default now(),
-  
-  -- Un usuario puede tener múltiples suscripciones (móvil + desktop)
-  -- pero no duplicados del mismo endpoint
-  unique(user_id, (subscription->>'endpoint'))
+  updated_at timestamptz default now()
 );
 
--- Índices
-create index idx_push_subscriptions_user_id on public.push_subscriptions(user_id);
+-- Índice único: un usuario no puede tener duplicados del mismo endpoint
+create unique index if not exists idx_push_subs_user_endpoint 
+on public.push_subscriptions (user_id, (subscription->>'endpoint'));
+
+-- Índice para búsquedas por usuario
+create index if not exists idx_push_subscriptions_user_id 
+on public.push_subscriptions(user_id);
 
 -- RLS: El usuario solo puede ver y gestionar sus propias suscripciones
 alter table public.push_subscriptions enable row level security;

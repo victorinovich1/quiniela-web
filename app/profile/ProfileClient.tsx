@@ -72,6 +72,8 @@ export default function ProfileClient({
   // Web Push Notifications
   const [pushSubscribed, setPushSubscribed] = useState(false)
   const [checkingPushStatus, setCheckingPushStatus] = useState(true)
+  const [isIOS, setIsIOS] = useState(false)
+  const [isPWA, setIsPWA] = useState(false)
   const supabase = createClient()
   
   // PWA Install Prompt
@@ -212,6 +214,14 @@ export default function ProfileClient({
   // Verificar estado de suscripción push al montar
   useEffect(() => {
     async function checkPushStatus() {
+      // Detectar iOS
+      const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+      setIsIOS(isiOS)
+      
+      // Detectar si es PWA (añadida a pantalla de inicio)
+      const isPWAMode = window.matchMedia('(display-mode: standalone)').matches
+      setIsPWA(isPWAMode)
+      
       if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
         setCheckingPushStatus(false)
         return
@@ -545,63 +555,92 @@ export default function ProfileClient({
               </button>
             </div>
 
-            {/* Botón: Activar Web Push */}
-            {!checkingPushStatus && 'serviceWorker' in navigator && 'PushManager' in window && (
-              <div className="p-4 bg-navy-medium/30 rounded-lg">
-                <div className="flex items-start gap-3 mb-3">
-                  <span className="text-2xl">📲</span>
+            {/* Botón: Activar Web Push - Tarjeta destacada si NO está configurado */}
+            {!checkingPushStatus && 'serviceWorker' in navigator && 'PushManager' in window && !pushSubscribed && (
+              <div className="p-6 bg-gradient-to-br from-fifaGreen/20 to-fifaGreen/5 border-2 border-fifaGreen/40 rounded-lg">
+                <div className="flex items-start gap-4">
+                  <span className="text-4xl">🔔</span>
                   <div className="flex-1">
-                    <h3 className="font-bold text-white text-sm mb-1">
-                      Notificaciones en el móvil
+                    <h3 className="font-extrabold text-white text-base mb-2">
+                      ¡No te pierdas ni un gol!
                     </h3>
-                    <p className="text-xs text-white/60 mb-2">
-                      Recibe alertas incluso con la web cerrada
+                    <p className="text-sm text-white/80 mb-4 leading-relaxed">
+                      Activa las notificaciones en tu móvil para recibir alertas de puntos, recordatorios de partidos y actualizaciones del ranking.
                     </p>
                     
-                    {/* Estado del permiso */}
-                    <div className="text-xs mb-3">
-                      <span className="text-white/50">Estado del permiso: </span>
-                      {typeof Notification !== 'undefined' && (
-                        <span className={`font-mono ${
-                          Notification.permission === 'granted' ? 'text-fifaGreen' :
-                          Notification.permission === 'denied' ? 'text-red-400' :
-                          'text-yellow-400'
-                        }`}>
-                          {Notification.permission === 'granted' ? '✅ Permitido' :
-                           Notification.permission === 'denied' ? '❌ Bloqueado' :
-                           '⏸️ No solicitado'}
-                        </span>
-                      )}
-                    </div>
+                    {/* Caso iOS sin PWA */}
+                    {isIOS && !isPWA ? (
+                      <div className="bg-yellow-500/20 border border-yellow-500/40 rounded-lg p-3 mb-3">
+                        <div className="flex items-start gap-2">
+                          <span className="text-lg">🎮</span>
+                          <div className="text-xs text-yellow-200">
+                            <strong>iPhone/iPad:</strong> Para recibir notificaciones, primero debes añadir la app a tu pantalla de inicio.
+                            <div className="mt-1">
+                              1. Toca el botón de <strong>Compartir</strong> ↗️<br/>
+                              2. Selecciona <strong>&quot;Añadir a pantalla de inicio&quot;</strong><br/>
+                              3. Vuelve aquí y activa las notificaciones
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
                     
-                    {pushSubscribed ? (
-                      <button
-                        onClick={handlePushUnsubscription}
-                        className="btn btn-outline text-xs py-1.5 px-3"
-                      >
-                        ✅ ACTIVADAS · Desactivar
-                      </button>
+                    {/* Permiso bloqueado */}
+                    {typeof Notification !== 'undefined' && Notification.permission === 'denied' ? (
+                      <div className="bg-red-500/20 border border-red-500/40 rounded-lg p-3 mb-3">
+                        <div className="flex items-start gap-2">
+                          <span className="text-lg">⚠️</span>
+                          <div className="text-xs text-red-200">
+                            <strong>Permisos bloqueados.</strong> Para activar:
+                            <div className="mt-1">
+                              <strong>Chrome/Edge:</strong> Click en el 🔒 en la barra de direcciones → Notificaciones → Permitir<br/>
+                              <strong>Safari:</strong> Ajustes del iPhone → Safari → Sitios web → Permitir notificaciones
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     ) : (
                       <button
                         onClick={handlePushSubscription}
-                        disabled={!notificationsEnabled || (typeof Notification !== 'undefined' && Notification.permission === 'denied')}
-                        className="btn btn-primary text-xs py-1.5 px-3"
+                        disabled={!notificationsEnabled || (isIOS && !isPWA)}
+                        className="btn btn-primary w-full text-sm py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        ACTIVAR AHORA
+                        📣 ACTIVAR NOTIFICACIONES
                       </button>
+                    )}
+                    
+                    {!notificationsEnabled && (
+                      <div className="text-xs text-white/50 mt-2">
+                        Primero activa &quot;Recibir notificaciones&quot; arriba
+                      </div>
                     )}
                   </div>
                 </div>
-                {!pushSubscribed && !notificationsEnabled && (
-                  <div className="text-xs text-white/40 mt-2">
-                    Primero debes activar &quot;Recibir notificaciones&quot;
+              </div>
+            )}
+            
+            {/* Botón compacto si YA está configurado */}
+            {!checkingPushStatus && 'serviceWorker' in navigator && 'PushManager' in window && pushSubscribed && (
+              <div className="p-4 bg-navy-medium/30 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">✅</span>
+                    <div>
+                      <h3 className="font-bold text-white text-sm">
+                        Notificaciones push activas
+                      </h3>
+                      <p className="text-xs text-white/60">
+                        Recibirás alertas incluso con la web cerrada
+                      </p>
+                    </div>
                   </div>
-                )}
-                {typeof Notification !== 'undefined' && Notification.permission === 'denied' && (
-                  <div className="bg-red-500/10 border border-red-500/30 rounded p-2 text-xs text-red-400 mt-2">
-                    ⚠️ Los permisos de notificación están bloqueados. Ve a la configuración del navegador para habilitarlos.
-                  </div>
-                )}
+                  <button
+                    onClick={handlePushUnsubscription}
+                    className="btn btn-outline text-xs py-1.5 px-3"
+                  >
+                    Desactivar
+                  </button>
+                </div>
               </div>
             )}
 

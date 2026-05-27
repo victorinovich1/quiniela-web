@@ -80,6 +80,8 @@ export async function POST(req: NextRequest) {
         .in('user_id', targetUsers)
 
       if (subscriptions && subscriptions.length > 0) {
+        console.log(`[Push] Enviando a ${subscriptions.length} suscripciones...`)
+        
         const pushPromises = subscriptions.map(async (sub) => {
           try {
             await webpush.sendNotification(
@@ -90,19 +92,24 @@ export async function POST(req: NextRequest) {
                 link: link || '/',
               })
             )
+            console.log('[Push] Push enviado con éxito a:', sub.user_id)
           } catch (err: any) {
             // Si el endpoint ya no es válido (410 Gone), eliminar la suscripción
             if (err.statusCode === 410) {
+              console.log('[Push] Suscripción expirada, eliminando:', sub.id)
               await supabase
                 .from('push_subscriptions')
                 .delete()
                 .eq('id', sub.id)
             }
-            console.error('Push error:', err)
+            console.error('[Push] Error enviando push:', err.message)
           }
         })
 
         await Promise.allSettled(pushPromises)
+        console.log('[Push] Lote de push completado')
+      } else {
+        console.log('[Push] No hay suscripciones push activas')
       }
     }
 

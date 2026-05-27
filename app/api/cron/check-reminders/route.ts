@@ -201,15 +201,17 @@ export async function GET(request: NextRequest) {
                     link: '/predictions',
                   })
                 )
+                console.log('[Push] Push enviado con éxito (recordatorio) a:', entry.user_id)
               } catch (pushError: any) {
                 // Si el endpoint ya no es válido (410 Gone), eliminar la suscripción
                 if (pushError.statusCode === 410) {
+                  console.log('[Push] Suscripción expirada, eliminando:', sub.id)
                   await supabase
                     .from('push_subscriptions')
                     .delete()
                     .eq('id', sub.id)
                 }
-                console.error('Push error:', pushError)
+                console.error('[Push] Error enviando recordatorio:', pushError.message)
               }
             }
           }

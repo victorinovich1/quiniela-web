@@ -22,9 +22,8 @@ export const metadata: Metadata = {
     ],
   },
   appleWebApp: {
-    capable: true,
-    statusBarStyle: 'black-translucent',
     title: 'Quiniela 2026',
+    statusBarStyle: 'black-translucent',
   },
 }
 

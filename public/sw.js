@@ -35,6 +35,5 @@ self.addEventListener('notificationclick', function(event) {
   event.notification.close()
   event.waitUntil(clients.openWindow(event.notification.data.url))
 })
-})
 // No intercepta peticiones para evitar conflictos con Supabase Realtime
 

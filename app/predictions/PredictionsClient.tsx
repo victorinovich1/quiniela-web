@@ -378,7 +378,7 @@ export default function PredictionsClient({
                 )}
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-[10px] font-black text-fifaGreen">M{m.match_number}</span>
-                  <span className="text-[11px] font-bold text-white/60">
+                  <span className="text-[11px] font-bold text-white/60" suppressHydrationWarning>
                     {m.kickoff_at ? new Date(m.kickoff_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                   </span>
                   <span className="text-[9px] text-white/40 uppercase tracking-wider ml-auto">
@@ -838,7 +838,7 @@ function EspecialesTab({
           <p className="text-yellow-400 text-sm font-medium">
             ⚠️ El podio se bloquea definitivamente al iniciar el mundial
           </p>
-          <p className="text-white/60 text-xs mt-1">
+          <p className="text-white/60 text-xs mt-1" suppressHydrationWarning>
             Fecha de bloqueo: {new Date(lockAt).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' })}
           </p>
         </div>

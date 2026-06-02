@@ -489,7 +489,7 @@ export default function NotificationsTab() {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-sm text-white/70 text-center">{batch.sent_count}</td>
-                      <td className="py-3 px-4 text-sm text-white/70 text-center">
+                      <td className="py-3 px-4 text-sm text-white/70 text-center" suppressHydrationWarning>
                         {new Date(batch.created_at).toLocaleDateString('es-MX', {
                           day: 'numeric',
                           month: 'short',

@@ -16,7 +16,7 @@ export default async function RulesPage() {
 
   const config = settings as Settings
 
-  // Formatear fecha de bloqueo global
+  // Formatear fecha de bloqueo global (renderizado en servidor)
   const lockDate = config?.lock_at
     ? new Date(config.lock_at).toLocaleString('es-AR', {
         dateStyle: 'full',

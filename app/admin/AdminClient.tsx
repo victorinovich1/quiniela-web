@@ -405,7 +405,7 @@ function MatchesTab({ initialMatches, teams, settings }: {
                   <span>🔒 Fijar resultado (Ignorar API)</span>
                 </label>
                 {m.last_synced_at && (
-                  <span className="text-white/40 ml-auto">
+                  <span className="text-white/40 ml-auto" suppressHydrationWarning>
                     Última sync: {new Date(m.last_synced_at).toLocaleString('es-ES', { 
                       day: 'numeric', 
                       month: 'short', 
@@ -1164,7 +1164,7 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
 
         <div className="space-y-2 text-sm">
           {s.last_sync_at && (
-            <div className="text-white/70">
+            <div className="text-white/70" suppressHydrationWarning>
               Última sincronización oficial: <span className="text-white font-medium">
                 {new Date(s.last_sync_at).toLocaleString('es-ES', {
                   dateStyle: 'medium',
@@ -1211,7 +1211,7 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
                   }`}>
                     {m.status === 'finished' ? 'FIN' : m.status === 'live' ? 'VIVO' : 'PROG'}
                   </span>
-                  <span className="text-white/40">
+                  <span className="text-white/40" suppressHydrationWarning>
                     {m.last_synced_at && new Date(m.last_synced_at).toLocaleString('es-ES', {
                       day: 'numeric',
                       month: 'short',

@@ -107,8 +107,15 @@ export default function NotificationProvider({
           if (status === 'SUBSCRIBED') {
             isSubscribedRef.current = true
             channelRef.current = channel
+            console.log('✅ [Realtime] Conectado exitosamente')
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
             console.error(`❌ [Realtime] Error: ${status}`)
+            // Reconexión automática: Supabase maneja esto internamente
+            // El canal se reconectará automáticamente al recuperar internet
+            console.log('🔄 [Realtime] Reconexión automática habilitada')
+          } else if (status === 'CLOSED') {
+            console.warn('⚠️ [Realtime] Canal cerrado')
+            isSubscribedRef.current = false
           }
         })
     }

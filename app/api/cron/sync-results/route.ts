@@ -213,12 +213,6 @@ export async function GET(request: NextRequest) {
     let fixtureUrl = buildFixtureUrl(competitionCode, season)
     let currentSeason = season
     
-    // LOG DETALLADO: URL y configuración
-    console.log('[cron/sync-results] === INICIO DE SINCRONIZACIÓN ===')
-    console.log('[cron/sync-results] URL completa:', fixtureUrl)
-    console.log('[cron/sync-results] API Key configurada:', footballDataKey ? 'SÍ' : 'NO')
-    console.log('[cron/sync-results] Competición:', competitionCode, '| Temporada:', season)
-    
     let upstreamRes = await fetch(fixtureUrl, {
       headers: {
         'X-Auth-Token': footballDataKey,
@@ -226,16 +220,10 @@ export async function GET(request: NextRequest) {
       cache: 'no-store',
     })
 
-    // LOG DETALLADO: Respuesta inicial
-    console.log('[cron/sync-results] Response status:', upstreamRes.status, upstreamRes.statusText)
-    console.log('[cron/sync-results] Response ok:', upstreamRes.ok)
-
     // Modo de prueba: Si season=2026 falla (400/403/404), reintentar con 2022 para validar conexión
     if (!upstreamRes.ok && [400, 403, 404].includes(upstreamRes.status) && season === '2026') {
-      console.log('[cron/sync-results] ⚠️  Season 2026 falló (' + upstreamRes.status + '), activando modo de prueba con 2022...')
       currentSeason = '2022'
       fixtureUrl = buildFixtureUrl(competitionCode, currentSeason)
-      console.log('[cron/sync-results] Nueva URL (fallback):', fixtureUrl)
       
       upstreamRes = await fetch(fixtureUrl, {
         headers: {
@@ -243,8 +231,6 @@ export async function GET(request: NextRequest) {
         },
         cache: 'no-store',
       })
-      
-      console.log('[cron/sync-results] Fallback response status:', upstreamRes.status, upstreamRes.statusText)
     }
 
     if (!upstreamRes.ok) {
@@ -320,43 +306,13 @@ export async function GET(request: NextRequest) {
 
     const externalMatches = payload.matches ?? []
     
-    // LOG DETALLADO: Estructura de respuesta
-    console.log('[cron/sync-results] ✅ Respuesta JSON recibida correctamente')
-    console.log('[cron/sync-results] 📊 TOTAL PARTIDOS RECIBIDOS DE LA API:', externalMatches.length)
-    
-    if (externalMatches.length > 0) {
-      // Mostrar primer partido
-      const first = externalMatches[0]
-      console.log('[cron/sync-results] 🥇 PRIMER PARTIDO:', {
-        home: first.homeTeam?.name || first.homeTeam?.tla || '???',
-        away: first.awayTeam?.name || first.awayTeam?.tla || '???',
-        stage: first.stage,
-        date: first.utcDate,
-      })
-      
-      // Mostrar último partido
-      const last = externalMatches[externalMatches.length - 1]
-      console.log('[cron/sync-results] 🏁 ÚLTIMO PARTIDO:', {
-        home: last.homeTeam?.name || last.homeTeam?.tla || '???',
-        away: last.awayTeam?.name || last.awayTeam?.tla || '???',
-        stage: last.stage,
-        date: last.utcDate,
-      })
-      
-      // Desglose por fase
-      const byStage: Record<string, number> = {}
-      externalMatches.forEach((m: FdMatch) => {
-        const stage = m.stage || 'UNKNOWN'
-        byStage[stage] = (byStage[stage] || 0) + 1
-      })
-      console.log('[cron/sync-results] 📋 DESGLOSE POR FASE:', byStage)
-    }
-    
     if (externalMatches.length === 0) {
-      console.warn('[cron/sync-results] ⚠️  La API devolvió 0 partidos. Posibles causas:')
-      console.warn('[cron/sync-results]    - La temporada aún no tiene fixture cargado')
-      console.warn('[cron/sync-results]    - El código de competición es incorrecto')
-      console.warn('[cron/sync-results] Estructura recibida:', JSON.stringify(payload).slice(0, 300))
+      return NextResponse.json({ 
+        ok: true, 
+        source: 'football-data.org', 
+        updated: 0, 
+        message: 'La API no devolvió partidos' 
+      })
     }
 
     let updated = 0
@@ -423,7 +379,6 @@ export async function GET(request: NextRequest) {
           if (diffMinutes <= 180) {
             mapped = m
             matchingMethod = 'dateStage'
-            console.log(`[cron/sync-results] 🎯 EMPAREJADO POR FECHA/FASE: M${m.match_number} (${fm.stage} → ${dbPhase}) - ${homeName || homeCode || '???'} vs ${awayName || awayCode || '???'}`)
             break
           }
         }
@@ -457,7 +412,6 @@ export async function GET(request: NextRequest) {
           autoAssignedTeams += 1
           mapped.home_team_id = assignPatch.home_team_id
           mapped.away_team_id = assignPatch.away_team_id
-          console.log(`[cron/sync-results] ✅ AUTO-ASIGNADO M${mapped.match_number}: ${homeCode} vs ${awayCode}`)
         }
       }
 
@@ -546,21 +500,6 @@ export async function GET(request: NextRequest) {
         last_sync_error: null,
       })
       .eq('id', 1)
-
-    // LOG DETALLADO: Resumen de sincronización
-    console.log('[cron/sync-results] ✅ === SINCRONIZACIÓN COMPLETADA ===')
-    console.log('[cron/sync-results] Partidos actualizados:', updated)
-    console.log('[cron/sync-results] Emparejados por EQUIPOS:', matchedByTeams)
-    console.log('[cron/sync-results] Emparejados por FECHA/FASE:', matchedByDateStage)
-    console.log('[cron/sync-results] Equipos auto-asignados:', autoAssignedTeams)
-    console.log('[cron/sync-results] Partidos recibidos de la API:', externalMatches.length)
-    console.log('[cron/sync-results] Omitidos (sin equipos):', skippedNoTeams)
-    console.log('[cron/sync-results] Omitidos (código desconocido):', skippedUnknownCode)
-    console.log('[cron/sync-results] Omitidos (sin mapeo):', skippedNoMapping)
-    if (currentSeason !== season) {
-      console.log('[cron/sync-results] ⚠️  MODO FALLBACK: usando temporada', currentSeason, 'en lugar de', season)
-    }
-    console.log('[cron/sync-results] === FIN DE SINCRONIZACIÓN ===')
 
     return NextResponse.json({
       ok: true,

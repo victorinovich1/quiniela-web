@@ -31,7 +31,6 @@ export async function GET(request: NextRequest) {
   if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
     isAuthorized = true
     debugInfo.method = 'cron-secret'
-    console.log('[Auth Success] Cron job autorizado')
   }
   
   // Opción 2: Usuario admin/manager desde frontend
@@ -64,15 +63,8 @@ export async function GET(request: NextRequest) {
         // Permitir tanto admin como manager
         if (profile.role === 'admin' || profile.role === 'manager') {
           isAuthorized = true
-          console.log(`[Auth Success] Usuario autorizado - User: ${user.id}, Role: ${profile.role}`)
-        } else {
-          console.warn(`[Auth Error] Rol insuficiente - User: ${user.id}, Role: ${profile.role}`)
         }
-      } else {
-        console.warn(`[Auth Error] Perfil no encontrado - User: ${user.id}`)
       }
-    } else {
-      console.warn('[Auth Error] Usuario no autenticado')
     }
   }
   
@@ -201,11 +193,8 @@ export async function GET(request: NextRequest) {
                     link: '/predictions',
                   })
                 )
-                console.log('[Push] Push enviado con éxito (recordatorio) a:', entry.user_id)
               } catch (pushError: any) {
-                // Si el endpoint ya no es válido (410 Gone), eliminar la suscripción
                 if (pushError.statusCode === 410) {
-                  console.log('[Push] Suscripción expirada, eliminando:', sub.id)
                   await supabase
                     .from('push_subscriptions')
                     .delete()

@@ -49,7 +49,7 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="es" className="dark" style={{ colorScheme: 'dark' }}>
+    <html lang="es" className="dark" style={{ colorScheme: 'dark' }} suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -58,7 +58,7 @@ export default async function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen flex flex-col">
+      <body className="min-h-screen flex flex-col" suppressHydrationWarning>
         <ServiceWorkerRegister />
         <NotificationProvider userId={user?.id ?? null}>
           <Navbar isAuthed={!!user} isAdmin={isAdmin} />

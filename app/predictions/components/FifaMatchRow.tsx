@@ -1,3 +1,6 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import type { Match, Team } from '@/lib/types'
 import Flag from '@/components/Flag'
 import { isMatchLocked, getMatchStatus } from '@/lib/utils'
@@ -25,6 +28,12 @@ export default function FifaMatchRow({
   setKoWinner,
   teamsForKo,
 }: FifaMatchRowProps) {
+  const [isMounted, setIsMounted] = useState(false)
+  
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+  
   const p = preds[match.id] ?? { home: null, away: null, ko: null }
   const homeTeam = match.home_team_id ? teamsById[match.home_team_id] : null
   const awayTeam = match.away_team_id ? teamsById[match.away_team_id] : null
@@ -69,16 +78,22 @@ export default function FifaMatchRow({
     <div className={`card p-3 ${matchLocked ? 'opacity-60' : ''}`}>
       <div className="grid grid-cols-[60px_1fr_auto_1fr_1px] sm:grid-cols-[80px_1fr_auto_1fr_100px] items-center gap-2 sm:gap-3">
         <div className="min-w-0">
-          <div className="text-white font-extrabold text-xs sm:text-base leading-tight" suppressHydrationWarning>
-            {isLockedByStatus ? (
-              <span className="text-white/40 text-[10px] sm:text-xs uppercase tracking-wider">Cerrado</span>
-            ) : showLive ? (
-              <span className="text-red-500 animate-pulse">EN VIVO</span>
-            ) : (
-              timeStr
-            )}
-          </div>
-          <div className="text-[9px] sm:text-[10px] font-bold text-white/40 uppercase tracking-wider hidden sm:block" suppressHydrationWarning>{tzShort} {dayStr && `· ${dayStr}`}</div>
+          {!isMounted ? (
+            <div className="text-white/40 font-bold text-xs sm:text-base">••:••</div>
+          ) : (
+            <>
+              <div className="text-white font-extrabold text-xs sm:text-base leading-tight">
+                {isLockedByStatus ? (
+                  <span className="text-white/40 text-[10px] sm:text-xs uppercase tracking-wider">Cerrado</span>
+                ) : showLive ? (
+                  <span className="text-red-500 animate-pulse">EN VIVO</span>
+                ) : (
+                  timeStr
+                )}
+              </div>
+              <div className="text-[9px] sm:text-[10px] font-bold text-white/40 uppercase tracking-wider hidden sm:block">{tzShort} {dayStr && `· ${dayStr}`}</div>
+            </>
+          )}
         </div>
 
         {homeTeam ? (

@@ -6,6 +6,7 @@ import type { Notification } from '@/lib/types'
 import { Bell, Trash2 } from 'lucide-react'
 
 export default function NotificationBell() {
+  const [isMounted, setIsMounted] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement | null>(null)
   
@@ -20,6 +21,8 @@ export default function NotificationBell() {
   } = useNotifications()
 
   useEffect(() => {
+    setIsMounted(true)
+    
     function handleClickOutside(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setShowDropdown(false)
@@ -112,14 +115,16 @@ export default function NotificationBell() {
                         <div className="flex-1">
                           <h4 className="font-bold text-white text-sm">{notif.title}</h4>
                           <p className="text-xs text-white/70 mt-1">{notif.message}</p>
-                          <p className="text-xs text-white/40 mt-1" suppressHydrationWarning>
-                            {new Date(notif.created_at).toLocaleDateString('es-MX', {
-                              day: 'numeric',
-                              month: 'short',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </p>
+                          {isMounted && (
+                            <p className="text-xs text-white/40 mt-1">
+                              {new Date(notif.created_at).toLocaleDateString('es-MX', {
+                                day: 'numeric',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </p>
+                          )}
                         </div>
                         {!notif.read && (
                           <div className="w-2.5 h-2.5 bg-fifaGreen rounded-full flex-shrink-0 mt-1 shadow-lg shadow-fifaGreen/50" />

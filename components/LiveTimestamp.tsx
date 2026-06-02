@@ -7,9 +7,12 @@ import { useEffect, useState } from 'react'
  * Se actualiza cada minuto para mantener la hora fresca
  */
 export default function LiveTimestamp() {
+  const [isMounted, setIsMounted] = useState(false)
   const [timestamp, setTimestamp] = useState('')
 
   useEffect(() => {
+    setIsMounted(true)
+    
     const updateTime = () => {
       setTimestamp(
         new Date().toLocaleTimeString('es-ES', {
@@ -28,7 +31,7 @@ export default function LiveTimestamp() {
     return () => clearInterval(interval)
   }, [])
 
-  if (!timestamp) return <span className="text-white/40">Cargando...</span>
+  if (!isMounted || !timestamp) return <span className="text-white/40">Cargando...</span>
 
   return <span>Actualizado: {timestamp}</span>
 }

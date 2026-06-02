@@ -55,11 +55,16 @@ export default function PredictionsClient({
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState<Date | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [isMounted, setIsMounted] = useState(false)
   const [countdown, setCountdown] = useState<string>('')
   const [autoSaving, setAutoSaving] = useState(false)
   const [autoSaveMsg, setAutoSaveMsg] = useState<string | null>(null)
   const [expressCountdowns, setExpressCountdowns] = useState<Record<number, number>>({})
   const [expressExpanded, setExpressExpanded] = useState(true)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const activeEntry = entries.find((e) => e.id === activeEntryId) || entries[0]
 
@@ -308,11 +313,11 @@ export default function PredictionsClient({
         </div>
       )}
 
-      {!locked && countdown && (
+      {!locked && isMounted && countdown && (
         <div className="bg-fifaGreen/10 border border-fifaGreen/30 rounded-xl p-3 mb-4">
           <div className="text-center">
             <p className="text-fifaGreen text-xs font-bold uppercase tracking-wider mb-2">El mundial de México, Estados Unidos y Canadá 2026 inicia en:</p>
-            <p className="font-mono font-extrabold text-white text-2xl tabular-nums" suppressHydrationWarning>{countdown}</p>
+            <p className="font-mono font-extrabold text-white text-2xl tabular-nums">{countdown}</p>
           </div>
         </div>
       )}

@@ -112,7 +112,7 @@ export default function NotificationBell() {
                         <div className="flex-1">
                           <h4 className="font-bold text-white text-sm">{notif.title}</h4>
                           <p className="text-xs text-white/70 mt-1">{notif.message}</p>
-                          <p className="text-xs text-white/40 mt-1">
+                          <p className="text-xs text-white/40 mt-1" suppressHydrationWarning>
                             {new Date(notif.created_at).toLocaleDateString('es-MX', {
                               day: 'numeric',
                               month: 'short',

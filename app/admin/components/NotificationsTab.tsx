@@ -50,8 +50,6 @@ export default function NotificationsTab() {
   async function loadSentBatches() {
     const supabase = createClient()
     
-    console.log('[DEBUG] Cargando historial de notificaciones...')
-    
     // Query agrupada por batch_id para mostrar solo una fila por envío
     const { data, error } = await supabase
       .from('notifications')
@@ -62,13 +60,8 @@ export default function NotificationsTab() {
     
     if (error) {
       console.error('[ERROR] Fallo al cargar historial:', error)
-      console.error('[ERROR] Código:', error.code)
-      console.error('[ERROR] Mensaje:', error.message)
-      console.error('[ERROR] Detalles:', error.details)
       return
     }
-    
-    console.log('[DEBUG] Historial cargado:', data?.length || 0, 'notificaciones')
     
     if (data) {
       // Agrupar por batch_id y contar
@@ -88,7 +81,6 @@ export default function NotificationsTab() {
         return acc
       }, [] as NotificationBatch[])
       
-      console.log('[DEBUG] Lotes agrupados:', grouped.length)
       setSentBatches(grouped)
     }
   }

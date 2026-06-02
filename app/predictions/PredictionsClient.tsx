@@ -312,7 +312,7 @@ export default function PredictionsClient({
         <div className="bg-fifaGreen/10 border border-fifaGreen/30 rounded-xl p-3 mb-4">
           <div className="text-center">
             <p className="text-fifaGreen text-xs font-bold uppercase tracking-wider mb-2">El mundial de México, Estados Unidos y Canadá 2026 inicia en:</p>
-            <p className="font-mono font-extrabold text-white text-2xl tabular-nums">{countdown}</p>
+            <p className="font-mono font-extrabold text-white text-2xl tabular-nums" suppressHydrationWarning>{countdown}</p>
           </div>
         </div>
       )}

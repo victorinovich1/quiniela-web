@@ -183,7 +183,7 @@ export default function EntriesClient({
                       </button>
                     </div>
                     <div className="text-[10px] text-white/40 uppercase tracking-wider mt-0.5 flex items-center gap-2">
-                      <span>{new Date(e.created_at).toLocaleDateString('es-ES')}</span>
+                      <span suppressHydrationWarning>{new Date(e.created_at).toLocaleDateString('es-ES')}</span>
                       <span>·</span>
                       {e.paid ? (
                         <span className="text-fifaGreen font-bold">Pagada</span>

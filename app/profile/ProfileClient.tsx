@@ -242,11 +242,6 @@ export default function ProfileClient({
   }, [])
 
   async function handlePushSubscription() {
-    console.log('[Push] Iniciando suscripción...')
-    console.log('[Push] serviceWorker disponible:', 'serviceWorker' in navigator)
-    console.log('[Push] PushManager disponible:', 'PushManager' in window)
-    console.log('[Push] Permiso actual:', Notification.permission)
-    
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       alert('Tu navegador no soporta notificaciones push')
       return
@@ -255,7 +250,6 @@ export default function ProfileClient({
     try {
       // Pedir permiso
       const permission = await Notification.requestPermission()
-      console.log('[Push] Permiso obtenido:', permission)
       
       if (permission !== 'granted') {
         alert('Necesitas dar permisos de notificaciones para continuar')
@@ -263,17 +257,13 @@ export default function ProfileClient({
       }
 
       // Obtener registro del Service Worker
-      console.log('[Push] Esperando Service Worker...')
       const registration = await navigator.serviceWorker.ready
-      console.log('[Push] Service Worker ready:', registration.active?.state)
 
       // Suscribirse a push
-      console.log('[Push] VAPID Key:', process.env.NEXT_PUBLIC_VAPID_KEY?.substring(0, 20) + '...')
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: process.env.NEXT_PUBLIC_VAPID_KEY,
       })
-      console.log('[Push] Suscripción creada:', subscription.endpoint.substring(0, 50) + '...')
 
       // Guardar suscripción en BD
       const { error } = await supabase
@@ -289,12 +279,11 @@ export default function ProfileClient({
         return
       }
 
-      console.log('[Push] Suscripción guardada en BD')
       setPushSubscribed(true)
       alert('✅ Notificaciones push activadas. Ahora recibirás alertas incluso con la web cerrada.')
 
     } catch (err) {
-      console.error('[Push] Error subscribing to push:', err)
+      console.error('[Push] Error subscribing:', err)
       alert('Error al activar notificaciones push: ' + (err as Error).message)
     }
   }
@@ -382,7 +371,7 @@ export default function ProfileClient({
               <div className="badge bg-fifaGreen/20 text-fifaGreen border border-fifaGreen/30 w-full justify-center py-2">
                 {roleLabel}
               </div>
-              <div className="badge bg-white/10 text-white/70 border border-white/20 w-full justify-center py-2 text-xs">
+              <div className="badge bg-white/10 text-white/70 border border-white/20 w-full justify-center py-2 text-xs" suppressHydrationWarning>
                 Miembro desde {memberSince}
               </div>
             </div>

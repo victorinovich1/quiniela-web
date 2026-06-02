@@ -22,6 +22,7 @@ export const metadata: Metadata = {
     ],
   },
   appleWebApp: {
+    capable: true,
     title: 'Quiniela 2026',
     statusBarStyle: 'black-translucent',
   },

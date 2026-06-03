@@ -908,36 +908,36 @@ La quiniela implementa un sistema de respaldo automÃ¡tico que opera independient
 
 **Beneficio:** Los usuarios pueden navegar el historial completo de notificaciones sin perder contexto.
 
-## Centralización de Constantes (lib/constants.ts)
+## Centralizaciï¿½n de Constantes (lib/constants.ts)
 
-**Objetivo:** Eliminar valores hardcodeados ("magic numbers") y centralizar configuración compartida.
+**Objetivo:** Eliminar valores hardcodeados ("magic numbers") y centralizar configuraciï¿½n compartida.
 
 **Archivo:** `lib/constants.ts`
 
 **Constantes definidas:**
 
 1. **`DEFAULT_SETTINGS_ID`** = 1
-   - ID único del registro de configuración global en tabla `settings`
+   - ID ï¿½nico del registro de configuraciï¿½n global en tabla `settings`
    - Reemplaza todos los `.eq('id', 1)` hardcodeados en queries
    - Importado en: AdminClient, predictions/page, admin/page, profile/page, rules/page
 
 2. **`DEFAULT_VAPID_EMAIL`** = 'mailto:admin@quinielamundial.com'
    - Email de contacto para VAPID (Web Push Notifications)
-   - Usado como fallback si `process.env.VAPID_CONTACT_EMAIL` no está definido
+   - Usado como fallback si `process.env.VAPID_CONTACT_EMAIL` no estï¿½ definido
    - Importado en: api/admin/notifications, api/cron/check-reminders
 
 3. **`PHASE_LABELS`**: Record<string, string>
-   - Mapeo de IDs de fase a etiquetas en español
+   - Mapeo de IDs de fase a etiquetas en espaï¿½ol
    - Ejemplo: `'round_of_16' ? 'Octavos de Final'`
    - Importado en: PredictionsClient, componentes de admin
 
 **Beneficios:**
 - Mantenimiento simplificado (cambiar un valor en un solo lugar)
-- IntelliSense completo en editores de código
-- Prevención de typos y bugs por valores inconsistentes
-- Facilita refactorización futura (ej: cambiar ID de settings si se requiere multi-tenant)
+- IntelliSense completo en editores de cï¿½digo
+- Prevenciï¿½n de typos y bugs por valores inconsistentes
+- Facilita refactorizaciï¿½n futura (ej: cambiar ID de settings si se requiere multi-tenant)
 
-**Migración de código legacy:**
+**Migraciï¿½n de cï¿½digo legacy:**
 - Antes: `.eq('id', 1)` hardcodeado en 8+ archivos
 - Ahora: `import { DEFAULT_SETTINGS_ID } from '@/lib/constants'` + `.eq('id', DEFAULT_SETTINGS_ID)`
    - AÃ±ade notificaciÃ³n al dropdown

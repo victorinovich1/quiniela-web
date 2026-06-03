@@ -62,8 +62,8 @@ export async function GET(request: NextRequest) {
       if (profile) {
         debugInfo.role = profile.role || 'ninguno'
         
-        // Permitir tanto admin como manager
-        if (profile.role === 'admin' || profile.role === 'manager') {
+        // Solo admin puede ejecutar manualmente
+        if (profile.role === 'admin') {
           isAuthorized = true
         }
       }

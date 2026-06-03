@@ -200,9 +200,23 @@ export default function NotificationProvider({
 
   async function markAllAsRead() {
     const unread = notifications.filter(n => !n.read)
-    if (unread.length > 0) {
-      await supabase.from('notifications').update({ read: true }).in('id', unread.map(n => n.id))
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+    if (unread.length === 0) return
+
+    // Optimistic update
+    const prevNotifications = notifications
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+    setError(null)
+
+    const { error: updateError } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .in('id', unread.map(n => n.id))
+
+    if (updateError) {
+      // Rollback en caso de error
+      setNotifications(prevNotifications)
+      setError('Error al marcar como leídas')
+      console.error('[markAllAsRead] Error:', updateError)
     }
   }
 

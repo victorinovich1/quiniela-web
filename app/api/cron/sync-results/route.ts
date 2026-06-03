@@ -101,7 +101,7 @@ function assertCronAuthorized(request: NextRequest): string | null {
   const secret = process.env.CRON_SECRET
   const authHeader = request.headers.get('authorization')
   
-  if (!secret) return null
+  if (!secret) return 'CRON_SECRET not configured - access denied'
   if (authHeader === `Bearer ${secret}`) return null
   
   return 'Unauthorized cron call'

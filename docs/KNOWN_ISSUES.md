@@ -47,6 +47,12 @@
 - [x] **Banderas en Admin** (2026-05-04): `AdminClient.tsx` muestra `<Flag />` junto a todos los nombres de equipos en las pestañas Equipos y Resultados. Emoji de banderas removido de la UI.
 - [x] **Terminología 'Mis Quinielas'** (2026-05-09): El término 'jugadas' fue reemplazado por 'quinielas' en toda la aplicación (navegación, mensajes, documentación) para mayor claridad conceptual. El modelo de datos (tabla `entries`) permanece sin cambios.
 - [x] **Bloqueo de eliminación de entries** (2026-05-04): Migración `018_lock_entries_deletion.sql` aplicada. RLS de `entries` DELETE bloquea a participantes tras el inicio del primer partido. Admin conserva permiso total.
+- [x] **Auditoría de Seguridad y Robustez** (2026-06-03): Resueltos 5 hallazgos críticos:
+  - **C-01 (SSR Crash)**: Protegido `window.innerWidth` con `isMounted` en PredictionsClient para evitar crash en server-side rendering.
+  - **C-02 (Supabase)**: Unificados imports de Supabase eliminando `await` innecesarios en `createClient()` (función síncrona). Consolidado a un único import `createClient` sin alias.
+  - **C-03/C-04 (Cron)**: Registrado `/api/cron/check-reminders` en vercel.json. Ajustados horarios de cron a 05:00 UTC (respaldo diario, frecuencia principal vía Cron-job.org).
+  - **C-05 (Roles)**: Reforzada seguridad en `/api/admin/sync-results` (solo admin, rechaza manager). Endpoint `/api/admin/notifications` permite admin+manager por diseño.
+  - **A-03 (Non-null assertions)**: Eliminadas todas las assertions `!` en Pronóstico Express. Validaciones reales para `home_team_id`/`away_team_id` nulos con fallback a 'TBD'.
 
 ## Decisiones de diseño que podrían revisarse
 

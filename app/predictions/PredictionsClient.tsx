@@ -395,10 +395,16 @@ export default function PredictionsClient({
                 <div className="space-y-2">
                   {/* Home Team */}
                   <div className="flex items-center gap-2">
-                    <Flag team={teamsById[m.home_team_id!]} size={14} />
-                    <span className="text-xs font-bold text-white flex-1 truncate">
-                      {teamsById[m.home_team_id!]?.name || 'TBD'}
-                    </span>
+                    {m.home_team_id && teamsById[m.home_team_id] ? (
+                      <>
+                        <Flag team={teamsById[m.home_team_id]} size={14} />
+                        <span className="text-xs font-bold text-white flex-1 truncate">
+                          {teamsById[m.home_team_id].name}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-xs font-bold text-white/40 flex-1">TBD</span>
+                    )}
                     <input
                       type="number"
                       min={0}
@@ -414,10 +420,16 @@ export default function PredictionsClient({
                   
                   {/* Away Team */}
                   <div className="flex items-center gap-2">
-                    <Flag team={teamsById[m.away_team_id!]} size={14} />
-                    <span className="text-xs font-bold text-white flex-1 truncate">
-                      {teamsById[m.away_team_id!]?.name || 'TBD'}
-                    </span>
+                    {m.away_team_id && teamsById[m.away_team_id] ? (
+                      <>
+                        <Flag team={teamsById[m.away_team_id]} size={14} />
+                        <span className="text-xs font-bold text-white flex-1 truncate">
+                          {teamsById[m.away_team_id].name}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-xs font-bold text-white/40 flex-1">TBD</span>
+                    )}
                     <input
                       type="number"
                       min={0}
@@ -432,7 +444,7 @@ export default function PredictionsClient({
                   </div>
                   
                   {/* Selector de Penales si es eliminatoria y empate */}
-                  {m.phase !== 'group' && preds[m.id]?.home !== null && preds[m.id]?.away !== null && preds[m.id]?.home === preds[m.id]?.away && (
+                  {m.phase !== 'group' && preds[m.id]?.home !== null && preds[m.id]?.away !== null && preds[m.id]?.home === preds[m.id]?.away && m.home_team_id && m.away_team_id && (
                     <div className="mt-2 pt-2 border-t border-white/10">
                       <label className="text-[10px] text-white/60 uppercase tracking-wider mb-1 block">
                         Penales:
@@ -444,8 +456,8 @@ export default function PredictionsClient({
                         className={`input w-full text-xs ${isMatchLocked(m, locked) ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <option value="">Selecciona ganador</option>
-                        <option value={m.home_team_id!}>{teamsById[m.home_team_id!]?.name || 'TBD'}</option>
-                        <option value={m.away_team_id!}>{teamsById[m.away_team_id!]?.name || 'TBD'}</option>
+                        <option value={m.home_team_id}>{teamsById[m.home_team_id]?.name || 'TBD'}</option>
+                        <option value={m.away_team_id}>{teamsById[m.away_team_id]?.name || 'TBD'}</option>
                       </select>
                     </div>
                   )}
@@ -601,7 +613,7 @@ function GruposTab({
             </button>
           </div>
 
-          {(!collapsed[activeGroup] || window.innerWidth >= 1024) && (
+          {(!collapsed[activeGroup] || (typeof window !== 'undefined' && window.innerWidth >= 1024)) && (
             <>
               {matchdays.map((md, idx) => (
                 <div key={md.label} className="mb-4">

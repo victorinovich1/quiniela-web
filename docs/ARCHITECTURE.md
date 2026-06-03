@@ -878,6 +878,68 @@ La quiniela implementa un sistema de respaldo autom√°tico que opera independient
 
 5. **NotificationBell recibe:**
    - Actualiza badge (contador +1)
+   - Reproduce audio (si `notifications_sound=true`)
+   - Inserta notificaci√≥n al inicio del array local
+
+### Paginaci√≥n de Notificaciones
+
+**Problema:** El l√≠mite inicial de 10 notificaciones imped√≠a ver mensajes antiguos.
+
+**Soluci√≥n implementada:**
+
+1. **Estado en NotificationProvider:**
+   - `hasMore: boolean` ‚Äî Indica si existen m√°s notificaciones en BD
+   - `isLoadingMore: boolean` ‚Äî Loading state durante la carga
+
+2. **Funci√≥n `loadMoreNotifications()`:**
+   - Carga los siguientes 10 registros usando `.range()`
+   - Concatena al estado local sin reemplazar las existentes
+   - Actualiza `hasMore` basado en si la respuesta tiene 10 registros completos
+
+3. **Bot√≥n "Cargar m√°s..." en NotificationBell:**
+   - Se muestra al final de la lista si `hasMore === true`
+   - Estado deshabilitado mientras `isLoadingMore === true`
+   - Texto cambia a "Cargando..." durante la operaci√≥n
+
+**L√≥gica de rango:**
+```typescript
+.range(notifications.length, notifications.length + 9)  // Pr√≥ximos 10
+```
+
+**Beneficio:** Los usuarios pueden navegar el historial completo de notificaciones sin perder contexto.
+
+## CentralizaciÛn de Constantes (lib/constants.ts)
+
+**Objetivo:** Eliminar valores hardcodeados ("magic numbers") y centralizar configuraciÛn compartida.
+
+**Archivo:** `lib/constants.ts`
+
+**Constantes definidas:**
+
+1. **`DEFAULT_SETTINGS_ID`** = 1
+   - ID ˙nico del registro de configuraciÛn global en tabla `settings`
+   - Reemplaza todos los `.eq('id', 1)` hardcodeados en queries
+   - Importado en: AdminClient, predictions/page, admin/page, profile/page, rules/page
+
+2. **`DEFAULT_VAPID_EMAIL`** = 'mailto:admin@quinielamundial.com'
+   - Email de contacto para VAPID (Web Push Notifications)
+   - Usado como fallback si `process.env.VAPID_CONTACT_EMAIL` no est· definido
+   - Importado en: api/admin/notifications, api/cron/check-reminders
+
+3. **`PHASE_LABELS`**: Record<string, string>
+   - Mapeo de IDs de fase a etiquetas en espaÒol
+   - Ejemplo: `'round_of_16' ? 'Octavos de Final'`
+   - Importado en: PredictionsClient, componentes de admin
+
+**Beneficios:**
+- Mantenimiento simplificado (cambiar un valor en un solo lugar)
+- IntelliSense completo en editores de cÛdigo
+- PrevenciÛn de typos y bugs por valores inconsistentes
+- Facilita refactorizaciÛn futura (ej: cambiar ID de settings si se requiere multi-tenant)
+
+**MigraciÛn de cÛdigo legacy:**
+- Antes: `.eq('id', 1)` hardcodeado en 8+ archivos
+- Ahora: `import { DEFAULT_SETTINGS_ID } from '@/lib/constants'` + `.eq('id', DEFAULT_SETTINGS_ID)`
    - A√±ade notificaci√≥n al dropdown
    - Si `notifications_enabled && notifications_sound`, reproduce audio
    - **Nota:** Audio solo funciona tras interacci√≥n del usuario (click en campana habilita)
@@ -1135,3 +1197,4 @@ Usamos `@supabase/ssr` (no el legacy `@supabase/auth-helpers-nextjs`). La sesi√≥
 | flagcdn.com | Free | Sin l√≠mite documentado | OK |
 
 Coste actual: **$0/mes**.
+

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toLocalDateTimeInput, getMatchStatus, getMatchScores } from '@/lib/utils'
+import { DEFAULT_SETTINGS_ID } from '@/lib/constants'
 import PageHeader from '@/components/PageHeader'
 import Flag from '@/components/Flag'
 import type { Team, Match, Profile, Invitation, Settings, Phase, Entry, Role } from '@/lib/types'
@@ -654,10 +655,17 @@ function ParticipantsTab({
     if (!confirm(`¿Eliminar permanentemente a ${p.display_name || p.email}${entryText}? Esta acción no se puede deshacer.`)) return
     
     try {
-      const supabase = createClient()
-      const { error } = await supabase.rpc('admin_delete_user', { target_user_id: p.id })
+      const res = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_user_id: p.id }),
+      })
       
-      if (error) throw error
+      const data = await res.json()
+      
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'Error al eliminar usuario')
+      }
       
       setProfiles(profiles.filter((x) => x.id !== p.id))
       setEntries(entries.filter((e) => e.user_id !== p.id))
@@ -801,6 +809,8 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState<string | null>(null)
   const [syncError, setSyncError] = useState<string | null>(null)
+  const [lastSyncClick, setLastSyncClick] = useState(0)
+  const SYNC_DEBOUNCE_MS = 5000 // 5 segundos
   const [msg, setMsg] = useState<string | null>(null)
   const [recentSyncs, setRecentSyncs] = useState<Match[]>([])
   const [currentTime, setCurrentTime] = useState(0)
@@ -876,7 +886,7 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
     const { error } = await supabase
       .from('settings')
       .update({ api_sync_enabled: enabled })
-      .eq('id', 1)
+      .eq('id', DEFAULT_SETTINGS_ID)
     
     if (error) {
       // Revertir estado local si falla
@@ -890,6 +900,16 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
   }
 
   async function syncResults() {
+    // Debounce: prevenir clics rápidos
+    const now = Date.now()
+    if (now - lastSyncClick < SYNC_DEBOUNCE_MS) {
+      const remaining = Math.ceil((SYNC_DEBOUNCE_MS - (now - lastSyncClick)) / 1000)
+      setSyncError(`Espera ${remaining}s antes de sincronizar nuevamente`)
+      setTimeout(() => setSyncError(null), 2000)
+      return
+    }
+    setLastSyncClick(now)
+    
     setSyncing(true)
     setSyncMsg(null)
     setSyncError(null)
@@ -930,7 +950,7 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
         }
         setSyncMsg(msg)
         // Recargar settings para obtener last_sync_at actualizado
-        const { data: updatedSettings } = await supabase.from('settings').select('*').eq('id', 1).single()
+        const { data: updatedSettings } = await supabase.from('settings').select('*').eq('id', DEFAULT_SETTINGS_ID).single()
         if (updatedSettings) setS(updatedSettings)
         // Recargar partidos recientes
         await loadRecentSyncs()
@@ -955,7 +975,7 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
     const supabase = createClient()
     const { id: _id, ...rest } = s
     void _id
-    const { error } = await supabase.from('settings').update(rest).eq('id', 1)
+    const { error } = await supabase.from('settings').update(rest).eq('id', DEFAULT_SETTINGS_ID)
     setSaving(false)
     setMsg(error ? `Error: ${error.message}` : 'Configuración guardada')
     setTimeout(() => setMsg(null), 2000)

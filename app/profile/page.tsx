@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { DEFAULT_SETTINGS_ID } from '@/lib/constants'
 import ProfileClient from './ProfileClient'
 
 export const dynamic = 'force-dynamic'

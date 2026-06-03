@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { DEFAULT_VAPID_EMAIL } from '@/lib/constants'
 import webpush from 'web-push'
 
 // Configurar VAPID keys (solo una vez)
 if (process.env.VAPID_PRIVATE_KEY && process.env.NEXT_PUBLIC_VAPID_KEY) {
+  const vapidEmail = process.env.VAPID_CONTACT_EMAIL || DEFAULT_VAPID_EMAIL
   webpush.setVapidDetails(
-    'mailto:admin@quinielamundial.com',
+    vapidEmail,
     process.env.NEXT_PUBLIC_VAPID_KEY,
     process.env.VAPID_PRIVATE_KEY
   )

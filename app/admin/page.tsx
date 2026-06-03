@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { DEFAULT_SETTINGS_ID } from '@/lib/constants'
 import AdminClient from './AdminClient'
 import type { Team, Match, Profile, Invitation, Settings, Entry } from '@/lib/types'
 
@@ -31,7 +32,7 @@ export default async function AdminPage() {
     supabase.from('matches').select('*').order('match_number'),
     supabase.from('profiles').select('*').order('created_at'),
     supabase.from('invitations').select('*').order('created_at', { ascending: false }),
-    supabase.from('settings').select('*').eq('id', 1).maybeSingle(),
+    supabase.from('settings').select('*').eq('id', DEFAULT_SETTINGS_ID).maybeSingle(),
     supabase.from('entries').select('*').order('created_at'),
   ])
 

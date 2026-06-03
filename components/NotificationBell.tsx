@@ -17,6 +17,9 @@ export default function NotificationBell() {
     deleteAllNotifications,
     markAsRead,
     markAllAsRead,
+    loadMoreNotifications,
+    hasMore,
+    isLoadingMore,
     unlockAudio,
     error,
   } = useNotifications()
@@ -150,6 +153,18 @@ export default function NotificationBell() {
                     </button>
                   </div>
                 ))
+              )}
+              
+              {hasMore && notifications.length > 0 && (
+                <div className="p-2 border-t border-white/10">
+                  <button
+                    onClick={loadMoreNotifications}
+                    disabled={isLoadingMore}
+                    className="w-full text-center text-xs text-fifaGreen hover:text-fifaGreen/80 font-bold uppercase tracking-wider transition-colors py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoadingMore ? 'Cargando...' : 'Cargar más...'}
+                  </button>
+                </div>
               )}
             </div>
 

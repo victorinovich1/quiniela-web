@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { DEFAULT_SETTINGS_ID } from '@/lib/constants'
 import PredictionsClient from './PredictionsClient'
 import type {
   Match,
@@ -37,8 +38,12 @@ export default async function PredictionsPage({
 
   // Resolver entry activa: ?entry=N o la primera
   const requestedId = searchParams.entry ? Number(searchParams.entry) : null
+  
+  // Validación: verificar que requestedId sea un número válido
+  const isValidId = requestedId !== null && !isNaN(requestedId) && requestedId > 0
+  
   const activeEntry =
-    (requestedId && entries.find((e) => e.id === requestedId)) || entries[0]
+    (isValidId && entries.find((e) => e.id === requestedId)) || entries[0]
 
   if (!activeEntry) redirect('/entries')
 
@@ -54,7 +59,7 @@ export default async function PredictionsPage({
     supabase.from('matches').select('*').order('match_number', { ascending: true }),
     supabase.from('predictions').select('*').eq('entry_id', activeEntry.id),
     supabase.from('special_predictions').select('*').eq('entry_id', activeEntry.id).maybeSingle(),
-    supabase.from('settings').select('lock_at').eq('id', 1).maybeSingle(),
+    supabase.from('settings').select('lock_at').eq('id', DEFAULT_SETTINGS_ID).maybeSingle(),
     supabase.rpc('predictions_locked'),
   ])
 

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { DEFAULT_SETTINGS_ID } from '@/lib/constants'
 import type { Settings } from '@/lib/types'
 import PageHeader from '@/components/PageHeader'
 import { Trophy, Timer, ShieldCheck, ListChecks } from 'lucide-react'
@@ -11,7 +12,7 @@ export default async function RulesPage() {
   const { data: settings } = await supabase
     .from('settings')
     .select('*')
-    .eq('id', 1)
+    .eq('id', DEFAULT_SETTINGS_ID)
     .single()
 
   const config = settings as Settings

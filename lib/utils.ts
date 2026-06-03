@@ -4,14 +4,25 @@
  */
 
 /**
- * Formatea segundos en una cadena legible (Xh Ym Zs o Xm Ys)
+ * Formatea segundos en una cadena legible
+ * @param seconds - Segundos a formatear
+ * @param format - 'text' (defecto): "Xh Ym Zs" | 'clock': "HH:MM:SS"
  */
-export function formatTimeLeft(seconds: number): string {
-  if (seconds <= 0) return '0s'
+export function formatTimeLeft(seconds: number, format: 'text' | 'clock' = 'text'): string {
+  if (seconds <= 0) return format === 'clock' ? '00:00' : '0s'
+  
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
   const s = seconds % 60
   
+  if (format === 'clock') {
+    if (h > 0) {
+      return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+    }
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+  }
+  
+  // Formato 'text'
   if (h > 0) {
     return m > 0 ? `${h}h ${m}m ${s}s` : `${h}h ${s}s`
   }
@@ -48,18 +59,13 @@ export function isMatchLocked(
 
 /**
  * Determina si un partido debe mostrar indicador "EN VIVO"
- * (status='scheduled' pero pasaron >5 min de kickoff)
+ * Unificado con getMatchStatus - usa el mismo criterio
  */
 export function shouldShowLiveIndicator(match: { 
   status: string
   kickoff_at: string | null 
 }): boolean {
-  if (match.status !== 'scheduled') return false
-  if (!match.kickoff_at) return false
-  
-  const kickoff = new Date(match.kickoff_at).getTime()
-  const now = Date.now()
-  return now >= kickoff + 5 * 60 * 1000 // 5 minutos después
+  return getMatchStatus(match) === 'live'
 }
 
 /**
@@ -178,13 +184,6 @@ export function toLocalDateTimeInput(iso: string): string {
   const d = new Date(iso)
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
-
-/**
- * Clona un objeto simple (no deep clone, solo para objetos planos)
- */
-export function shallowClone<T extends Record<string, unknown>>(obj: T): T {
-  return { ...obj }
 }
 
 /**

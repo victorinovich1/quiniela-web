@@ -6,13 +6,14 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { computeGroupStandings } from '@/lib/standings'
 import Flag from '@/components/Flag'
-import { isMatchLocked } from '@/lib/utils'
+import StandingsTable from '@/components/StandingsTable'
+import { isMatchLocked, formatTimeLeft } from '@/lib/utils'
+import { PHASE_LABELS } from '@/lib/constants'
 import CompactMatchRow from './components/CompactMatchRow'
 import FifaMatchRow from './components/FifaMatchRow'
 import {
   GROUP_CODES,
   KO_PHASES,
-  PHASE_LABELS,
   type Entry,
   type Match,
   type Phase,
@@ -270,17 +271,6 @@ export default function PredictionsClient({
     router.push(`/predictions?entry=${id}`)
   }
 
-  function formatTimeLeft(seconds: number): string {
-    if (seconds <= 0) return '00:00'
-    const hours = Math.floor(seconds / 3600)
-    const mins = Math.floor((seconds % 3600) / 60)
-    const secs = seconds % 60
-    if (hours > 0) {
-      return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-    }
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
-
   return (
     <div className="pb-32">
       {entries.length > 1 ? (
@@ -388,7 +378,7 @@ export default function PredictionsClient({
                 
                 <div className="flex items-center justify-between mb-2">
                   <span className={`text-[10px] font-bold font-mono tabular-nums ${timeLeftColor} ${shouldPulse ? 'animate-pulse' : ''}`}>
-                    Cierre: {formatTimeLeft(secondsLeft)}
+                    Cierre: {formatTimeLeft(secondsLeft, 'clock')}
                   </span>
                 </div>
                 
@@ -657,89 +647,13 @@ function GruposTab({
             </div>
 
             {/* Tabla de posiciones */}
-            <div className="card p-3">
-              <div className="text-xs font-bold uppercase tracking-wider text-fifaGreen mb-2">Tabla en Vivo</div>
-              <table className="w-full text-xs">
-                <thead className="text-[9px] uppercase tracking-wider text-white/40">
-                  <tr>
-                    <th className="text-left py-1.5 pl-1">#</th>
-                    <th className="text-left py-1.5">Equipo</th>
-                    <th className="text-center py-1.5 w-7">PJ</th>
-                    <th className="text-center py-1.5 w-7">DG</th>
-                    <th className="text-center py-1.5 w-8">PTS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {standings.map((s, i) => {
-                    const t = groupTeams.find((tt) => tt.id === s.team_id)
-                    const top2 = i < 2
-                    return (
-                      <tr key={s.team_id} className="border-t border-white/5">
-                        <td className="py-1.5 pl-1">
-                          <span className={`text-xs font-extrabold ${top2 ? 'text-fifaGreen' : 'text-white/40'}`}>
-                            {i + 1}
-                          </span>
-                        </td>
-                        <td className="py-1.5">
-                          <div className="flex items-center gap-1.5">
-                            {t && <Flag team={t} size={12} />}
-                            <span className="text-[10px] font-bold text-white uppercase truncate">{s.team_name}</span>
-                          </div>
-                        </td>
-                        <td className="text-center text-white/60 text-[11px]">{s.pj}</td>
-                        <td className="text-center text-white/70 text-[11px]">{s.dg > 0 ? '+' : ''}{s.dg}</td>
-                        <td className="text-center font-extrabold text-white">{s.pts}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <StandingsTable standings={standings} teams={groupTeams} className="card p-3" />
           </div>
         </div>
       </div>
 
       {/* Tabla móvil (al final) */}
-      <div className="lg:hidden mt-6">
-        <div className="text-xs font-bold uppercase tracking-wider text-fifaGreen mb-2 px-1">Tabla en Vivo</div>
-        <div className="card p-3">
-          <table className="w-full text-xs">
-            <thead className="text-[9px] uppercase tracking-wider text-white/40">
-              <tr>
-                <th className="text-left py-1.5 pl-1">#</th>
-                <th className="text-left py-1.5">Equipo</th>
-                <th className="text-center py-1.5 w-7">PJ</th>
-                <th className="text-center py-1.5 w-7">DG</th>
-                <th className="text-center py-1.5 w-8">PTS</th>
-              </tr>
-            </thead>
-            <tbody>
-              {standings.map((s, i) => {
-                const t = groupTeams.find((tt) => tt.id === s.team_id)
-                const top2 = i < 2
-                return (
-                  <tr key={s.team_id} className="border-t border-white/5">
-                    <td className="py-1.5 pl-1">
-                      <span className={`text-xs font-extrabold ${top2 ? 'text-fifaGreen' : 'text-white/40'}`}>
-                        {i + 1}
-                      </span>
-                    </td>
-                    <td className="py-1.5">
-                      <div className="flex items-center gap-1.5">
-                        {t && <Flag team={t} size={12} />}
-                        <span className="text-[10px] font-bold text-white uppercase truncate">{s.team_name}</span>
-                      </div>
-                    </td>
-                    <td className="text-center text-white/60 text-[11px]">{s.pj}</td>
-                    <td className="text-center text-white/70 text-[11px]">{s.dg > 0 ? '+' : ''}{s.dg}</td>
-                    <td className="text-center font-extrabold text-white">{s.pts}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <StandingsTable standings={standings} teams={groupTeams} className="lg:hidden mt-6 px-1" />
     </div>
   )
 }

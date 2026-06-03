@@ -12,6 +12,9 @@ interface NotificationContextType {
   deleteAllNotifications: () => Promise<void>
   markAsRead: (id: string) => Promise<void>
   markAllAsRead: () => Promise<void>
+  loadMoreNotifications: () => Promise<void>
+  hasMore: boolean
+  isLoadingMore: boolean
   playSound: () => void
   unlockAudio: () => void
   error: string | null
@@ -35,6 +38,8 @@ export default function NotificationProvider({
   children: React.ReactNode
 }) {
   const [notifications, setNotifications] = useState<Notification[]>([])
+  const [hasMore, setHasMore] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const channelRef = useRef<RealtimeChannel | null>(null)
   const isSubscribedRef = useRef(false)
@@ -86,7 +91,10 @@ export default function NotificationProvider({
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(10)
-      if (data) setNotifications(data)
+      if (data) {
+        setNotifications(data)
+        setHasMore(data.length === 10)
+      }
 
       // Suscripción Realtime
       const channelName = `unique-notifs-${userId}`
@@ -198,6 +206,30 @@ export default function NotificationProvider({
     }
   }
 
+  async function loadMoreNotifications() {
+    if (!userId || isLoadingMore || !hasMore) return
+
+    setIsLoadingMore(true)
+    setError(null)
+
+    const { data, error: loadError } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .range(notifications.length, notifications.length + 9)
+
+    if (loadError) {
+      setError('Error al cargar más notificaciones')
+      console.error('[loadMoreNotifications] Error:', loadError)
+    } else if (data) {
+      setNotifications(prev => [...prev, ...data])
+      setHasMore(data.length === 10)
+    }
+
+    setIsLoadingMore(false)
+  }
+
   const unreadCount = notifications.filter(n => !n.read).length
 
   const value = {
@@ -207,6 +239,9 @@ export default function NotificationProvider({
     deleteAllNotifications,
     markAsRead,
     markAllAsRead,
+    loadMoreNotifications,
+    hasMore,
+    isLoadingMore,
     playSound,
     unlockAudio,
     error,

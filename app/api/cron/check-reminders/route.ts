@@ -110,101 +110,162 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // OPTIMIZACIÓN BULK: Obtener todos los datos necesarios en una sola pasada
+    const matchIds = upcomingMatches.map(m => m.id)
+    const matchNumbers = upcomingMatches.map(m => m.match_number)
+
+    // 1. Obtener TODAS las entries activas
+    const { data: allEntries, error: entriesError } = await supabase
+      .from('entries')
+      .select('id, user_id, alias')
+
+    if (entriesError || !allEntries || allEntries.length === 0) {
+      return NextResponse.json({
+        ok: true,
+        message: 'No active entries found',
+        sent: 0,
+      })
+    }
+
+    const allUserIds = [...new Set(allEntries.map(e => e.user_id))]
+
+    // 2. Obtener TODAS las predictions para estos matches
+    const { data: allPredictions } = await supabase
+      .from('predictions')
+      .select('entry_id, match_id, home_score')
+      .in('match_id', matchIds)
+
+    // Crear índice: `${entry_id}_${match_id}` -> prediction
+    const predictionIndex = new Map<string, { home_score: number | null }>()
+    if (allPredictions) {
+      for (const pred of allPredictions) {
+        predictionIndex.set(`${pred.entry_id}_${pred.match_id}`, pred)
+      }
+    }
+
+    // 3. Obtener TODOS los profiles (notificaciones habilitadas)
+    const { data: allProfiles } = await supabase
+      .from('profiles')
+      .select('id, notifications_enabled')
+      .in('id', allUserIds)
+
+    const profileIndex = new Map<string, boolean>()
+    if (allProfiles) {
+      for (const p of allProfiles) {
+        profileIndex.set(p.id, p.notifications_enabled ?? true)
+      }
+    }
+
+    // 4. ANTI-SPAM: Obtener TODAS las notificaciones recientes (últimas 2 horas)
+    const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000)
+    const { data: recentNotifs } = await supabase
+      .from('notifications')
+      .select('user_id, message, created_at')
+      .in('user_id', allUserIds)
+      .gte('created_at', twoHoursAgo.toISOString())
+
+    // Crear índice: user_id -> Set de match_numbers ya notificados
+    const notifiedMatchesByUser = new Map<string, Set<number>>()
+    if (recentNotifs) {
+      for (const notif of recentNotifs) {
+        // Extraer match_number del mensaje (formato: "Partido #42 comienza...")
+        const match = notif.message.match(/Partido #(\d+)/)
+        if (match) {
+          const matchNum = parseInt(match[1], 10)
+          if (!notifiedMatchesByUser.has(notif.user_id)) {
+            notifiedMatchesByUser.set(notif.user_id, new Set())
+          }
+          notifiedMatchesByUser.get(notif.user_id)!.add(matchNum)
+        }
+      }
+    }
+
+    // 5. Obtener TODAS las push subscriptions de una vez
+    const { data: allPushSubs } = await supabase
+      .from('push_subscriptions')
+      .select('*')
+      .in('user_id', allUserIds)
+
+    const pushSubsByUser = new Map<string, any[]>()
+    if (allPushSubs) {
+      for (const sub of allPushSubs) {
+        if (!pushSubsByUser.has(sub.user_id)) {
+          pushSubsByUser.set(sub.user_id, [])
+        }
+        pushSubsByUser.get(sub.user_id)!.push(sub)
+      }
+    }
+
+    // 6. CRUZAR DATOS EN MEMORIA
     let totalSent = 0
+    const notificationsToInsert: any[] = []
 
     for (const match of upcomingMatches) {
-      // Obtener todas las entries activas
-      const { data: entries } = await supabase
-        .from('entries')
-        .select('id, user_id, alias')
+      for (const entry of allEntries) {
+        // Skip si ya tiene predicción con score
+        const pred = predictionIndex.get(`${entry.id}_${match.id}`)
+        if (pred && pred.home_score !== null) continue
 
-      if (!entries || entries.length === 0) continue
+        // Skip si ya se notificó este partido a este usuario
+        const notifiedMatches = notifiedMatchesByUser.get(entry.user_id)
+        if (notifiedMatches?.has(match.match_number)) continue
 
-      for (const entry of entries) {
-        // Verificar si ya tiene predicción para este partido (home_score null = no pronosticado)
-        const { data: existingPrediction } = await supabase
-          .from('predictions')
-          .select('id, home_score')
-          .eq('entry_id', entry.id)
-          .eq('match_id', match.id)
-          .maybeSingle()
-
-        // Si ya tiene predicción con score, skip
-        if (existingPrediction && existingPrediction.home_score !== null) continue
-
-        // ANTI-SPAM: Verificar si ya se envió recordatorio para este partido/usuario
-        // Búsqueda robusta: user_id + match_number en mensaje + últimas 2 horas
-        const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000)
-        const { data: recentReminder } = await supabase
-          .from('notifications')
-          .select('id')
-          .eq('user_id', entry.user_id)
-          .ilike('message', `%Partido #${match.match_number}%`)
-          .gte('created_at', twoHoursAgo.toISOString())
-          .maybeSingle()
-
-        // Si ya se envió recordatorio para este partido, skip
-        if (recentReminder) continue
-
-        // Verificar si el usuario tiene notificaciones habilitadas
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('notifications_enabled')
-          .eq('id', entry.user_id)
-          .single()
-
-        if (!profile?.notifications_enabled) continue
+        // Skip si el usuario tiene notificaciones deshabilitadas
+        if (!profileIndex.get(entry.user_id)) continue
 
         // Calcular minutos faltantes
         const matchTime = new Date(match.kickoff_at)
         const minutesLeft = Math.round((matchTime.getTime() - now.getTime()) / (60 * 1000))
 
-        // Crear notificación con batch_id para historial admin
         const message = `Partido #${match.match_number} comienza en ${minutesLeft} minutos. ¡No olvides pronosticar con tu jugada "${entry.alias}"!`
 
-        const { error: insertError } = await supabase
-          .from('notifications')
-          .insert({
-            user_id: entry.user_id,
-            title: '⏰ Partido por comenzar',
-            message,
-            type: 'warning',
-            link: '/predictions',
-            batch_id: batchId, // ← Compartido por todos los recordatorios de esta ejecución
-          })
+        notificationsToInsert.push({
+          user_id: entry.user_id,
+          title: '⏰ Partido por comenzar',
+          message,
+          type: 'warning',
+          link: '/predictions',
+          batch_id: batchId,
+        })
+      }
+    }
 
-        if (!insertError) {
-          totalSent += 1
+    // 7. INSERTAR NOTIFICACIONES EN LOTE
+    if (notificationsToInsert.length > 0) {
+      const { error: insertError } = await supabase
+        .from('notifications')
+        .insert(notificationsToInsert)
 
-          // Enviar Web Push si el usuario está suscrito
-          const { data: pushSubs } = await supabase
-            .from('push_subscriptions')
-            .select('*')
-            .eq('user_id', entry.user_id)
+      if (!insertError) {
+        totalSent = notificationsToInsert.length
 
-          if (pushSubs && pushSubs.length > 0) {
-            for (const sub of pushSubs) {
-              try {
-                await webpush.sendNotification(
-                  sub.subscription as any,
-                  JSON.stringify({
-                    title: '⏰ Partido por comenzar',
-                    message,
-                    link: '/predictions',
-                  })
-                )
-              } catch (pushError: any) {
+        // 8. ENVIAR WEB PUSH EN PARALELO
+        const pushPromises: Promise<any>[] = []
+        for (const notif of notificationsToInsert) {
+          const subs = pushSubsByUser.get(notif.user_id) || []
+          for (const sub of subs) {
+            pushPromises.push(
+              webpush.sendNotification(
+                sub.subscription as any,
+                JSON.stringify({
+                  title: notif.title,
+                  message: notif.message,
+                  link: notif.link,
+                })
+              ).catch((pushError: any) => {
                 if (pushError.statusCode === 410) {
-                  await supabase
-                    .from('push_subscriptions')
-                    .delete()
-                    .eq('id', sub.id)
+                  // Eliminar suscripción expirada
+                  supabase.from('push_subscriptions').delete().eq('id', sub.id).then()
                 }
-                console.error('[Push] Error enviando recordatorio:', pushError.message)
-              }
-            }
+                console.error('[Push] Error:', pushError.message)
+              })
+            )
           }
         }
+
+        await Promise.allSettled(pushPromises)
+      } else {
+        console.error('[Bulk Insert] Error al insertar notificaciones:', insertError)
       }
     }
 

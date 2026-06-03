@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, useMemo, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Notification } from '@/lib/types'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 
 interface NotificationContextType {
   notifications: Notification[]
@@ -13,6 +14,7 @@ interface NotificationContextType {
   markAllAsRead: () => Promise<void>
   playSound: () => void
   unlockAudio: () => void
+  error: string | null
 }
 
 const NotificationContext = createContext<NotificationContextType | null>(null)
@@ -33,7 +35,8 @@ export default function NotificationProvider({
   children: React.ReactNode
 }) {
   const [notifications, setNotifications] = useState<Notification[]>([])
-  const channelRef = useRef<any>(null)
+  const [error, setError] = useState<string | null>(null)
+  const channelRef = useRef<RealtimeChannel | null>(null)
   const isSubscribedRef = useRef(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const audioUnlockedRef = useRef(false)
@@ -139,19 +142,52 @@ export default function NotificationProvider({
   }
 
   async function deleteNotification(id: string) {
-    await supabase.from('notifications').delete().eq('id', id)
+    // Optimistic update
+    const prevNotifications = notifications
     setNotifications(prev => prev.filter(n => n.id !== id))
+    setError(null)
+
+    // Realizar la operación
+    const { error: deleteError } = await supabase.from('notifications').delete().eq('id', id)
+    
+    if (deleteError) {
+      // Rollback en caso de error
+      setNotifications(prevNotifications)
+      setError('Error al eliminar notificación')
+      console.error('[deleteNotification] Error:', deleteError)
+    }
   }
 
   async function deleteAllNotifications() {
     if (!userId) return
-    await supabase.from('notifications').delete().eq('user_id', userId)
+    
+    const prevNotifications = notifications
     setNotifications([])
+    setError(null)
+
+    const { error: deleteError } = await supabase.from('notifications').delete().eq('user_id', userId)
+    
+    if (deleteError) {
+      setNotifications(prevNotifications)
+      setError('Error al eliminar notificaciones')
+      console.error('[deleteAllNotifications] Error:', deleteError)
+    }
   }
 
   async function markAsRead(id: string) {
-    await supabase.from('notifications').update({ read: true }).eq('id', id)
+    // Optimistic update
+    const prevNotifications = notifications
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
+    setError(null)
+
+    const { error: updateError } = await supabase.from('notifications').update({ read: true }).eq('id', id)
+    
+    if (updateError) {
+      // Rollback en caso de error
+      setNotifications(prevNotifications)
+      setError('Error al marcar como leída')
+      console.error('[markAsRead] Error:', updateError)
+    }
   }
 
   async function markAllAsRead() {
@@ -173,6 +209,7 @@ export default function NotificationProvider({
     markAllAsRead,
     playSound,
     unlockAudio,
+    error,
   }
 
   return (

@@ -18,6 +18,7 @@ export default function NotificationBell() {
     markAsRead,
     markAllAsRead,
     unlockAudio,
+    error,
   } = useNotifications()
 
   useEffect(() => {
@@ -92,6 +93,11 @@ export default function NotificationBell() {
               <h3 className="font-bold text-white uppercase tracking-wider text-sm">
                 Notificaciones
               </h3>
+              {error && (
+                <div className="mt-2 text-xs text-danger bg-danger/10 border border-danger/30 rounded px-2 py-1">
+                  {error}
+                </div>
+              )}
             </div>
 
             <div className="flex-1 overflow-y-auto">

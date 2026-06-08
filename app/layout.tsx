@@ -13,12 +13,12 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   icons: {
     icon: [
-      { url: '/images/favicon.ico' },
-      { url: '/images/android-chrome-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/favicon.ico' },
+      { url: '/android-chrome-192x192.png', sizes: '192x192', type: 'image/png' },
     ],
-    shortcut: '/images/favicon.ico',
+    shortcut: '/favicon.ico',
     apple: [
-      { url: '/images/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
     ],
   },
   appleWebApp: {

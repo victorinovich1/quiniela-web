@@ -113,8 +113,9 @@ export interface Settings {
   third_team_id: number | null
   fourth_team_id: number | null
   last_sync_at: string | null
-  last_sync_error: string | null
+  last_full_check_at: string | null
   last_sync_status: string | null
+  last_sync_error: string | null
   sync_interval_minutes: number
   api_sync_enabled: boolean
   req_pts_special: number

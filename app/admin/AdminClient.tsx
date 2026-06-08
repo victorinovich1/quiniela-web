@@ -933,21 +933,32 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
       }
       
       if (data.ok) {
+        const totalReceived = data.total_received || data.upstreamCount || 0
+        const totalUpdated = data.total_updated || data.updated || 0
+        const totalSkipped = data.total_skipped || 0
+        const lastMatch = data.last_match_number || 0
+        
+        let msg = `✅ Sincronización exitosa: ${totalReceived} partidos verificados (${totalUpdated} cambios necesarios)`
+        
+        if (totalSkipped > 0) {
+          msg += `. ${totalSkipped} partidos sin cambios (ahorro de recursos)`
+        }
+        
+        if (lastMatch > 0) {
+          msg += `. El robot llegó hasta el partido M${lastMatch}`
+        }
+        
         const byTeams = data.matchedByTeams || 0
         const byDateStage = data.matchedByDateStage || 0
         const autoAssigned = data.autoAssignedTeams || 0
-        const fromAPI = data.upstreamCount || 0
         
-        let msg = `✅ Sincronización exitosa: ${data.updated} partidos actualizados`
-        if (fromAPI > 0) {
-          msg += ` de ${fromAPI} recibidos de la API`
-        }
         if (byTeams > 0 || byDateStage > 0) {
           msg += ` • Emparejados: ${byTeams} por equipos, ${byDateStage} por fecha/fase`
         }
         if (autoAssigned > 0) {
           msg += ` • ${autoAssigned} equipos auto-asignados`
         }
+        
         setSyncMsg(msg)
         // Recargar settings para obtener last_sync_at actualizado
         const { data: updatedSettings } = await supabase.from('settings').select('*').eq('id', DEFAULT_SETTINGS_ID).single()

@@ -81,12 +81,17 @@ export async function POST(request: NextRequest) {
         .from('settings')
         .update({ 
           last_sync_at: new Date().toISOString(),
+          last_full_check_at: new Date().toISOString(), // Solo se actualiza en sincronización manual
           last_sync_error: null,
         })
         .eq('id', 1)
       
       return NextResponse.json({ 
         ok: true, 
+        total_received: data.total_received || 0,
+        total_updated: data.total_updated || data.updated || 0,
+        total_skipped: data.total_skipped || 0,
+        last_match_number: data.last_match_number || 0,
         updated: data.updated || 0,
         upstreamCount: data.upstreamCount || 0,
         matchedByTeams: data.matchedByTeams || 0,

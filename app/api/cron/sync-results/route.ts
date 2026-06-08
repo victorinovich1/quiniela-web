@@ -18,6 +18,10 @@ type MatchRow = {
   phase: string
   status: MatchStatus
   manual_override: boolean
+  stadium: string | null
+  home_score: number | null
+  away_score: number | null
+  shootout_winner_team_id: number | null
 }
 
 type FdTeam = {
@@ -175,7 +179,7 @@ export async function GET(request: NextRequest) {
 
     const [{ data: teams, error: teamsErr }, { data: matches, error: matchesErr }] = await Promise.all([
       supabase.from('teams').select('id, code'),
-      supabase.from('matches').select('id, match_number, home_team_id, away_team_id, kickoff_at, phase, status, manual_override'),
+      supabase.from('matches').select('id, match_number, home_team_id, away_team_id, kickoff_at, phase, status, manual_override, stadium, home_score, away_score, shootout_winner_team_id'),
     ])
 
     if (teamsErr || matchesErr || !teams || !matches) {
@@ -307,15 +311,23 @@ export async function GET(request: NextRequest) {
     const externalMatches = payload.matches ?? []
     
     if (externalMatches.length === 0) {
+      console.log('[Sync Scan] API devolvió 0 partidos')
       return NextResponse.json({ 
         ok: true, 
-        source: 'football-data.org', 
-        updated: 0, 
+        source: 'football-data.org',
+        total_received: 0,
+        total_updated: 0,
+        total_skipped: 0,
+        last_match_number: null,
         message: 'La API no devolvió partidos' 
       })
     }
 
+    console.log(`[Sync Scan] Verificando ${externalMatches.length} partidos... OK`)
+
     let updated = 0
+    let skipped = 0
+    let lastMatchNumber = 0
     let matchedByTeams = 0
     let matchedByDateStage = 0
     let autoAssignedTeams = 0
@@ -416,7 +428,10 @@ export async function GET(request: NextRequest) {
       }
 
       // No actualizar si el Admin fijó el resultado manualmente
-      if (mapped.manual_override) continue
+      if (mapped.manual_override) {
+        skipped += 1
+        continue
+      }
 
       const rawHome = parseScore(fm.score?.fullTime?.home)
       const rawAway = parseScore(fm.score?.fullTime?.away)
@@ -427,6 +442,21 @@ export async function GET(request: NextRequest) {
       if (fm.score?.duration === 'PENALTY_SHOOTOUT' && mapped.home_team_id && mapped.away_team_id) {
         if (fm.score.winner === 'HOME_TEAM') shootoutWinner = swapped ? mapped.away_team_id : mapped.home_team_id
         if (fm.score.winner === 'AWAY_TEAM') shootoutWinner = swapped ? mapped.home_team_id : mapped.away_team_id
+      }
+
+      // Detectar si hay cambios reales antes de actualizar
+      const newStatus = mapStatus(fm.status)
+      const hasChanges = (
+        mapped.home_score !== homeScore ||
+        mapped.away_score !== awayScore ||
+        mapped.shootout_winner_team_id !== shootoutWinner ||
+        mapped.status !== newStatus
+      )
+
+      if (!hasChanges) {
+        skipped += 1
+        lastMatchNumber = Math.max(lastMatchNumber, mapped.match_number)
+        continue
       }
 
       // Actualiza scores, status, stadium y labels desde la API
@@ -461,7 +491,6 @@ export async function GET(request: NextRequest) {
       }
 
       // NOTIFICACIÓN AUTOMÁTICA: Si el partido cambió a 'finished', notificar usuarios
-      const newStatus = mapStatus(fm.status)
       if (newStatus === 'finished' && mapped.status !== 'finished') {
         const teamHome = homeName || homeCode || 'Equipo A'
         const teamAway = awayName || awayCode || 'Equipo B'
@@ -489,6 +518,7 @@ export async function GET(request: NextRequest) {
       }
 
       updated += 1
+      lastMatchNumber = Math.max(lastMatchNumber, mapped.match_number)
     }
 
     // Actualizar timestamp y estado de última sincronización exitosa
@@ -501,12 +531,18 @@ export async function GET(request: NextRequest) {
       })
       .eq('id', 1)
 
+    console.log(`[Sync Scan] Completado: ${updated} actualizaciones, ${skipped} sin cambios`)
+
     return NextResponse.json({
       ok: true,
       source: 'football-data.org',
       competitionCode,
       season: currentSeason,
       fallbackMode: currentSeason !== season,
+      total_received: externalMatches.length,
+      total_updated: updated,
+      total_skipped: skipped,
+      last_match_number: lastMatchNumber,
       upstreamCount: externalMatches.length,
       updated,
       matchedByTeams,

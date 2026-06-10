@@ -1,15 +1,17 @@
-// Service Worker para Web Push Notifications
+// Service Worker para PWA + Web Push Notifications
 
-// Bypass para peticiones de Supabase (Realtime WebSocket)
-self.addEventListener('fetch', function(event) {
-  // NO interceptar peticiones de Supabase
-  if (event.request.url.includes('supabase.co') || 
-      event.request.url.includes('realtime')) {
-    return
-  }
+// Instalación inmediata
+self.addEventListener('install', () => self.skipWaiting())
+
+// Activación y control de clientes
+self.addEventListener('activate', (event) => event.waitUntil(clients.claim()))
+
+// Fetch handler requerido para PWA instalable
+self.addEventListener('fetch', (event) => {
+  // Handler mínimo - no intercepta peticiones
 })
 
-// Listener de notificaciones push - Despierta el teléfono
+// Listener de notificaciones push
 self.addEventListener('push', function(event) {
   console.log('[SW] Push recibido', event)
   
@@ -25,7 +27,7 @@ self.addEventListener('push', function(event) {
   
   event.waitUntil(
     self.registration.showNotification(data.title, options)
-      .then(() => console.log('[SW] Notificación mostrada en pantalla de bloqueo'))
+      .then(() => console.log('[SW] Notificación mostrada'))
   )
 })
 
@@ -35,5 +37,4 @@ self.addEventListener('notificationclick', function(event) {
   event.notification.close()
   event.waitUntil(clients.openWindow(event.notification.data.url))
 })
-// No intercepta peticiones para evitar conflictos con Supabase Realtime
 

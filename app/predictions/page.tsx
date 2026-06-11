@@ -56,7 +56,7 @@ export default async function PredictionsPage({
     { data: lockedRpc },
   ] = await Promise.all([
     supabase.from('teams').select('*').order('group_code').order('position_in_group'),
-    supabase.from('matches').select('*').order('match_number', { ascending: true }),
+    supabase.from('matches').select('*').order('kickoff_at', { ascending: true }),
     supabase.from('predictions').select('*').eq('entry_id', activeEntry.id),
     supabase.from('special_predictions').select('*').eq('entry_id', activeEntry.id).maybeSingle(),
     supabase.from('settings').select('lock_at').eq('id', DEFAULT_SETTINGS_ID).maybeSingle(),

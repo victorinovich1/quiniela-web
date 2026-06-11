@@ -681,7 +681,11 @@ function EliminatoriasTab({
 }) {
   const phaseMatches = matches
     .filter((m) => m.phase === activePhase)
-    .sort((a, b) => a.match_number - b.match_number)
+    .sort((a, b) => {
+      const aTime = a.kickoff_at ? new Date(a.kickoff_at).getTime() : 0
+      const bTime = b.kickoff_at ? new Date(b.kickoff_at).getTime() : 0
+      return aTime - bTime
+    })
 
   const SHORT: Record<Phase, string> = {
     group: '', r32: '16avos', r16: 'Octavos', qf: 'Cuartos', sf: 'Semis', third: '3er', final: 'Final',

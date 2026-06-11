@@ -29,7 +29,7 @@ export default async function AdminPage() {
     { data: entries },
   ] = await Promise.all([
     supabase.from('teams').select('*').order('group_code').order('position_in_group'),
-    supabase.from('matches').select('*').order('match_number'),
+    supabase.from('matches').select('*').order('kickoff_at', { ascending: true }),
     supabase.from('profiles').select('*').order('created_at'),
     supabase.from('invitations').select('*').order('created_at', { ascending: false }),
     supabase.from('settings').select('*').eq('id', DEFAULT_SETTINGS_ID).maybeSingle(),

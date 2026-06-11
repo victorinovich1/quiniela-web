@@ -1,6 +1,6 @@
 import type { Match, Team } from '@/lib/types'
 import Flag from '@/components/Flag'
-import { isMatchLocked, getMatchStatus } from '@/lib/utils'
+import { isMatchLocked, getMatchStatus, parseUTCDate } from '@/lib/utils'
 
 type PredMap = Record<number, { home: number | null; away: number | null; ko: number | null }>
 
@@ -25,7 +25,7 @@ export default function CompactMatchRow({
   const homeLabel = homeTeam?.name || match.home_team_label || 'TBD'
   const awayLabel = awayTeam?.name || match.away_team_label || 'TBD'
 
-  const kickoff = match.kickoff_at ? new Date(match.kickoff_at) : null
+  const kickoff = match.kickoff_at ? parseUTCDate(match.kickoff_at) : null
   const timeStr = kickoff ? kickoff.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '--:--'
   const matchLocked = isMatchLocked(match, locked)
   

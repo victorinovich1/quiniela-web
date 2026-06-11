@@ -4,6 +4,26 @@
  */
 
 /**
+ * Parsea fecha de Supabase garantizando interpretación UTC
+ * Regla de Oro: Todas las fechas de BD son UTC
+ * @param dateStr - String ISO de Supabase (con o sin 'Z')
+ * @returns Date object interpretado como UTC
+ */
+export function parseUTCDate(dateStr: string | null | undefined): Date | null {
+  if (!dateStr) return null
+  
+  // Si ya tiene 'Z' o timezone offset (+XX:XX), usar directo
+  if (dateStr.endsWith('Z') || dateStr.includes('+')) {
+    return new Date(dateStr)
+  }
+  
+  // Si es formato "YYYY-MM-DD HH:MM:SS" sin timezone, agregar 'Z'
+  // Normalizar espacio a 'T' para formato ISO estándar
+  const normalized = dateStr.replace(' ', 'T')
+  return new Date(normalized + 'Z')
+}
+
+/**
  * Formatea segundos en una cadena legible
  * @param seconds - Segundos a formatear
  * @param format - 'text' (defecto): "Xh Ym Zs" | 'clock': "HH:MM:SS"
@@ -34,10 +54,22 @@ export function formatTimeLeft(seconds: number, format: 'text' | 'clock' = 'text
 
 /**
  * Calcula tiempo restante hasta una fecha en segundos
+ * Usa parseUTCDate para fechas de BD
  */
 export function getSecondsUntil(targetDate: Date | string): number {
-  const target = typeof targetDate === 'string' ? new Date(targetDate) : targetDate
+  const target = typeof targetDate === 'string' ? parseUTCDate(targetDate) : targetDate
+  if (!target) return 0
   return Math.max(0, Math.floor((target.getTime() - Date.now()) / 1000))
+}
+
+/**
+ * Calcula diferencia en milisegundos hasta una fecha
+ * Para countdowns precisos sin redondeo a segundos
+ */
+export function getMillisecondsUntil(targetDate: Date | string): number {
+  const target = typeof targetDate === 'string' ? parseUTCDate(targetDate) : targetDate
+  if (!target) return 0
+  return Math.max(0, target.getTime() - Date.now())
 }
 
 /**
@@ -52,9 +84,10 @@ export function isMatchLocked(
   if (match.status !== 'scheduled') return true
   if (!match.kickoff_at) return false
   
-  const kickoff = new Date(match.kickoff_at).getTime()
+  const kickoff = parseUTCDate(match.kickoff_at)
+  if (!kickoff) return false
   const now = Date.now()
-  return now >= kickoff - 15 * 60 * 1000 // 15 minutos antes
+  return now >= kickoff.getTime() - 15 * 60 * 1000 // 15 minutos antes
 }
 
 /**
@@ -124,9 +157,10 @@ export function getMatchStatus(match: {
   
   // Partido virtualmente en vivo si llegó la hora del kickoff
   if (match.status === 'scheduled' && match.kickoff_at) {
-    const kickoff = new Date(match.kickoff_at).getTime()
+    const kickoff = parseUTCDate(match.kickoff_at)
+    if (!kickoff) return 'scheduled'
     const now = Date.now()
-    if (now >= kickoff) return 'live'
+    if (now >= kickoff.getTime()) return 'live'
   }
   
   return 'scheduled'

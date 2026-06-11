@@ -1264,7 +1264,7 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
         </label>
         <input
           type="datetime-local"
-          value={s.lock_at ? s.lock_at.slice(0, 16) : ''}
+          value={s.lock_at ? toLocalDateTimeInput(s.lock_at) : ''}
           onChange={(e) => update('lock_at', e.target.value ? new Date(e.target.value).toISOString() : null)}
           className="input"
         />

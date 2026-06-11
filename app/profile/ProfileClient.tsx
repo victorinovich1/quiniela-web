@@ -8,6 +8,7 @@ import type { User } from '@supabase/supabase-js'
 import type { Profile, Settings } from '@/lib/types'
 import { TOTAL_AVATARS, AVATAR_PATHS } from '@/lib/avatars'
 import { COUNTRIES } from '@/lib/countries'
+import { parseUTCDate } from '@/lib/utils'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function ProfileClient({
@@ -110,7 +111,8 @@ export default function ProfileClient({
   // Verificar bloqueo de podio
   useEffect(() => {
     if (lockAt) {
-      setPodiumLocked(Date.now() > new Date(lockAt).getTime())
+      const target = parseUTCDate(lockAt)
+      if (target) setPodiumLocked(Date.now() > target.getTime())
     }
   }, [lockAt])
 

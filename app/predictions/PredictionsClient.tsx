@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { computeGroupStandings } from '@/lib/standings'
 import Flag from '@/components/Flag'
 import StandingsTable from '@/components/StandingsTable'
-import { isMatchLocked, formatTimeLeft } from '@/lib/utils'
+import { isMatchLocked, formatTimeLeft, parseUTCDate } from '@/lib/utils'
 import { PHASE_LABELS } from '@/lib/constants'
 import CompactMatchRow from './components/CompactMatchRow'
 import FifaMatchRow from './components/FifaMatchRow'
@@ -96,8 +96,9 @@ export default function PredictionsClient({
   useEffect(() => {
     if (!lockAt) return
     function tick() {
-      const target = new Date(lockAt!).getTime()
-      const diff = target - Date.now()
+      const target = parseUTCDate(lockAt!)
+      if (!target) { setCountdown(''); return }
+      const diff = target.getTime() - Date.now()
       if (diff <= 0) { setCountdown(''); return }
       const days = Math.floor(diff / (1000*60*60*24))
       const hours = Math.floor((diff/(1000*60*60))%24)
@@ -112,7 +113,9 @@ export default function PredictionsClient({
 
   const podiumLocked = useMemo(() => {
     if (!lockAt) return false
-    return Date.now() > new Date(lockAt).getTime()
+    const target = parseUTCDate(lockAt)
+    if (!target) return false
+    return Date.now() > target.getTime()
   }, [lockAt])
 
   const teamsById = useMemo(() => {
@@ -131,8 +134,8 @@ export default function PredictionsClient({
         !isMatchLocked(m, locked)
       )
       .sort((a, b) => {
-        const ta = a.kickoff_at ? new Date(a.kickoff_at).getTime() : 0
-        const tb = b.kickoff_at ? new Date(b.kickoff_at).getTime() : 0
+        const ta = a.kickoff_at ? parseUTCDate(a.kickoff_at)?.getTime() ?? 0 : 0
+        const tb = b.kickoff_at ? parseUTCDate(b.kickoff_at)?.getTime() ?? 0 : 0
         return ta - tb
       })
       .slice(0, 4)
@@ -142,7 +145,7 @@ export default function PredictionsClient({
   const nextKickoff = useMemo(() => {
     if (expressMatches.length === 0) return null
     const times = expressMatches
-      .map(m => m.kickoff_at ? new Date(m.kickoff_at).getTime() : Infinity)
+      .map(m => m.kickoff_at ? parseUTCDate(m.kickoff_at)?.getTime() ?? Infinity : Infinity)
       .filter(t => t !== Infinity)
     return times.length > 0 ? Math.min(...times) : null
   }, [expressMatches])
@@ -157,7 +160,9 @@ export default function PredictionsClient({
       
       for (const match of expressMatches) {
         if (!match.kickoff_at) continue
-        const lockTime = new Date(match.kickoff_at).getTime() - 15 * 60 * 1000
+        const kickoff = parseUTCDate(match.kickoff_at)
+        if (!kickoff) continue
+        const lockTime = kickoff.getTime() - 15 * 60 * 1000
         const secondsLeft = Math.max(0, Math.floor((lockTime - now) / 1000))
         newCountdowns[match.id] = secondsLeft
       }
@@ -353,7 +358,7 @@ export default function PredictionsClient({
               const timeLeftColor = minutesLeft < 10 ? 'text-danger' : minutesLeft < 60 ? 'text-yellow-400' : 'text-white/60'
               const shouldPulse = minutesLeft < 10
               const isLockedByStatus = m.status !== 'scheduled'
-              const isNextMatch = m.kickoff_at && nextKickoff ? new Date(m.kickoff_at).getTime() === nextKickoff : false
+              const isNextMatch = m.kickoff_at && nextKickoff ? parseUTCDate(m.kickoff_at)?.getTime() === nextKickoff : false
               
               return (
               <div key={m.id} className={`relative bg-navy-deepest/40 border rounded-lg p-2.5 hover:bg-white/5 transition-all ${
@@ -545,8 +550,8 @@ function GruposTab({
   const groupMatches = matches
     .filter((m) => m.phase === 'group' && m.group_code === activeGroup)
     .sort((a, b) => {
-      const ta = a.kickoff_at ? new Date(a.kickoff_at).getTime() : 0
-      const tb = b.kickoff_at ? new Date(b.kickoff_at).getTime() : 0
+      const ta = a.kickoff_at ? parseUTCDate(a.kickoff_at)?.getTime() ?? 0 : 0
+      const tb = b.kickoff_at ? parseUTCDate(b.kickoff_at)?.getTime() ?? 0 : 0
       return ta - tb || a.match_number - b.match_number
     })
 

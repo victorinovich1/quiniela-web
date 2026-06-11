@@ -139,7 +139,7 @@ export default function PredictionsClient({
         return ta - tb
       })
       .slice(0, 4)
-  }, [matches, locked])
+  }, [matches])
 
   // Calcular el kickoff más cercano de los partidos express
   const nextKickoff = useMemo(() => {
@@ -331,7 +331,7 @@ export default function PredictionsClient({
       </div>
 
       {/* PRONÓSTICO EXPRESS */}
-      {expressMatches.length > 0 && !locked && (
+      {expressMatches.length > 0 && (
         <div className="bg-fifaGreen/5 border border-fifaGreen/20 rounded-xl p-4 mb-5 transition-all">
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-2">

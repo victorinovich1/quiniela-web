@@ -131,7 +131,7 @@ export default function PredictionsClient({
         m.status === 'scheduled' && 
         m.home_team_id !== null && 
         m.away_team_id !== null &&
-        !isMatchLocked(m, locked)
+        !isMatchLocked(m)
       )
       .sort((a, b) => {
         const ta = a.kickoff_at ? parseUTCDate(a.kickoff_at)?.getTime() ?? 0 : 0
@@ -181,7 +181,7 @@ export default function PredictionsClient({
     
     // Verificar que el partido no esté bloqueado
     const match = matches.find(m => m.id === matchId)
-    if (!match || isMatchLocked(match, locked)) return
+    if (!match || isMatchLocked(match)) return
     
     setAutoSaving(true)
     setAutoSaveMsg(null)
@@ -303,8 +303,14 @@ export default function PredictionsClient({
       )}
 
       {locked && (
-        <div className="bg-danger/15 border border-danger/40 text-danger rounded-xl p-3 mb-4 text-sm font-bold uppercase tracking-wider">
-          Pronósticos bloqueados — ya empezó el Mundial
+        <div className="bg-navy-dark/80 border border-fifaGreen/30 rounded-xl p-3 mb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">⚽</span>
+            <div className="text-sm">
+              <p className="text-fifaGreen font-bold">¡EL MUNDIAL ESTÁ EN MARCHA!</p>
+              <p className="text-white/70 text-xs mt-0.5">El podio ha sido bloqueado. Puedes seguir pronosticando partidos futuros hasta 15 min antes de cada inicio.</p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -362,7 +368,7 @@ export default function PredictionsClient({
               
               return (
               <div key={m.id} className={`relative bg-navy-deepest/40 border rounded-lg p-2.5 hover:bg-white/5 transition-all ${
-                isMatchLocked(m, locked) ? 'opacity-60' : ''
+                isMatchLocked(m) ? 'opacity-60' : ''
               } ${
                 isNextMatch ? 'border-fifaGreen bg-fifaGreen/10' : 'border-white/10'
               }`}>
@@ -407,8 +413,8 @@ export default function PredictionsClient({
                       inputMode="numeric"
                       value={preds[m.id]?.home ?? ''}
                       onChange={(e) => setScore(m.id, 'home', e.target.value)}
-                      disabled={isMatchLocked(m, locked)}
-                      className={`score-input w-10 h-8 text-sm ${isMatchLocked(m, locked) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      disabled={isMatchLocked(m)}
+                      className={`score-input w-10 h-8 text-sm ${isMatchLocked(m) ? 'opacity-50 cursor-not-allowed' : ''}`}
                       placeholder="-"
                     />
                   </div>
@@ -432,8 +438,8 @@ export default function PredictionsClient({
                       inputMode="numeric"
                       value={preds[m.id]?.away ?? ''}
                       onChange={(e) => setScore(m.id, 'away', e.target.value)}
-                      disabled={isMatchLocked(m, locked)}
-                      className={`score-input w-10 h-8 text-sm ${isMatchLocked(m, locked) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      disabled={isMatchLocked(m)}
+                      className={`score-input w-10 h-8 text-sm ${isMatchLocked(m) ? 'opacity-50 cursor-not-allowed' : ''}`}
                       placeholder="-"
                     />
                   </div>
@@ -447,8 +453,8 @@ export default function PredictionsClient({
                       <select
                         value={preds[m.id]?.ko ?? ''}
                         onChange={(e) => setKoWinner(m.id, e.target.value ? Number(e.target.value) : null)}
-                        disabled={isMatchLocked(m, locked)}
-                        className={`input w-full text-xs ${isMatchLocked(m, locked) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        disabled={isMatchLocked(m)}
+                        className={`input w-full text-xs ${isMatchLocked(m) ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <option value="">Selecciona ganador</option>
                         <option value={m.home_team_id}>{teamsById[m.home_team_id]?.name || 'TBD'}</option>

@@ -218,10 +218,8 @@ export async function GET(request: NextRequest) {
     }
 
   const teamByCode = new Map<string, number>()
-  const teamByName = new Map<string, number>()
   for (const t of teams as TeamRow[]) {
     teamByCode.set(t.code.toUpperCase(), t.id)
-    teamByName.set(normalizeTeamName(t.name), t.id)
   }
 
   // MAPEO HÍBRIDO: Por equipos (grupos) + Por fecha+fase (eliminatorias)
@@ -418,18 +416,10 @@ export async function GET(request: NextRequest) {
       let extHomeId: number | undefined
       let extAwayId: number | undefined
 
-      // 1. Intentar mapeo por equipos - primero por código
+      // 1. Intentar mapeo por equipos usando TLA (código FIFA de 3 letras)
       if (homeCode && awayCode) {
         extHomeId = teamByCode.get(homeCode)
         extAwayId = teamByCode.get(awayCode)
-        
-        // Fallback: Si no encontró por código, buscar por nombre
-        if (!extHomeId && homeName) {
-          extHomeId = teamByName.get(normalizeTeamName(homeName))
-        }
-        if (!extAwayId && awayName) {
-          extAwayId = teamByName.get(normalizeTeamName(awayName))
-        }
         
         if (extHomeId && extAwayId) {
           mapped = matchByTeams.get(`${extHomeId}-${extAwayId}`)
@@ -438,7 +428,10 @@ export async function GET(request: NextRequest) {
             swapped = !!mapped
           }
           if (mapped) matchingMethod = 'teams'
-        } else if (!extHomeId || !extAwayId) {
+        } else {
+          // Log: código TLA no encontrado en BD
+          if (!extHomeId) console.log(`[Sync Warning] Código TLA no encontrado en BD: ${homeCode}`)
+          if (!extAwayId) console.log(`[Sync Warning] Código TLA no encontrado en BD: ${awayCode}`)
           skippedUnknownCode += 1
         }
       }
@@ -464,10 +457,11 @@ export async function GET(request: NextRequest) {
           const dbDate = new Date(dateStr)
           const diffMinutes = Math.abs(apiDate.getTime() - dbDate.getTime()) / (1000 * 60)
           
-          // Margen de 60 minutos (1 hora) para ajustes de horario/zona
-          if (diffMinutes <= 60) {
+          // Margen de 120 minutos (2 horas) para capturar discrepancias de horario
+          if (diffMinutes <= 120) {
             mapped = m
             matchingMethod = 'dateStage'
+            console.log(`[Sync Match] Partido M${m.match_number} emparejado por fecha+fase (diff: ${Math.round(diffMinutes)}min)`)
             break
           }
         }
@@ -477,10 +471,11 @@ export async function GET(request: NextRequest) {
         skippedNoMapping += 1
         
         // Log detallado de partido no encontrado
-        const homeDisplay = homeName || homeCode || '???'
-        const awayDisplay = awayName || awayCode || '???'
+        const homeDisplay = `${homeCode || '???'}${homeName ? ` (${homeName})` : ''}`
+        const awayDisplay = `${awayCode || '???'}${awayName ? ` (${awayName})` : ''}`
         const timeDisplay = fm.utcDate ? new Date(fm.utcDate).toISOString() : 'Sin hora'
-        console.log(`[Sync Fail] No se encontró pareja para: ${homeDisplay} vs ${awayDisplay} a las ${timeDisplay}`)
+        const phaseDisplay = fm.stage ? `[${fm.stage}]` : '[Sin fase]'
+        console.log(`[Sync Fail] ${phaseDisplay} No se encontró pareja para: ${homeDisplay} vs ${awayDisplay} a las ${timeDisplay}`)
         
         if ((homeCode || homeName) && (awayCode || awayName) && sampleUnmapped.length < 10) {
           sampleUnmapped.push({ home: homeDisplay, away: awayDisplay, status: fm.status })
@@ -566,6 +561,11 @@ export async function GET(request: NextRequest) {
       // Guardar team labels si vienen de la API (TBD, Winner SF1, etc.)
       if (homeName) updatePatch.home_team_label = swapped ? awayName : homeName
       if (awayName) updatePatch.away_team_label = swapped ? homeName : awayName
+
+      // Log de actualización detallado
+      const scoreDisplay = homeScore !== null && awayScore !== null ? `${homeScore}-${awayScore}` : 'null-null'
+      const statusChange = mapped.status !== newStatus ? `${mapped.status}→${newStatus}` : newStatus
+      console.log(`[Sync Update] M${mapped.match_number}: ${scoreDisplay} [${statusChange}] ${homeCode || '???'} vs ${awayCode || '???'}`)
 
       const { error: updateErr } = await supabase
         .from('matches')

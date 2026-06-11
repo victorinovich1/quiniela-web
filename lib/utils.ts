@@ -63,6 +63,16 @@ export function getSecondsUntil(targetDate: Date | string): number {
 }
 
 /**
+ * Calcula diferencia en milisegundos hasta una fecha
+ * Para countdowns precisos sin redondeo a segundos
+ */
+export function getMillisecondsUntil(targetDate: Date | string): number {
+  const target = typeof targetDate === 'string' ? parseUTCDate(targetDate) : targetDate
+  if (!target) return 0
+  return Math.max(0, target.getTime() - Date.now())
+}
+
+/**
  * Valida si un partido está bloqueado para pronósticos
  * Bloqueado si: status no es 'scheduled', o faltan menos de 15 min para kickoff
  */
@@ -147,9 +157,10 @@ export function getMatchStatus(match: {
   
   // Partido virtualmente en vivo si llegó la hora del kickoff
   if (match.status === 'scheduled' && match.kickoff_at) {
-    const kickoff = new Date(match.kickoff_at).getTime()
+    const kickoff = parseUTCDate(match.kickoff_at)
+    if (!kickoff) return 'scheduled'
     const now = Date.now()
-    if (now >= kickoff) return 'live'
+    if (now >= kickoff.getTime()) return 'live'
   }
   
   return 'scheduled'

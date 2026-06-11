@@ -6,7 +6,7 @@ import { toLocalDateTimeInput, getMatchStatus, getMatchScores } from '@/lib/util
 import { DEFAULT_SETTINGS_ID } from '@/lib/constants'
 import PageHeader from '@/components/PageHeader'
 import Flag from '@/components/Flag'
-import type { Team, Match, Profile, Invitation, Settings, Phase, Entry, Role } from '@/lib/types'
+import type { Team, Match, Profile, Invitation, Settings, Phase, Entry, Role, BestThirdPlacedTeam } from '@/lib/types'
 import { PHASE_LABELS, KO_PHASES, GROUP_CODES } from '@/lib/types'
 import NotificationsTab from './components/NotificationsTab'
 
@@ -153,8 +153,24 @@ function MatchesTab({ initialMatches, teams, settings }: {
   const [matchSearch, setMatchSearch] = useState<string>('')
   const [savingId, setSavingId] = useState<number | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
+  const [thirdPlaceTeams, setThirdPlaceTeams] = useState<BestThirdPlacedTeam[]>([])
+  const [showThirds, setShowThirds] = useState(false)
 
   const teamById = useMemo(() => Object.fromEntries(teams.map((t) => [t.id, t])), [teams])
+
+  // Cargar ranking de terceros
+  useEffect(() => {
+    async function loadThirds() {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('best_third_placed_teams')
+        .select('*')
+        .order('third_place_rank', { ascending: true })
+      
+      if (data) setThirdPlaceTeams(data as BestThirdPlacedTeam[])
+    }
+    loadThirds()
+  }, [matches]) // Recargar cuando cambien los partidos
 
   const filtered = matches.filter((m) => {
     const phaseMatch = phase === 'group' ? m.group_code === groupFilter : m.phase === phase
@@ -420,6 +436,105 @@ function MatchesTab({ initialMatches, teams, settings }: {
           )
         })}
       </div>
+
+      {/* Sección: Ranking de Terceros Lugares */}
+      {phase === 'group' && thirdPlaceTeams.length > 0 && (
+        <div className="mt-6">
+          <button
+            onClick={() => setShowThirds(!showThirds)}
+            className="w-full flex items-center justify-between bg-gold/10 hover:bg-gold/20 border border-gold/30 rounded-lg p-3 mb-3 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🥉</span>
+              <div className="text-left">
+                <h3 className="font-black uppercase tracking-tight text-gold">
+                  Ranking de Terceros Lugares
+                </h3>
+                <p className="text-xs text-white/60">
+                  Los 8 primeros clasifican a Dieciseisavos (Round of 32)
+                </p>
+              </div>
+            </div>
+            <span className="text-gold">
+              {showThirds ? '▼' : '►'}
+            </span>
+          </button>
+
+          {showThirds && (
+            <div className="card p-4 space-y-3">
+              <div className="text-xs text-white/60 bg-navy-dark/60 rounded px-3 py-2 border-l-2 border-gold">
+                <strong className="text-gold">Criterios de desempate:</strong> 1. Puntos · 2. Diferencia de goles · 3. Goles a favor
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-white/60 text-xs uppercase border-b border-white/10">
+                      <th className="text-left py-2">Pos</th>
+                      <th className="text-left py-2">Equipo</th>
+                      <th className="text-center py-2">Grupo</th>
+                      <th className="text-center py-2">PJ</th>
+                      <th className="text-center py-2">Pts</th>
+                      <th className="text-center py-2">GF</th>
+                      <th className="text-center py-2">GC</th>
+                      <th className="text-center py-2">Dif</th>
+                      <th className="text-left py-2">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {thirdPlaceTeams.map((t) => {
+                      const qualified = t.third_place_rank <= 8
+                      return (
+                        <tr 
+                          key={t.team_id} 
+                          className={`border-b border-white/5 ${qualified ? 'bg-fifaGreen/10' : ''}`}
+                        >
+                          <td className="py-2 font-bold">
+                            <span className={qualified ? 'text-fifaGreen' : 'text-white/60'}>
+                              {t.third_place_rank}°
+                            </span>
+                          </td>
+                          <td className="py-2">
+                            <div className="flex items-center gap-2">
+                              <Flag team={{ iso_code: t.iso_code, name: t.name }} size={16} />
+                              <span className="font-medium">{t.name}</span>
+                            </div>
+                          </td>
+                          <td className="py-2 text-center font-bold text-gold">{t.group_code}</td>
+                          <td className="py-2 text-center text-white/60">{t.matches_played}</td>
+                          <td className="py-2 text-center font-bold">{t.points}</td>
+                          <td className="py-2 text-center">{t.goals_for}</td>
+                          <td className="py-2 text-center">{t.goals_against}</td>
+                          <td className="py-2 text-center">
+                            <span className={t.goal_difference > 0 ? 'text-fifaGreen' : t.goal_difference < 0 ? 'text-danger' : ''}>
+                              {t.goal_difference > 0 ? '+' : ''}{t.goal_difference}
+                            </span>
+                          </td>
+                          <td className="py-2">
+                            {qualified ? (
+                              <span className="text-xs bg-fifaGreen/20 text-fifaGreen px-2 py-1 rounded-full font-bold">
+                                ✓ CLASIFICA
+                              </span>
+                            ) : (
+                              <span className="text-xs bg-white/10 text-white/60 px-2 py-1 rounded-full">
+                                Eliminado
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="text-xs text-white/60 bg-navy-dark/60 rounded px-3 py-2 border-l-2 border-fifaGreen">
+                💡 <strong>Asignación manual:</strong> Una vez definidos los 8 mejores terceros, usa los selectores de equipos en los partidos M74, M75, M77, M79, M80, M81, M82, M84, M85 y M87 para asignar los cruces según las etiquetas oficiales FIFA.
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

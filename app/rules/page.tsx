@@ -302,6 +302,32 @@ export default async function RulesPage() {
                   Podrás pronosticar cada partido hasta 15 minutos antes de su inicio, siguiendo la regla general de bloqueo.
                 </p>
               </div>
+
+              {/* Nueva sección: 8 Mejores Terceros */}
+              <div className="bg-navy-dark/60 border border-gold/30 rounded-lg p-4 space-y-3">
+                <h3 className="text-sm font-black uppercase tracking-wider text-gold mb-2">
+                  🥉 Clasificación de Terceros Lugares
+                </h3>
+                <p className="text-white/80 text-xs leading-relaxed">
+                  De los 12 grupos, avanzan a Dieciseisavos (Round of 32):
+                </p>
+                <ul className="text-white/80 text-xs space-y-1.5 ml-4">
+                  <li className="flex items-start gap-2">
+                    <span className="text-fifaGreen mt-0.5">•</span>
+                    <span>Los <strong className="text-white">2 primeros de cada grupo</strong> (24 equipos)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-gold mt-0.5">•</span>
+                    <span>Los <strong className="text-gold">8 mejores terceros lugares</strong> (de los 12 totales)</span>
+                  </li>
+                </ul>
+                <div className="bg-white/5 rounded px-3 py-2 mt-3 border-l-2 border-fifaGreen">
+                  <p className="text-white/70 text-xs leading-relaxed">
+                    <strong className="text-fifaGreen">Criterios de desempate entre terceros:</strong><br/>
+                    1. Puntos · 2. Diferencia de goles · 3. Goles a favor
+                  </p>
+                </div>
+              </div>
               
               <div className="bg-navy-dark/60 border border-fifaGreen/30 rounded-lg p-3">
                 <p className="text-white/60 text-xs">

@@ -164,6 +164,21 @@ export interface MatchScore {
   points: number
 }
 
+export interface BestThirdPlacedTeam {
+  team_id: number
+  code: string
+  name: string
+  group_code: string
+  iso_code: string
+  matches_played: number
+  points: number
+  goals_for: number
+  goals_against: number
+  goal_difference: number
+  group_position: number
+  third_place_rank: number
+}
+
 export const PHASE_LABELS: Record<Phase, string> = {
   group: 'Fase de Grupos',
   r32: 'Dieciseisavos',

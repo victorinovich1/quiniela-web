@@ -78,12 +78,27 @@ function mapPhaseApiToDB(apiStage: string | null | undefined): string | null {
 function mapStatus(raw: string | null | undefined): MatchStatus {
   if (!raw) return 'scheduled'
   const normalized = raw.toUpperCase()
-  // Estados en vivo
-  if (normalized === 'IN_PLAY' || normalized === 'PAUSED' || normalized === 'LIVE') return 'live'
-  // Estados finalizados
-  if (normalized === 'FINISHED' || normalized === 'AWARDED') return 'finished'
-  // Estados pendientes
-  if (normalized === 'TIMED' || normalized === 'SCHEDULED') return 'scheduled'
+  // Estados en vivo (ampliado)
+  if (
+    normalized === 'IN_PLAY' || 
+    normalized === 'LIVE' || 
+    normalized === 'PAUSED' ||
+    normalized === 'FIRST_HALF' ||
+    normalized === 'SECOND_HALF' ||
+    normalized === 'EXTRA_TIME'
+  ) return 'live'
+  // Estados finalizados (ampliado)
+  if (
+    normalized === 'FINISHED' || 
+    normalized === 'AWARDED' ||
+    normalized === 'ENDED'
+  ) return 'finished'
+  // Estados pendientes (ampliado)
+  if (
+    normalized === 'TIMED' || 
+    normalized === 'SCHEDULED' ||
+    normalized === 'ANNOUNCED'
+  ) return 'scheduled'
   // Default fallback
   return 'scheduled'
 }
@@ -310,6 +325,11 @@ export async function GET(request: NextRequest) {
 
     const externalMatches = payload.matches ?? []
     
+    // LOG DIAGNÓSTICO: Primer partido de la respuesta
+    if (externalMatches.length > 0) {
+      console.log('[API Response] Primer partido:', JSON.stringify(externalMatches[0], null, 2))
+    }
+    
     if (externalMatches.length === 0) {
       console.log('[Sync Scan] API devolvió 0 partidos')
       return NextResponse.json({ 
@@ -453,7 +473,18 @@ export async function GET(request: NextRequest) {
         mapped.status !== newStatus
       )
 
+      // Siempre actualizar last_synced_at para confirmar verificación con FIFA
+      const updatePatch: Record<string, unknown> = {
+        last_synced_at: new Date().toISOString(),
+      }
+
       if (!hasChanges) {
+        // Actualizar solo timestamp de verificación
+        await supabase
+          .from('matches')
+          .update(updatePatch)
+          .eq('id', mapped.id)
+        
         skipped += 1
         lastMatchNumber = Math.max(lastMatchNumber, mapped.match_number)
         continue
@@ -462,14 +493,11 @@ export async function GET(request: NextRequest) {
       // Actualiza scores, status, stadium y labels desde la API
       // Si la API marca el partido como FINISHED, el status pasa a 'finished' automáticamente
       // y las views de puntos (entry_scores, etc.) recalculan los puntajes
-      const updatePatch: Record<string, unknown> = {
-        home_score: homeScore,
-        away_score: awayScore,
-        shootout_winner_team_id: shootoutWinner,
-        status: mapStatus(fm.status), // scheduled | live | finished
-        stadium: fm.venue ?? null,
-        last_synced_at: new Date().toISOString(),
-      }
+      updatePatch.home_score = homeScore
+      updatePatch.away_score = awayScore
+      updatePatch.shootout_winner_team_id = shootoutWinner
+      updatePatch.status = newStatus
+      updatePatch.stadium = fm.venue ?? null
 
       // Guardar team labels si vienen de la API (TBD, Winner SF1, etc.)
       if (homeName) updatePatch.home_team_label = swapped ? awayName : homeName

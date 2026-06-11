@@ -594,7 +594,9 @@ export async function GET(request: NextRequest) {
         )
       }
 
-      // NOTIFICACIÓN AUTOMÁTICA: Si el partido cambió a 'finished', notificar usuarios
+      // NOTIFICACIONES AUTOMÁTICAS DESACTIVADAS
+      // El administrador puede enviar notificaciones manuales desde /api/admin/notifications
+      /*
       if (newStatus === 'finished' && mapped.status !== 'finished') {
         const teamHome = homeName || homeCode || 'Equipo A'
         const teamAway = awayName || awayCode || 'Equipo B'
@@ -602,7 +604,6 @@ export async function GET(request: NextRequest) {
           ? `${homeScore}-${awayScore}`
           : 'Resultado actualizado'
 
-        // Obtener usuarios con notificaciones habilitadas
         const { data: usersToNotify } = await supabase
           .from('profiles')
           .select('id')
@@ -620,6 +621,7 @@ export async function GET(request: NextRequest) {
           await supabase.from('notifications').insert(notifications)
         }
       }
+      */
 
       updated += 1
       lastMatchNumber = Math.max(lastMatchNumber, mapped.match_number)

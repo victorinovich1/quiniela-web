@@ -210,7 +210,8 @@ export default function PredictionsClient({
   }
 
   function setScore(matchId: number, key: 'home' | 'away', value: string) {
-    if (locked) return
+    const match = matches.find(m => m.id === matchId)
+    if (match && isMatchLocked(match)) return
     setPreds((prev) => {
       const cur = prev[matchId] ?? { home: null, away: null, ko: null }
       const num = value === '' ? null : Math.max(0, Math.min(99, Number(value)))
@@ -227,7 +228,8 @@ export default function PredictionsClient({
   }
 
   function setKoWinner(matchId: number, teamId: number | null) {
-    if (locked) return
+    const match = matches.find(m => m.id === matchId)
+    if (match && isMatchLocked(match)) return
     setPreds((prev) => {
       const cur = prev[matchId] ?? { home: null, away: null, ko: null }
       const next = { ...cur, ko: teamId }

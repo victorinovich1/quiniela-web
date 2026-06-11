@@ -22,6 +22,15 @@ const REMINDER_MIN_MINUTES = 30
 const REMINDER_MAX_MINUTES = 50
 
 export async function GET(request: NextRequest) {
+  // RECORDATORIOS AUTOMÁTICOS DESACTIVADOS
+  // El administrador puede enviar notificaciones manuales desde el panel de Admin
+  return NextResponse.json({
+    ok: true,
+    message: 'Recordatorios automáticos desactivados',
+    notificationsSent: 0,
+  })
+  
+  /* CÓDIGO ORIGINAL DESACTIVADO
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
   

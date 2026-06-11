@@ -525,12 +525,16 @@ export async function GET(request: NextRequest) {
 
       // Detectar si hay cambios reales antes de actualizar
       const newStatus = mapStatus(fm.status)
-      const hasChanges = (
-        mapped.home_score !== homeScore ||
-        mapped.away_score !== awayScore ||
-        mapped.shootout_winner_team_id !== shootoutWinner ||
-        mapped.status !== newStatus
+      
+      // LÓGICA BLINDADA: Solo considerar cambios si la API envía datos válidos
+      const scoreChanged = (
+        (typeof homeScore === 'number' && mapped.home_score !== homeScore) ||
+        (typeof awayScore === 'number' && mapped.away_score !== awayScore)
       )
+      const shootoutChanged = shootoutWinner !== null && mapped.shootout_winner_team_id !== shootoutWinner
+      const statusChanged = mapped.status !== newStatus
+      
+      const hasChanges = scoreChanged || shootoutChanged || statusChanged
 
       // Siempre actualizar last_synced_at para confirmar verificación con FIFA
       const updatePatch: Record<string, unknown> = {
@@ -549,22 +553,30 @@ export async function GET(request: NextRequest) {
         continue
       }
 
-      // Actualiza scores, status, stadium y labels desde la API
-      // Si la API marca el partido como FINISHED, el status pasa a 'finished' automáticamente
-      // y las views de puntos (entry_scores, etc.) recalculan los puntajes
-      updatePatch.home_score = homeScore
-      updatePatch.away_score = awayScore
-      updatePatch.shootout_winner_team_id = shootoutWinner
+      // ACTUALIZACIÓN BLINDADA: Solo actualizar scores si la API envía números reales
+      // REGLA DE ORO: Nunca sobrescribir scores existentes con null
+      
+      // Siempre actualizar status (crítico para detección de partidos en vivo)
       updatePatch.status = newStatus
-      updatePatch.stadium = fm.venue ?? null
+      
+      // Solo actualizar scores si la API trae números válidos (no null, no undefined)
+      if (typeof homeScore === 'number') updatePatch.home_score = homeScore
+      if (typeof awayScore === 'number') updatePatch.away_score = awayScore
+      
+      // Solo actualizar ganador de penales si hay valor válido
+      if (shootoutWinner !== null) updatePatch.shootout_winner_team_id = shootoutWinner
+      
+      // Actualizar stadium solo si la API lo envía
+      if (fm.venue) updatePatch.stadium = fm.venue
 
       // Guardar team labels si vienen de la API (TBD, Winner SF1, etc.)
       if (homeName) updatePatch.home_team_label = swapped ? awayName : homeName
       if (awayName) updatePatch.away_team_label = swapped ? homeName : awayName
 
-      // Log de actualización detallado
+      // Log de diagnóstico antes del update
       const scoreDisplay = homeScore !== null && awayScore !== null ? `${homeScore}-${awayScore}` : 'null-null'
       const statusChange = mapped.status !== newStatus ? `${mapped.status}→${newStatus}` : newStatus
+      console.log(`[Shield Check M${mapped.match_number}]: API scores are ${homeScore}-${awayScore}`)
       console.log(`[Sync Update] M${mapped.match_number}: ${scoreDisplay} [${statusChange}] ${homeCode || '???'} vs ${awayCode || '???'}`)
 
       const { error: updateErr } = await supabase

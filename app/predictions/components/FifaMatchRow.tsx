@@ -42,7 +42,7 @@ export default function FifaMatchRow({
 
   const isKnockout = match.phase !== 'group'
   const teamsNotDefined = !match.home_team_id || !match.away_team_id
-  const matchLocked = isMatchLocked(match, locked)
+  const matchLocked = isMatchLocked(match)
   const disableInputs = matchLocked || (isKnockout && teamsNotDefined)
   
   // Usar función centralizada para determinar estado real

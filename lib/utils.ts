@@ -75,11 +75,10 @@ export function getMillisecondsUntil(targetDate: Date | string): number {
 /**
  * Valida si un partido está bloqueado para pronósticos
  * Bloqueado si: status no es 'scheduled', o faltan menos de 15 min para kickoff
- * NOTA: globalLocked NO afecta partidos (solo afecta podio/especiales)
+ * NOTA: Esta función NO depende del bloqueo global (predictions_locked)
  */
 export function isMatchLocked(
-  match: { status: string; kickoff_at: string | null },
-  globalLocked: boolean
+  match: { status: string; kickoff_at: string | null }
 ): boolean {
   // Verificar status del partido
   if (match.status !== 'scheduled') return true

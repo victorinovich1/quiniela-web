@@ -27,7 +27,7 @@ export default function CompactMatchRow({
 
   const kickoff = match.kickoff_at ? parseUTCDate(match.kickoff_at) : null
   const timeStr = kickoff ? kickoff.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '--:--'
-  const matchLocked = isMatchLocked(match, locked)
+  const matchLocked = isMatchLocked(match)
   
   // Usar función centralizada para determinar estado real
   const status = getMatchStatus(match)

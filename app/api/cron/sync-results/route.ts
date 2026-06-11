@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic'
 type TeamRow = {
   id: number
   code: string
+  name: string
 }
 
 type MatchRow = {
@@ -107,6 +108,15 @@ function parseScore(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null
 }
 
+function normalizeTeamName(name: string | null | undefined): string {
+  if (!name) return ''
+  return name
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Eliminar acentos
+    .trim()
+}
+
 function buildFixtureUrl(
   competitionCode: string,
   season: string
@@ -193,7 +203,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [{ data: teams, error: teamsErr }, { data: matches, error: matchesErr }] = await Promise.all([
-      supabase.from('teams').select('id, code'),
+      supabase.from('teams').select('id, code, name'),
       supabase.from('matches').select('id, match_number, home_team_id, away_team_id, kickoff_at, phase, status, manual_override, stadium, home_score, away_score, shootout_winner_team_id'),
     ])
 
@@ -208,8 +218,10 @@ export async function GET(request: NextRequest) {
     }
 
   const teamByCode = new Map<string, number>()
+  const teamByName = new Map<string, number>()
   for (const t of teams as TeamRow[]) {
     teamByCode.set(t.code.toUpperCase(), t.id)
+    teamByName.set(normalizeTeamName(t.name), t.id)
   }
 
   // MAPEO HÍBRIDO: Por equipos (grupos) + Por fecha+fase (eliminatorias)
@@ -239,7 +251,7 @@ export async function GET(request: NextRequest) {
       cache: 'no-store',
     })
 
-    // Modo de prueba: Si season=2026 falla (400/403/404), reintentar con 2022 para validar conexión
+    // Fallback: Si season=2026 falla (400/403/404), reintentar con 2022
     if (!upstreamRes.ok && [400, 403, 404].includes(upstreamRes.status) && season === '2026') {
       currentSeason = '2022'
       fixtureUrl = buildFixtureUrl(competitionCode, currentSeason)
@@ -250,6 +262,41 @@ export async function GET(request: NextRequest) {
         },
         cache: 'no-store',
       })
+    }
+
+    // Fallback: Si obtuvimos respuesta OK pero devuelve 0 partidos, reintentar sin season
+    let payload: { matches?: FdMatch[] } = {}
+    if (upstreamRes.ok) {
+      try {
+        payload = await upstreamRes.json()
+      } catch {
+        // Se maneja abajo
+      }
+
+      if ((payload.matches ?? []).length === 0) {
+        console.log('[Sync Scan] Season específica devolvió 0 partidos, reintentando sin season...')
+        const urlNoSeason = `${FOOTBALL_DATA_BASE}/competitions/${encodeURIComponent(competitionCode)}/matches`
+        
+        const retryRes = await fetch(urlNoSeason, {
+          headers: {
+            'X-Auth-Token': footballDataKey,
+          },
+          cache: 'no-store',
+        })
+
+        if (retryRes.ok) {
+          try {
+            const retryPayload = await retryRes.json()
+            if ((retryPayload.matches ?? []).length > 0) {
+              payload = retryPayload
+              currentSeason = 'default'
+              console.log(`[Sync Scan] Fallback sin season exitoso: ${payload.matches?.length ?? 0} partidos`)
+            }
+          } catch {
+            // Ignorar error de parsing
+          }
+        }
+      }
     }
 
     if (!upstreamRes.ok) {
@@ -306,21 +353,23 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    let payload: { matches?: FdMatch[] }
-    try {
-      payload = await upstreamRes.json()
-    } catch (parseErr) {
-      const txt = await upstreamRes.text()
-      console.error('[cron/sync-results] ❌ ERROR: Respuesta no es JSON válido')
-      console.error('[cron/sync-results] Respuesta recibida:', txt.slice(0, 500))
-      return NextResponse.json(
-        {
-          ok: false,
-          error: 'API devolvió respuesta no-JSON (posiblemente HTML)',
-          details: txt.slice(0, 500),
-        },
-        { status: 502 }
-      )
+    // Parsear respuesta (si no se parseó en el fallback)
+    if (!payload.matches) {
+      try {
+        payload = await upstreamRes.json()
+      } catch (parseErr) {
+        const txt = await upstreamRes.text()
+        console.error('[cron/sync-results] ❌ ERROR: Respuesta no es JSON válido')
+        console.error('[cron/sync-results] Respuesta recibida:', txt.slice(0, 500))
+        return NextResponse.json(
+          {
+            ok: false,
+            error: 'API devolvió respuesta no-JSON (posiblemente HTML)',
+            details: txt.slice(0, 500),
+          },
+          { status: 502 }
+        )
+      }
     }
 
     const externalMatches = payload.matches ?? []
@@ -369,10 +418,18 @@ export async function GET(request: NextRequest) {
       let extHomeId: number | undefined
       let extAwayId: number | undefined
 
-      // 1. Intentar mapeo por equipos (si ambos códigos existen)
+      // 1. Intentar mapeo por equipos - primero por código
       if (homeCode && awayCode) {
         extHomeId = teamByCode.get(homeCode)
         extAwayId = teamByCode.get(awayCode)
+        
+        // Fallback: Si no encontró por código, buscar por nombre
+        if (!extHomeId && homeName) {
+          extHomeId = teamByName.get(normalizeTeamName(homeName))
+        }
+        if (!extAwayId && awayName) {
+          extAwayId = teamByName.get(normalizeTeamName(awayName))
+        }
         
         if (extHomeId && extAwayId) {
           mapped = matchByTeams.get(`${extHomeId}-${extAwayId}`)
@@ -407,8 +464,8 @@ export async function GET(request: NextRequest) {
           const dbDate = new Date(dateStr)
           const diffMinutes = Math.abs(apiDate.getTime() - dbDate.getTime()) / (1000 * 60)
           
-          // Margen de 180 minutos (3 horas) para ajustes de horario
-          if (diffMinutes <= 180) {
+          // Margen de 60 minutos (1 hora) para ajustes de horario/zona
+          if (diffMinutes <= 60) {
             mapped = m
             matchingMethod = 'dateStage'
             break
@@ -418,8 +475,15 @@ export async function GET(request: NextRequest) {
 
       if (!mapped) {
         skippedNoMapping += 1
+        
+        // Log detallado de partido no encontrado
+        const homeDisplay = homeName || homeCode || '???'
+        const awayDisplay = awayName || awayCode || '???'
+        const timeDisplay = fm.utcDate ? new Date(fm.utcDate).toISOString() : 'Sin hora'
+        console.log(`[Sync Fail] No se encontró pareja para: ${homeDisplay} vs ${awayDisplay} a las ${timeDisplay}`)
+        
         if ((homeCode || homeName) && (awayCode || awayName) && sampleUnmapped.length < 10) {
-          sampleUnmapped.push({ home: homeCode || homeName || '???', away: awayCode || awayName || '???', status: fm.status })
+          sampleUnmapped.push({ home: homeDisplay, away: awayDisplay, status: fm.status })
         }
         continue
       }

@@ -548,6 +548,7 @@ export async function GET(request: NextRequest) {
           .update(updatePatch)
           .eq('id', mapped.id)
         
+        console.log(`[Sync] M${mapped.match_number}: Resultados verificados y al día`)
         skipped += 1
         lastMatchNumber = Math.max(lastMatchNumber, mapped.match_number)
         continue
@@ -566,8 +567,8 @@ export async function GET(request: NextRequest) {
       // Solo actualizar ganador de penales si hay valor válido
       if (shootoutWinner !== null) updatePatch.shootout_winner_team_id = shootoutWinner
       
-      // Actualizar stadium solo si la API lo envía
-      if (fm.venue) updatePatch.stadium = fm.venue
+      // PROTECCIÓN TOTAL: stadium es sagrado, nunca actualizar desde API
+      // Los estadios se cargan manualmente vía migraciones (015, 017)
 
       // Guardar team labels si vienen de la API (TBD, Winner SF1, etc.)
       if (homeName) updatePatch.home_team_label = swapped ? awayName : homeName

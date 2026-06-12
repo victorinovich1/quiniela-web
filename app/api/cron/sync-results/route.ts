@@ -487,7 +487,8 @@ export async function GET(request: NextRequest) {
       if (matchingMethod === 'teams') matchedByTeams += 1
       if (matchingMethod === 'dateStage') matchedByDateStage += 1
 
-      // AUTO-ASIGNACIÓN: Si BD tiene NULL pero API tiene equipos, asignar
+      // AUTO-VÍNCULO DE EQUIPOS EN ELIMINATORIAS: Si BD tiene NULL pero API tiene equipos reales, asignar
+      // Esto permite que las banderas aparezcan automáticamente en la web cuando los partidos se definen
       if ((!mapped.home_team_id || !mapped.away_team_id) && homeCode && awayCode && extHomeId && extAwayId) {
         const assignPatch: { home_team_id: number; away_team_id: number } = {
           home_team_id: swapped ? extAwayId : extHomeId,
@@ -503,6 +504,7 @@ export async function GET(request: NextRequest) {
           autoAssignedTeams += 1
           mapped.home_team_id = assignPatch.home_team_id
           mapped.away_team_id = assignPatch.away_team_id
+          console.log(`[Auto-Link] M${mapped.match_number}: Equipos asignados ${homeCode} vs ${awayCode}`)
         }
       }
 
@@ -567,8 +569,8 @@ export async function GET(request: NextRequest) {
       // Solo actualizar ganador de penales si hay valor válido
       if (shootoutWinner !== null) updatePatch.shootout_winner_team_id = shootoutWinner
       
-      // PROTECCIÓN TOTAL: stadium es sagrado, nunca actualizar desde API
-      // Los estadios se cargan manualmente vía migraciones (015, 017)
+      // stadium NUNCA se incluye aquí para proteger nuestros datos manuales
+      // Los estadios se cargan manualmente vía migraciones (015, 017) y la API no debe modificarlos
 
       // Guardar team labels si vienen de la API (TBD, Winner SF1, etc.)
       if (homeName) updatePatch.home_team_label = swapped ? awayName : homeName

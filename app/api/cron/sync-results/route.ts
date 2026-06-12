@@ -461,7 +461,7 @@ export async function GET(request: NextRequest) {
           if (diffMinutes <= 120) {
             mapped = m
             matchingMethod = 'dateStage'
-            console.log(`[Sync Match] Partido M${m.match_number} emparejado por fecha+fase (diff: ${Math.round(diffMinutes)}min)`)
+            console.log(`[Sync Match] M${m.match_number} (API: ${homeName || homeCode || '???'} vs ${awayName || awayCode || '???'}) emparejado por fecha+fase (diff: ${Math.round(diffMinutes)}min)`)
             break
           }
         }

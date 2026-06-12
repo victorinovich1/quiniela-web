@@ -429,9 +429,9 @@ export async function GET(request: NextRequest) {
           }
           if (mapped) matchingMethod = 'teams'
         } else {
-          // Log: código TLA no encontrado en BD
-          if (!extHomeId) console.log(`[Sync Warning] Código TLA no encontrado en BD: ${homeCode}`)
-          if (!extAwayId) console.log(`[Sync Warning] Código TLA no encontrado en BD: ${awayCode}`)
+          // Log: código TLA no encontrado en BD (incluir nombre del equipo para diagnóstico)
+          if (!extHomeId) console.log(`[Sync Warning] Código TLA '${homeCode}' (${homeName || 'nombre desconocido'}) no encontrado en BD`)
+          if (!extAwayId) console.log(`[Sync Warning] Código TLA '${awayCode}' (${awayName || 'nombre desconocido'}) no encontrado en BD`)
           skippedUnknownCode += 1
         }
       }

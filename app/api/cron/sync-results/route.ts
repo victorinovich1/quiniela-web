@@ -142,6 +142,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: unauthorizedReason }, { status: 401 })
   }
 
+  // Detectar modo de escaneo completo (procesar TODOS los partidos)
+  const { searchParams } = new URL(request.url)
+  const fullScan = searchParams.get('full_scan') === 'true'
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY
   const footballDataKey = process.env.FOOTBALL_DATA_API_KEY
@@ -401,9 +405,38 @@ export async function GET(request: NextRequest) {
     let skippedNoTeams = 0
     let skippedNoMapping = 0
     let skippedUnknownCode = 0
+    let skippedOptimization = 0
     const sampleUnmapped: Array<{ home: string; away: string; status: string | null | undefined }> = []
 
+    // Ventana de optimización: solo procesar partidos relevantes si no es full_scan
+    const now = new Date()
+    const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+
     for (const fm of externalMatches) {
+      // FILTRO DE OPTIMIZACIÓN: Ignorar partidos fuera de la ventana de interés
+      if (!fullScan && fm.utcDate) {
+        const matchDate = new Date(fm.utcDate)
+        
+        // Ignorar partidos que inician en más de 24 horas
+        if (matchDate > twentyFourHoursFromNow) {
+          skippedOptimization += 1
+          continue
+        }
+        
+        // Ignorar partidos ya finalizados con marcador válido en nuestra BD
+        if (fm.status === 'FINISHED') {
+          const dbMatch = (matches as MatchRow[]).find(m => {
+            const homeMatch = fm.homeTeam?.tla && m.home_team_id === teamByCode.get(fm.homeTeam.tla.toUpperCase())
+            const awayMatch = fm.awayTeam?.tla && m.away_team_id === teamByCode.get(fm.awayTeam.tla.toUpperCase())
+            return homeMatch && awayMatch && m.status === 'finished' && typeof m.home_score === 'number'
+          })
+          if (dbMatch) {
+            skippedOptimization += 1
+            continue
+          }
+        }
+      }
+
       const homeCode = fm.homeTeam?.tla?.toUpperCase()
       const awayCode = fm.awayTeam?.tla?.toUpperCase()
       const homeName = fm.homeTeam?.name
@@ -640,6 +673,7 @@ export async function GET(request: NextRequest) {
       })
       .eq('id', 1)
 
+    console.log(`[Sync] Procesados ${updated + skipped} partidos activos. ${skippedOptimization} partidos futuros/finalizados ignorados para ahorrar recursos`)
     console.log(`[Sync Scan] Completado: ${updated} actualizaciones, ${skipped} sin cambios`)
 
     return NextResponse.json({

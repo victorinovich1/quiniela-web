@@ -93,18 +93,18 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
             {dataError ? 'No se pudieron cargar los datos' : 'Aún no hay jugadas registradas'}
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto scrollbar-hide">
             <div className="min-w-[700px]">
               <div className={`grid items-center gap-2 px-2 py-2 label-up border-b border-white/10`}
                 style={{
                   gridTemplateColumns: `36px 1fr 40px 40px 60px 60px 70px ${recentMatches.map(() => '72px').join(' ')}`
                 }}>
                 <div>#</div>
-                <div>Quiniela</div>
-                <div className="text-center text-lg hidden sm:block" title="Exactos totales">🎯</div>
-                <div className="text-center text-lg hidden sm:block" title="Aciertos en eliminatorias">🔥</div>
-                <div className="text-right hidden sm:block">Partidos</div>
-                <div className="text-right hidden sm:block">Esp.</div>
+                <div className="min-w-[140px]">Quiniela</div>
+                <div className="text-center text-lg hidden md:table-cell" title="Exactos totales">🎯</div>
+                <div className="text-center text-lg hidden md:table-cell" title="Aciertos en eliminatorias">🔥</div>
+                <div className="text-right hidden md:table-cell">Partidos</div>
+                <div className="text-right hidden md:table-cell">Esp.</div>
                 <div className="text-right">Total</div>
                 {recentMatches.map((m) => {
                   const homeTeam = m?.home_team_id ? teamsById[m.home_team_id] : null
@@ -118,14 +118,14 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                   const hasScore = homeScore !== null && awayScore !== null
                   
                   return (
-                    <div key={m?.id ?? Math.random()} className="flex flex-col items-center gap-1">
+                    <div key={m?.id ?? Math.random()} className="flex flex-col items-center gap-1 min-w-[60px]">
                       <div className="flex items-center gap-0.5">
-                        {homeTeam && <Flag team={homeTeam} size={10} />}
+                        {homeTeam && <Flag team={homeTeam} size={8} className="md:w-[10px] md:h-[10px]" />}
                         <span className="text-[8px] text-white/40">-</span>
-                        {awayTeam && <Flag team={awayTeam} size={10} />}
+                        {awayTeam && <Flag team={awayTeam} size={8} className="md:w-[10px] md:h-[10px]" />}
                       </div>
                       {hasScore && (
-                        <div className={`px-2 py-0.5 rounded text-sm font-black ${
+                        <div className={`px-1.5 py-0.5 md:px-2 rounded text-[11px] md:text-sm font-black ${
                           isLive 
                             ? 'bg-red-600 text-white animate-pulse' 
                             : isFinished
@@ -154,7 +154,7 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                       gridTemplateColumns: `36px 1fr 40px 40px 60px 60px 70px ${recentMatches.map(() => '72px').join(' ')}`
                     }}>
                     <div className={`text-base font-extrabold ${medal}`}>{idx + 1}</div>
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-3 min-w-[140px]">
                       {/* Avatar con bandera */}
                       <div className="relative flex-shrink-0">
                         <div className={`w-16 h-16 rounded-full overflow-hidden border-2 ${
@@ -192,10 +192,10 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                         </div>
                       </div>
                     </div>
-                    <div className="text-center text-white/60 text-base font-semibold hidden sm:block" title="Exactos totales">{row?.total_exact ?? 0}</div>
-                    <div className="text-center text-white/60 text-base font-semibold hidden sm:block" title="Aciertos en eliminatorias">{row?.ko_winner_count ?? 0}</div>
-                    <div className="text-right text-white/60 text-sm hidden sm:block">{row?.match_points ?? 0}</div>
-                    <div className="text-right text-white/60 text-sm hidden sm:block">{row?.special_points ?? 0}</div>
+                    <div className="text-center text-white/60 text-base font-semibold hidden md:table-cell" title="Exactos totales">{row?.total_exact ?? 0}</div>
+                    <div className="text-center text-white/60 text-base font-semibold hidden md:table-cell" title="Aciertos en eliminatorias">{row?.ko_winner_count ?? 0}</div>
+                    <div className="text-right text-white/60 text-sm hidden md:table-cell">{row?.match_points ?? 0}</div>
+                    <div className="text-right text-white/60 text-sm hidden md:table-cell">{row?.special_points ?? 0}</div>
                     <div className="text-right font-extrabold text-white text-base sm:text-lg">{row?.total_points ?? 0}</div>
                     {recentMatches.map((m) => {
                       const pred = row?.entry_id && m?.id ? predsByEntry[row.entry_id]?.[m.id] : null
@@ -220,9 +220,9 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                       }
                       
                       return (
-                        <div key={m?.id ?? Math.random()} className="flex justify-center">
+                        <div key={m?.id ?? Math.random()} className="flex justify-center min-w-[60px]">
                           {hasPred ? (
-                            <div className={`px-3 py-1 rounded-lg text-base font-bold bg-white/10 border ${
+                            <div className={`px-1.5 py-0.5 md:px-3 md:py-1 rounded-lg text-xs md:text-base font-bold bg-white/10 border ${
                               hasPoints
                                 ? 'border-fifaGreen text-fifaGreen'
                                 : isFinished

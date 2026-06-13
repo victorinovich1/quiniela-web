@@ -177,7 +177,8 @@ export async function GET(request: NextRequest) {
       .eq('id', 1)
       .single()
 
-    if (!settings?.api_sync_enabled) {
+    if (!settings?.api_sync_enabled && !fullScan) {
+      console.log('[Sync Aborted] Sincronización desactivada por el Admin.')
       return NextResponse.json({
         ok: true,
         message: 'Sincronización deshabilitada por configuración',
@@ -188,7 +189,7 @@ export async function GET(request: NextRequest) {
     // Validar intervalo: solo sincronizar si ha pasado el tiempo configurado
     // Margen de tolerancia de 30 segundos para evitar perder ciclos de Vercel Cron
     const intervalMinutes = settings.sync_interval_minutes || 10
-    if (settings.last_sync_at) {
+    if (!fullScan && settings.last_sync_at) {
       const lastSync = new Date(settings.last_sync_at).getTime()
       const now = Date.now()
       const elapsedMinutes = (now - lastSync) / (1000 * 60)
@@ -413,12 +414,47 @@ export async function GET(request: NextRequest) {
     const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
 
     for (const fm of externalMatches) {
+      const homeCode = fm.homeTeam?.tla?.toUpperCase()
+      const awayCode = fm.awayTeam?.tla?.toUpperCase()
+      const homeName = fm.homeTeam?.name
+      const awayName = fm.awayTeam?.name
+
       // FILTRO DE OPTIMIZACIÓN: Ignorar partidos fuera de la ventana de interés
       if (!fullScan && fm.utcDate) {
         const matchDate = new Date(fm.utcDate)
+
+        let candidateMatch: MatchRow | undefined
+        if (homeCode && awayCode) {
+          const candidateHomeId = teamByCode.get(homeCode)
+          const candidateAwayId = teamByCode.get(awayCode)
+          if (candidateHomeId && candidateAwayId) {
+            candidateMatch =
+              matchByTeams.get(`${candidateHomeId}-${candidateAwayId}`) ||
+              matchByTeams.get(`${candidateAwayId}-${candidateHomeId}`)
+          }
+        }
+        if (!candidateMatch && fm.utcDate && fm.stage) {
+          const dbPhase = mapPhaseApiToDB(fm.stage)
+          if (dbPhase) {
+            for (const [key, m] of matchByDatePhase) {
+              const parts = key.split('|||')
+              if (parts.length !== 2) continue
+              const [phase, dateStr] = parts
+              if (phase !== dbPhase) continue
+              const dbDate = new Date(dateStr)
+              const diffMinutes = Math.abs(matchDate.getTime() - dbDate.getTime()) / (1000 * 60)
+              if (diffMinutes <= 120) {
+                candidateMatch = m
+                break
+              }
+            }
+          }
+        }
+        const candidateLabel = candidateMatch ? `M${candidateMatch.match_number}` : `API#${fm.id}`
         
         // Ignorar partidos que inician en más de 24 horas
         if (matchDate > twentyFourHoursFromNow) {
+          console.log(`[Skip] ${candidateLabel}: Muy lejos en el futuro (>24h).`)
           skippedOptimization += 1
           continue
         }
@@ -426,21 +462,17 @@ export async function GET(request: NextRequest) {
         // Ignorar partidos ya finalizados con marcador válido en nuestra BD
         if (fm.status === 'FINISHED') {
           const dbMatch = (matches as MatchRow[]).find(m => {
-            const homeMatch = fm.homeTeam?.tla && m.home_team_id === teamByCode.get(fm.homeTeam.tla.toUpperCase())
-            const awayMatch = fm.awayTeam?.tla && m.away_team_id === teamByCode.get(fm.awayTeam.tla.toUpperCase())
-            return homeMatch && awayMatch && m.status === 'finished' && typeof m.home_score === 'number'
+            const homeMatch = homeCode && m.home_team_id === teamByCode.get(homeCode)
+            const awayMatch = awayCode && m.away_team_id === teamByCode.get(awayCode)
+            return homeMatch && awayMatch && m.status === 'finished' && typeof m.home_score === 'number' && typeof m.away_score === 'number'
           })
           if (dbMatch) {
+            console.log(`[Skip] M${dbMatch.match_number}: Partido ya finalizado.`)
             skippedOptimization += 1
             continue
           }
         }
       }
-
-      const homeCode = fm.homeTeam?.tla?.toUpperCase()
-      const awayCode = fm.awayTeam?.tla?.toUpperCase()
-      const homeName = fm.homeTeam?.name
-      const awayName = fm.awayTeam?.name
       
       // MAPEO HÍBRIDO
       let mapped: MatchRow | undefined
@@ -543,6 +575,7 @@ export async function GET(request: NextRequest) {
 
       // No actualizar si el Admin fijó el resultado manualmente
       if (mapped.manual_override) {
+        console.log(`[Skip] M${mapped.match_number}: Manual Override activo (Fijado por Admin).`)
         skipped += 1
         continue
       }

@@ -1030,7 +1030,7 @@ function SettingsTab({ initialSettings, teams }: { initialSettings: Settings | n
     setSyncError(null)
     const supabase = createClient()
     try {
-      const res = await fetch('/api/admin/sync-results', { method: 'POST' })
+      const res = await fetch('/api/admin/sync-results?full_scan=true', { method: 'POST' })
       
       // Verificar res.ok ANTES de parsear JSON para evitar 'Unexpected token <'
       if (!res.ok) {

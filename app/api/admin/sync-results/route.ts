@@ -5,6 +5,8 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   const supabase = createClient()
+  const { searchParams } = new URL(request.url)
+  const fullScan = searchParams.get('full_scan') === 'true'
   
   // Verificar que el usuario es admin
   const { data: { user }, error: authErr } = await supabase.auth.getUser()
@@ -43,7 +45,11 @@ export async function POST(request: NextRequest) {
       headers['x-vercel-protection-bypass'] = vercelBypass
     }
 
-    const res = await fetch(`${baseUrl}/api/cron/sync-results`, {
+    const cronUrl = fullScan
+      ? `${baseUrl}/api/cron/sync-results?full_scan=true`
+      : `${baseUrl}/api/cron/sync-results`
+
+    const res = await fetch(cronUrl, {
       method: 'GET',
       headers,
       cache: 'no-store',

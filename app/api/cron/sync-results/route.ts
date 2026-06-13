@@ -186,6 +186,13 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    if (!settings) {
+      return NextResponse.json({
+        ok: false,
+        error: 'No se pudo cargar la configuración',
+      }, { status: 500 })
+    }
+
     // Validar intervalo: solo sincronizar si ha pasado el tiempo configurado
     // Margen de tolerancia de 30 segundos para evitar perder ciclos de Vercel Cron
     const intervalMinutes = settings.sync_interval_minutes || 10

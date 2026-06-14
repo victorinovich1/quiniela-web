@@ -229,6 +229,28 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // HIBERNACIÓN INTELIGENTE: Ahorro extremo de CPU cuando no hay partidos relevantes
+    if (!fullScan) {
+      const now = new Date()
+      const twelveHoursFromNow = new Date(now.getTime() + 12 * 60 * 60 * 1000)
+      
+      const hasLiveMatches = (matches as MatchRow[]).some(m => m.status === 'live')
+      const hasUpcomingMatches = (matches as MatchRow[]).some(m => {
+        if (!m.kickoff_at) return false
+        const kickoff = new Date(m.kickoff_at)
+        return kickoff >= now && kickoff <= twelveHoursFromNow
+      })
+      
+      if (!hasLiveMatches && !hasUpcomingMatches) {
+        console.log('[Hibernación] Modo ahorro: No hay partidos en vivo ni en las próximas 12h')
+        return NextResponse.json({
+          ok: true,
+          message: 'Modo ahorro: No hay partidos hoy',
+          updated: 0,
+        })
+      }
+    }
+
   const teamByCode = new Map<string, number>()
   for (const t of teams as TeamRow[]) {
     teamByCode.set(t.code.toUpperCase(), t.id)
@@ -418,7 +440,8 @@ export async function GET(request: NextRequest) {
 
     // Ventana de optimización: solo procesar partidos relevantes si no es full_scan
     const now = new Date()
-    const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+    const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000)
+    const twelveHoursFromNow = new Date(now.getTime() + 12 * 60 * 60 * 1000)
 
     for (const fm of externalMatches) {
       const homeCode = fm.homeTeam?.tla?.toUpperCase()
@@ -426,7 +449,7 @@ export async function GET(request: NextRequest) {
       const homeName = fm.homeTeam?.name
       const awayName = fm.awayTeam?.name
 
-      // FILTRO DE OPTIMIZACIÓN: Ignorar partidos fuera de la ventana de interés
+      // FILTRO DE VENTANA: Solo procesar partidos -3h a +12h
       if (!fullScan && fm.utcDate) {
         const matchDate = new Date(fm.utcDate)
 
@@ -459,9 +482,8 @@ export async function GET(request: NextRequest) {
         }
         const candidateLabel = candidateMatch ? `M${candidateMatch.match_number}` : `API#${fm.id}`
         
-        // Ignorar partidos que inician en más de 24 horas
-        if (matchDate > twentyFourHoursFromNow) {
-          console.log(`[Skip] ${candidateLabel}: Muy lejos en el futuro (>24h).`)
+        // Ignorar partidos fuera de ventana -3h a +12h
+        if (matchDate < threeHoursAgo || matchDate > twelveHoursFromNow) {
           skippedOptimization += 1
           continue
         }

@@ -7,6 +7,13 @@ import Flag from '@/components/Flag'
 import { PHASE_LABELS, type Phase, type Team } from '@/lib/types'
 import { getMatchStatus, getMatchScores } from '@/lib/utils'
 
+interface SpecialPrediction {
+  champion_team_id: number | null
+  runner_up_team_id: number | null
+  third_team_id: number | null
+  fourth_team_id: number | null
+}
+
 interface MatchWithScore {
   id: number
   phase: Phase
@@ -44,13 +51,21 @@ type Filter = 'all' | 'hits' | 'misses'
 
 export default function SummaryClient({
   entryAlias,
+  ownerName,
+  isOwner,
   matches,
   teams,
+  specialPredictions,
+  showSpecialPredictions,
   stats,
 }: {
   entryAlias: string
+  ownerName: string
+  isOwner: boolean
   matches: MatchWithScore[]
   teams: Team[]
+  specialPredictions: SpecialPrediction | null
+  showSpecialPredictions: boolean
   stats: SummaryStats
 }) {
   const router = useRouter()
@@ -105,11 +120,17 @@ export default function SummaryClient({
           Volver a Mis Quinielas
         </Link>
         <h1 className="text-3xl font-black uppercase tracking-tight text-white mb-2">
-          Resumen Detallado
+          {isOwner ? 'Resumen Detallado' : 'Expediente de Juego'}
         </h1>
         <p className="text-white/60 text-sm">
-          <span className="label-up">Quiniela:</span>{' '}
-          <span className="text-white font-bold uppercase">{entryAlias}</span>
+          <span className="label-up">{isOwner ? 'Quiniela' : 'Jugador'}:</span>{' '}
+          <span className="text-white font-bold uppercase">{isOwner ? entryAlias : ownerName}</span>
+          {!isOwner && (
+            <>
+              {' · '}
+              <span className="text-white/80">Jugada: {entryAlias}</span>
+            </>
+          )}
         </p>
       </div>
 
@@ -149,6 +170,44 @@ export default function SummaryClient({
           <div className="text-[10px] font-bold uppercase tracking-wider text-white/40">
             Posición
           </div>
+        </div>
+      </div>
+
+      {/* Sección de Podio */}
+      {showSpecialPredictions && specialPredictions && (
+        <div className="card p-5 mb-6">
+          <h2 className="text-lg font-black uppercase tracking-tight text-white mb-4">
+            🏆 Podio Pronosticado
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {[
+              { label: '🥇 Campeón', teamId: specialPredictions.champion_team_id },
+              { label: '🥈 Subcampeón', teamId: specialPredictions.runner_up_team_id },
+              { label: '🥉 Tercer Lugar', teamId: specialPredictions.third_team_id },
+              { label: '4° Lugar', teamId: specialPredictions.fourth_team_id },
+            ].map((item, idx) => {
+              const team = teams.find(t => t.id === item.teamId)
+              return (
+                <div key={idx} className="bg-white/5 rounded-lg p-3 text-center">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-white/60 mb-2">
+                    {item.label}
+                  </div>
+                  {team ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <Flag team={team} size={24} />
+                      <div className="text-xs font-bold text-white">{team.name}</div>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-white/40">Sin elegir</div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* </div>
         </div>
       </div>
 
@@ -254,19 +313,30 @@ export default function SummaryClient({
                       {/* Pronóstico vs Resultado */}
                       <div className="text-center">
                         <div className="text-[10px] font-bold uppercase tracking-wider text-white/40 mb-1">
-                          Mi Pronóstico
+                          {isOwner ? 'Mi Pronóstico' : 'Su Pronóstico'}
                         </div>
-                        <div className={`text-sm font-mono font-bold ${
-                          hasPrediction ? 'text-white' : 'text-white/20'
-                        }`}>
-                          {hasPrediction
-                            ? formatScore(m.prediction!.home_score, m.prediction!.away_score)
-                            : '- : -'}
-                        </div>
-                        {m.prediction?.ko_winner_team_id && m.prediction.home_score === m.prediction.away_score && (
-                          <div className="text-[9px] text-yellow-400 mt-1">
-                            Penales: {teams.find(t => t.id === m.prediction!.ko_winner_team_id)?.name}
+                        {!isOwner && status === 'scheduled' ? (
+                          <div className="flex flex-col items-center gap-1">
+                            <div className="text-2xl">🔒</div>
+                            <div className="text-[9px] text-white/40 text-center max-w-[100px]">
+                              Privado hasta el inicio
+                            </div>
                           </div>
+                        ) : (
+                          <>
+                            <div className={`text-sm font-mono font-bold ${
+                              hasPrediction ? 'text-white' : 'text-white/20'
+                            }`}>
+                              {hasPrediction
+                                ? formatScore(m.prediction!.home_score, m.prediction!.away_score)
+                                : '- : -'}
+                            </div>
+                            {m.prediction?.ko_winner_team_id && m.prediction.home_score === m.prediction.away_score && (
+                              <div className="text-[9px] text-yellow-400 mt-1">
+                                Penales: {teams.find(t => t.id === m.prediction!.ko_winner_team_id)?.name}
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
 

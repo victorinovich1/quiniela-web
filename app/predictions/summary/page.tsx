@@ -4,6 +4,7 @@ import SummaryClient from './SummaryClient'
 import type { Match, Team, Prediction, MatchScore } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 interface MatchWithScore extends Match {
   prediction: Prediction | null
@@ -35,23 +36,30 @@ export default async function SummaryPage({
     .eq('id', entryId)
     .single()
 
-  if (!entry || entry.user_id !== user.id) {
+  if (!entry) {
     redirect('/entries')
   }
 
-  // Consultar matches, predictions, scores y teams en paralelo
+  // Determinar si es el dueño de la entry
+  const isOwner = entry.user_id === user.id
+
+  // Consultar matches, predictions, scores, teams y special_predictions en paralelo
   const [
     { data: matches },
     { data: predictions },
     { data: matchScores },
     { data: teams },
     { data: leaderboardData },
+    { data: specialPredictions },
+    { data: settings },
   ] = await Promise.all([
     supabase.from('matches').select('*').order('match_number'),
     supabase.from('predictions').select('*').eq('entry_id', entryId),
     supabase.from('match_scores').select('*').eq('entry_id', entryId),
     supabase.from('teams').select('*'),
     supabase.from('leaderboard').select('*').eq('entry_id', entryId).single(),
+    supabase.from('special_predictions').select('*').eq('entry_id', entryId).single(),
+    supabase.from('settings').select('lock_at').eq('id', 1).single(),
   ])
 
   // Crear maps para lookups rápidos
@@ -87,11 +95,29 @@ export default async function SummaryPage({
 
   const rank = leaderboardData?.rank || 0
 
+  // Obtener nombre del dueño si no soy yo
+  let ownerName = entry.alias
+  if (!isOwner) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('display_name')
+      .eq('id', entry.user_id)
+      .single()
+    ownerName = profile?.display_name || entry.alias
+  }
+
+  // Determinar si se puede mostrar special predictions
+  const mundialStarted = settings?.lock_at ? new Date(settings.lock_at) < new Date() : false
+
   return (
     <SummaryClient
       entryAlias={entry.alias}
+      ownerName={ownerName}
+      isOwner={isOwner}
       matches={matchesWithData}
       teams={teams || []}
+      specialPredictions={specialPredictions}
+      showSpecialPredictions={mundialStarted}
       stats={{
         totalPoints,
         exactMatches,

@@ -182,7 +182,12 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-xs sm:text-sm font-bold text-white uppercase tracking-tight truncate">{row?.alias ?? 'Sin nombre'}</span>
+                          <a 
+                            href={`/predictions/summary?entry=${row?.entry_id}`}
+                            className="text-xs sm:text-sm font-bold text-white uppercase tracking-tight truncate hover:text-fifaGreen transition-colors cursor-pointer"
+                          >
+                            {row?.alias ?? 'Sin nombre'}
+                          </a>
                           {isMe && <span className="badge bg-gold text-navy-deepest">Tú</span>}
                           {!row?.paid && <span className="badge bg-danger/30 text-danger">Sin pagar</span>}
                         </div>

@@ -45,6 +45,9 @@ export default function ProfileClient({
   // Modal de avatares
   const [showAvatarModal, setShowAvatarModal] = useState(false)
   
+  // Debugging: mostrar stats actuales
+  console.log('Stats del usuario:', { totalPoints, exactCount })
+  
   // Lógica de desbloqueo de niveles
   const unlockSpecial = (totalPoints >= (settings?.req_pts_special ?? 30)) || (exactCount >= (settings?.req_exact_special ?? 3))
   const unlockPremium = (totalPoints >= (settings?.req_pts_premium ?? 70)) || (exactCount >= (settings?.req_exact_premium ?? 7))

@@ -28,7 +28,7 @@ export default async function ProfilePage() {
   // Obtener stats del usuario desde leaderboard
   const { data: userStats } = await supabase
     .from('leaderboard')
-    .select('total_points, exact_count')
+    .select('total_points, total_exact')
     .eq('user_id', user.id)
     .maybeSingle()
 
@@ -38,7 +38,7 @@ export default async function ProfilePage() {
       profile={profile} 
       settings={settings}
       totalPoints={userStats?.total_points ?? 0}
-      exactCount={userStats?.exact_count ?? 0}
+      exactCount={userStats?.total_exact ?? 0}
     />
   )
 }

@@ -44,6 +44,7 @@ export default function ProfileClient({
   
   // Modal de avatares
   const [showAvatarModal, setShowAvatarModal] = useState(false)
+  const [savingAvatar, setSavingAvatar] = useState(false)
   
   // Debugging: mostrar stats actuales
   console.log('Stats del usuario:', { totalPoints, exactCount })
@@ -317,10 +318,37 @@ export default function ProfileClient({
     }
   }
 
-  function handleSelectAvatar(id: number, category: string) {
+  async function handleSelectAvatar(id: number, category: string) {
+    setSavingAvatar(true)
+    setProfileMsg(null)
+    
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('profiles')
+      .update({ 
+        avatar_perm_id: id, 
+        avatar_category: category 
+      })
+      .eq('id', user.id)
+    
+    setSavingAvatar(false)
+    
+    if (error) {
+      if (error.code === '23505') {
+        setProfileMsg({ type: 'error', text: '❌ Este personaje ya está ocupado' })
+      } else {
+        setProfileMsg({ type: 'error', text: `❌ Error: ${error.message}` })
+      }
+      setTimeout(() => setProfileMsg(null), 3000)
+      return
+    }
+    
+    // Éxito: actualizar estado local y cerrar modal
     setAvatarPermId(id)
     setAvatarCategory(category)
     setShowAvatarModal(false)
+    setProfileMsg({ type: 'success', text: '✅ Avatar actualizado' })
+    setTimeout(() => setProfileMsg(null), 3000)
   }
 
   const selectedCountry = COUNTRIES.find(c => c.code === countryCode)
@@ -345,9 +373,10 @@ export default function ProfileClient({
             <div className="flex flex-col items-center lg:items-start">
               <button
                 onClick={() => setShowAvatarModal(true)}
+                disabled={savingAvatar}
                 className={`group relative w-40 h-40 rounded-full overflow-hidden border-4 ${
                   avatarPermId ? 'border-fifaGreen shadow-lg shadow-fifaGreen/30' : 'border-white/20'
-                } bg-white/10 mb-3 cursor-pointer transition-all hover:scale-105`}
+                } bg-white/10 mb-3 cursor-pointer transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 <img
                   src={
@@ -361,12 +390,19 @@ export default function ProfileClient({
                     (e.target as HTMLImageElement).src = AVATAR_PATHS.default
                   }}
                 />
-                {/* Overlay con icono */}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
+                {/* Overlay con icono o spinner */}
+                <div className={`absolute inset-0 bg-black/50 ${savingAvatar ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity flex items-center justify-center`}>
+                  {savingAvatar ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="animate-spin rounded-full h-10 w-10 border-4 border-white/30 border-t-white"></div>
+                      <span className="text-xs text-white font-medium">Guardando...</span>
+                    </div>
+                  ) : (
+                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  )}
                 </div>
               </button>
             </div>
@@ -792,12 +828,35 @@ export default function ProfileClient({
 
             {/* Opción para quitar avatar */}
             <button
-              onClick={() => {
+              onClick={async () => {
+                setSavingAvatar(true)
+                setProfileMsg(null)
+                
+                const supabase = createClient()
+                const { error } = await supabase
+                  .from('profiles')
+                  .update({ 
+                    avatar_perm_id: null, 
+                    avatar_category: 'permanentes' 
+                  })
+                  .eq('id', user.id)
+                
+                setSavingAvatar(false)
+                
+                if (error) {
+                  setProfileMsg({ type: 'error', text: `❌ Error: ${error.message}` })
+                  setTimeout(() => setProfileMsg(null), 3000)
+                  return
+                }
+                
                 setAvatarPermId(null)
                 setAvatarCategory('permanentes')
                 setShowAvatarModal(false)
+                setProfileMsg({ type: 'success', text: '✅ Avatar eliminado' })
+                setTimeout(() => setProfileMsg(null), 3000)
               }}
-              className="w-full mb-6 p-4 bg-white/5 hover:bg-white/10 border-2 border-dashed border-white/20 hover:border-white/40 rounded-lg transition-all flex items-center justify-center gap-3 text-white/70 hover:text-white"
+              disabled={savingAvatar}
+              className="w-full mb-6 p-4 bg-white/5 hover:bg-white/10 border-2 border-dashed border-white/20 hover:border-white/40 rounded-lg transition-all flex items-center justify-center gap-3 text-white/70 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

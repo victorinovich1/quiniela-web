@@ -16,9 +16,9 @@ export default function BottomNav({
 
   const items = [
     { href: '/predictions', label: 'Pronósticos', icon: PredIcon },
+    { href: '/tournament', label: 'Mundial', icon: StatsIcon },
     { href: '/leaderboard', label: 'Ranking', icon: TrophyIcon },
-    { href: '/entries', label: 'Mis quinielas', icon: GridIcon },
-    { href: '/rules', label: 'Reglas', icon: BookIcon },
+    { href: '/entries', label: 'Quinielas', icon: GridIcon },
     { href: '/profile', label: 'Perfil', icon: UserIcon },
   ]
   if (isAdmin) items.push({ href: '/admin', label: 'Admin', icon: GearIcon })
@@ -65,6 +65,16 @@ function TrophyIcon({ active }: { active: boolean }) {
       <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
       <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
       <path d="M18 2H6v7a6 6 0 0012 0V2z" />
+    </svg>
+  )
+}
+
+function StatsIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 16v-4" />
+      <path d="M12 8h.01" />
     </svg>
   )
 }

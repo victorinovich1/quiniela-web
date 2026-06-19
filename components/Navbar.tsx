@@ -66,6 +66,7 @@ export default function Navbar({
           {isAuthed ? (
             <div className="hidden md:flex items-center gap-1">
               <Link href="/predictions" className={linkClass('/predictions')}>Pronósticos</Link>
+              <Link href="/tournament" className={linkClass('/tournament')}>Mundial</Link>
               <Link href="/leaderboard" className={linkClass('/leaderboard')}>Ranking</Link>
               <Link href="/entries" className={linkClass('/entries')}>MIS QUINIELAS</Link>
               <Link href="/profile" className={linkClass('/profile')}>Perfil</Link>

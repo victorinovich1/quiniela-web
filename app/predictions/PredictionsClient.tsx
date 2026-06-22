@@ -124,7 +124,7 @@ export default function PredictionsClient({
     return m
   }, [teams])
 
-  // Próximos 4 partidos para Pronóstico Express
+  // Próximos 6 partidos para Pronóstico Express
   const expressMatches = useMemo(() => {
     return matches
       .filter((m) => 
@@ -138,7 +138,7 @@ export default function PredictionsClient({
         const tb = b.kickoff_at ? parseUTCDate(b.kickoff_at)?.getTime() ?? 0 : 0
         return ta - tb
       })
-      .slice(0, 4)
+      .slice(0, 6)
   }, [matches])
 
   // Calcular el kickoff más cercano de los partidos express

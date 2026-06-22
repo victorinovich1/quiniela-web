@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import TournamentClient from './TournamentClient'
-import type { Team } from '@/lib/types'
+import type { Team, Match } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -32,10 +32,12 @@ export default async function TournamentPage() {
     { data: standings },
     { data: bestThirds },
     { data: teams },
+    { data: matches },
   ] = await Promise.all([
     supabase.from('official_group_standings').select('*'),
     supabase.from('official_best_thirds').select('*'),
     supabase.from('teams').select('*'),
+    supabase.from('matches').select('*').eq('phase', 'group'),
   ])
 
   // Agrupar por grupo (A-L)
@@ -50,6 +52,7 @@ export default async function TournamentPage() {
       standingsByGroup={standingsByGroup}
       bestThirds={(bestThirds || []) as BestThird[]}
       teams={teams || []}
+      matches={(matches || []) as Match[]}
     />
   )
 }

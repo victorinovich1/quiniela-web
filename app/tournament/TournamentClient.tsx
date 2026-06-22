@@ -1,8 +1,9 @@
 'use client'
 
+import { useMemo } from 'react'
 import PageHeader from '@/components/PageHeader'
 import Flag from '@/components/Flag'
-import type { Team } from '@/lib/types'
+import type { Team, Match } from '@/lib/types'
 
 interface OfficialStanding {
   team_id: number
@@ -23,16 +24,73 @@ interface BestThird extends OfficialStanding {
   third_place_rank: number
 }
 
+/**
+ * Aplica enfrentamiento directo si dos equipos están empatados en pts, dg, gf
+ */
+function applyHeadToHead<T extends OfficialStanding>(
+  standings: T[],
+  matches: Match[]
+): T[] {
+  return [...standings].sort((a, b) => {
+    // 1. Puntos
+    if (a.pts !== b.pts) return b.pts - a.pts
+
+    // 2. Diferencia de goles
+    if (a.dg !== b.dg) return b.dg - a.dg
+
+    // 3. Goles a favor
+    if (a.gf !== b.gf) return b.gf - a.gf
+
+    // 4. Enfrentamiento directo
+    const h2h = matches.find(
+      (m) =>
+        m.group_code === a.group_code &&
+        ((m.home_team_id === a.team_id && m.away_team_id === b.team_id) ||
+          (m.home_team_id === b.team_id && m.away_team_id === a.team_id))
+    )
+
+    if (h2h && h2h.home_score !== null && h2h.away_score !== null) {
+      const aScore =
+        h2h.home_team_id === a.team_id ? h2h.home_score : h2h.away_score
+      const bScore =
+        h2h.home_team_id === b.team_id ? h2h.home_score : h2h.away_score
+
+      if (aScore > bScore) return -1
+      if (bScore > aScore) return 1
+    }
+
+    // 5. Alfabético
+    return a.team_name.localeCompare(b.team_name)
+  })
+}
+
 export default function TournamentClient({
   standingsByGroup,
   bestThirds,
   teams,
+  matches,
 }: {
   standingsByGroup: Record<string, OfficialStanding[]>
   bestThirds: BestThird[]
   teams: Team[]
+  matches: Match[]
 }) {
   const groupCodes = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']
+
+  // Aplicar h2h a cada grupo
+  const sortedStandingsByGroup = useMemo(() => {
+    const result: Record<string, OfficialStanding[]> = {}
+    const codes = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']
+    for (const code of codes) {
+      result[code] = applyHeadToHead(standingsByGroup[code] || [], matches)
+    }
+    return result
+  }, [standingsByGroup, matches])
+
+  // Aplicar h2h a best thirds
+  const sortedBestThirds = useMemo(() => {
+    return applyHeadToHead(bestThirds, matches)
+  }, [bestThirds, matches])
 
   return (
     <>
@@ -49,7 +107,7 @@ export default function TournamentClient({
             <svg className="w-4 h-4 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
-            DATOS OFICIALES FIFA
+            DATOS OFICIALES ortedSFIFA
           </div>
         </div>
 
@@ -97,7 +155,7 @@ export default function TournamentClient({
                 </tr>
               </thead>
               <tbody>
-                {bestThirds.map((t) => {
+                {sortedBestThirds.map((t) => {
                   const team = teams.find(tm => tm.id === t.team_id)
                   const isQualified = t.third_place_rank <= 8
                   const isEliminated = t.third_place_rank > 8

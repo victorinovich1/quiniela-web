@@ -731,33 +731,11 @@ export async function GET(request: NextRequest) {
       lastMatchNumber = Math.max(lastMatchNumber, mapped.match_number)
     }
 
-    // ACTUALIZAR last_known_rank: Guardar ranking actual en profiles
+    // ACTUALIZAR last_known_rank vía RPC
     if (updated > 0) {
-      // Obtener ranking actual post-actualización
-      const { data: currentLeaderboard } = await supabase
-        .from('leaderboard')
-        .select('entry_id, user_id, rank')
-        .order('rank', { ascending: true })
-      
-      if (currentLeaderboard && currentLeaderboard.length > 0) {
-        // Agrupar por user_id y tomar el mejor rank
-        const userBestRanks = new Map<string, number>()
-        for (const row of currentLeaderboard) {
-          const currentBest = userBestRanks.get(row.user_id)
-          if (!currentBest || row.rank < currentBest) {
-            userBestRanks.set(row.user_id, row.rank)
-          }
-        }
-        
-        // Actualizar cada usuario
-        for (const [userId, bestRank] of userBestRanks) {
-          await supabase
-            .from('profiles')
-            .update({ last_known_rank: bestRank })
-            .eq('id', userId)
-        }
-        
-        console.log(`[Snapshot] Actualizado last_known_rank para ${userBestRanks.size} usuarios`)
+      const { data: updatedCount, error: rpcErr } = await supabase.rpc('update_ranking_memory')
+      if (!rpcErr && updatedCount) {
+        console.log(`[Snapshot] Actualizado last_known_rank para ${updatedCount} usuarios`)
       }
     }
 

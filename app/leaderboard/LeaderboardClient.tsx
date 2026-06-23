@@ -155,11 +155,11 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                     }}>
                     <div className="flex items-center gap-1">
                       <span className={`text-base font-extrabold ${medal}`}>{idx + 1}</span>
-                      {row?.rank_movement && row.rank_movement !== 0 && row?.previous_rank && (
-                        <span className={`text-xs font-bold ${
+                      {row.previous_rank && row.rank_movement !== 0 && (
+                        <span className={`text-[10px] font-black ${
                           row.rank_movement > 0 ? 'text-green-400' : 'text-red-400'
                         }`} title={`${row.rank_movement > 0 ? 'Subió' : 'Bajó'} ${Math.abs(row.rank_movement)} posiciones`}>
-                          {row.rank_movement > 0 ? '↑' : '↓'}{Math.abs(row.rank_movement)}
+                          {row.rank_movement > 0 ? '▲' : '▼'}
                         </span>
                       )}
                     </div>

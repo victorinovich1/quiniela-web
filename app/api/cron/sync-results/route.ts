@@ -438,6 +438,12 @@ export async function GET(request: NextRequest) {
     let skippedOptimization = 0
     const sampleUnmapped: Array<{ home: string; away: string; status: string | null | undefined }> = []
 
+    // SNAPSHOT DE RANKING: Guardar posiciones actuales antes de actualizar
+    const { data: currentRanking } = await supabase
+      .from('leaderboard')
+      .select('entry_id, rank, total_points')
+      .order('rank', { ascending: true })
+
     // Ventana de optimización: solo procesar partidos relevantes si no es full_scan
     const now = new Date()
     const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000)
@@ -723,6 +729,24 @@ export async function GET(request: NextRequest) {
 
       updated += 1
       lastMatchNumber = Math.max(lastMatchNumber, mapped.match_number)
+    }
+
+    // GUARDAR SNAPSHOT: Solo si hubo cambios reales en resultados
+    if (updated > 0 && currentRanking && currentRanking.length > 0) {
+      const snapshotRows = currentRanking.map(r => ({
+        entry_id: r.entry_id,
+        rank: r.rank,
+        total_points: r.total_points,
+        snapshot_at: new Date().toISOString(),
+      }))
+
+      const { error: snapshotErr } = await supabase
+        .from('ranking_snapshots')
+        .insert(snapshotRows)
+
+      if (!snapshotErr) {
+        console.log(`[Snapshot] Guardadas ${snapshotRows.length} posiciones del ranking`)
+      }
     }
 
     // Actualizar timestamp y estado de última sincronización exitosa

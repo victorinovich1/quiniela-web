@@ -154,6 +154,8 @@ export interface LeaderboardRow {
   correct_champion: number
   correct_runner_up: number
   rank: number
+  previous_rank: number | null
+  rank_movement: number
   display_avatar: string
 }
 

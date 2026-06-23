@@ -153,7 +153,16 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                     style={{
                       gridTemplateColumns: `36px 1fr 40px 40px 60px 60px 70px ${recentMatches.map(() => '72px').join(' ')}`
                     }}>
-                    <div className={`text-base font-extrabold ${medal}`}>{idx + 1}</div>
+                    <div className="flex items-center gap-1">
+                      <span className={`text-base font-extrabold ${medal}`}>{idx + 1}</span>
+                      {row?.rank_movement !== undefined && row.rank_movement !== 0 && (
+                        <span className={`text-xs font-bold ${
+                          row.rank_movement > 0 ? 'text-green-400' : 'text-red-400'
+                        }`} title={`${row.rank_movement > 0 ? 'Subió' : 'Bajó'} ${Math.abs(row.rank_movement)} posiciones`}>
+                          {row.rank_movement > 0 ? '↑' : '↓'}{Math.abs(row.rank_movement)}
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-3 min-w-[140px]">
                       {/* Avatar con bandera */}
                       <div className="relative flex-shrink-0">

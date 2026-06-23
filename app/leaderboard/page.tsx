@@ -24,7 +24,7 @@ export default async function LeaderboardPage() {
     // 1. Leaderboard principal
     const { data: leaderboardData, error: leaderboardError } = await supabase
       .from('leaderboard')
-      .select('entry_id, user_id, display_name, alias, paid, avatar_perm_id, country_code, match_points, special_points, total_points, total_exact, ko_winner_count, rank, previous_rank, rank_movement, display_avatar')
+      .select('entry_id, user_id, display_name, alias, paid, avatar_perm_id, avatar_category, country_code, match_points, special_points, total_points, total_exact, ko_winner_count, rank, previous_rank, rank_movement, display_avatar')
       .order('total_points', { ascending: false })
 
     if (leaderboardError) throw leaderboardError

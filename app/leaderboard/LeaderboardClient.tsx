@@ -19,6 +19,15 @@ interface Props {
 export default function LeaderboardClient({ user, rows, recentMatches, teams, predictions, dataError }: Props) {
   const [showTooltip, setShowTooltip] = useState(false)
 
+  // DEBUG: Ver qué datos llegan
+  console.log('[Leaderboard DEBUG] Total rows:', rows.length)
+  console.log('[Leaderboard DEBUG] Primeras 3 rows:', rows.slice(0, 3).map(r => ({
+    alias: r.alias,
+    rank: r.rank,
+    previous_rank: r.previous_rank,
+    rank_movement: r.rank_movement
+  })))
+
   const teamsById = teams.reduce((acc, t) => {
     if (t?.id) acc[t.id] = t
     return acc
@@ -155,7 +164,7 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                     }}>
                     <div className="flex items-center gap-1">
                       <span className={`text-base font-extrabold ${medal}`}>{idx + 1}</span>
-                      {row?.rank_movement !== undefined && row.rank_movement !== 0 && (
+                      {row.rank_movement !== 0 && row.previous_rank !== null && (
                         <span className={`text-xs font-bold ${
                           row.rank_movement > 0 ? 'text-green-400' : 'text-red-400'
                         }`} title={`${row.rank_movement > 0 ? 'Subió' : 'Bajó'} ${Math.abs(row.rank_movement)} posiciones`}>

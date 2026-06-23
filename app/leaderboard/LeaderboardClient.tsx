@@ -19,15 +19,6 @@ interface Props {
 export default function LeaderboardClient({ user, rows, recentMatches, teams, predictions, dataError }: Props) {
   const [showTooltip, setShowTooltip] = useState(false)
 
-  // DEBUG: Ver qué datos llegan
-  console.log('[Leaderboard DEBUG] Total rows:', rows.length)
-  console.log('[Leaderboard DEBUG] Primeras 3 rows:', rows.slice(0, 3).map(r => ({
-    alias: r.alias,
-    rank: r.rank,
-    previous_rank: r.previous_rank,
-    rank_movement: r.rank_movement
-  })))
-
   const teamsById = teams.reduce((acc, t) => {
     if (t?.id) acc[t.id] = t
     return acc

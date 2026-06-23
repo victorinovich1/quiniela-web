@@ -16,6 +16,7 @@ export interface Profile {
   country_code: string | null
   notifications_enabled: boolean
   notifications_sound: boolean
+  last_known_rank: number | null
 }
 
 export interface Notification {

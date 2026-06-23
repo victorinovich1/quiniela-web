@@ -731,21 +731,33 @@ export async function GET(request: NextRequest) {
       lastMatchNumber = Math.max(lastMatchNumber, mapped.match_number)
     }
 
-    // GUARDAR SNAPSHOT: Solo si hubo cambios reales en resultados
-    if (updated > 0 && currentRanking && currentRanking.length > 0) {
-      const snapshotRows = currentRanking.map(r => ({
-        entry_id: r.entry_id,
-        rank: r.rank,
-        total_points: r.total_points,
-        snapshot_at: new Date().toISOString(),
-      }))
-
-      const { error: snapshotErr } = await supabase
-        .from('ranking_snapshots')
-        .insert(snapshotRows)
-
-      if (!snapshotErr) {
-        console.log(`[Snapshot] Guardadas ${snapshotRows.length} posiciones del ranking`)
+    // ACTUALIZAR last_known_rank: Guardar ranking actual en profiles
+    if (updated > 0) {
+      // Obtener ranking actual post-actualización
+      const { data: currentLeaderboard } = await supabase
+        .from('leaderboard')
+        .select('entry_id, user_id, rank')
+        .order('rank', { ascending: true })
+      
+      if (currentLeaderboard && currentLeaderboard.length > 0) {
+        // Agrupar por user_id y tomar el mejor rank
+        const userBestRanks = new Map<string, number>()
+        for (const row of currentLeaderboard) {
+          const currentBest = userBestRanks.get(row.user_id)
+          if (!currentBest || row.rank < currentBest) {
+            userBestRanks.set(row.user_id, row.rank)
+          }
+        }
+        
+        // Actualizar cada usuario
+        for (const [userId, bestRank] of userBestRanks) {
+          await supabase
+            .from('profiles')
+            .update({ last_known_rank: bestRank })
+            .eq('id', userId)
+        }
+        
+        console.log(`[Snapshot] Actualizado last_known_rank para ${userBestRanks.size} usuarios`)
       }
     }
 

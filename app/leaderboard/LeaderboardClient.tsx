@@ -159,7 +159,7 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                         <span className={`text-[10px] font-black ${
                           row.rank_movement > 0 ? 'text-green-400' : 'text-red-400'
                         }`} title={`${row.rank_movement > 0 ? 'Subió' : 'Bajó'} ${Math.abs(row.rank_movement)} posiciones`}>
-                          {row.rank_movement > 0 ? '▲' : '▼'}
+                          {row.rank_movement > 0 ? '▲' : '▼'}{Math.abs(row.rank_movement)}
                         </span>
                       )}
                     </div>

@@ -690,22 +690,35 @@ function EliminatoriasTab({
   const phaseMatches = matches
     .filter((m) => m.phase === activePhase)
     .sort((a, b) => {
-      const aTime = a.kickoff_at ? new Date(a.kickoff_at).getTime() : 0
-      const bTime = b.kickoff_at ? new Date(b.kickoff_at).getTime() : 0
+      const aTime = a.kickoff_at ? new Date(a.kickoff_at).getTime() : Infinity
+      const bTime = b.kickoff_at ? new Date(b.kickoff_at).getTime() : Infinity
+      if (aTime === Infinity && bTime === Infinity) return a.match_number - b.match_number
       return aTime - bTime
     })
 
-  // Agrupar partidos por día
+  // Agrupar partidos por día (con timestamp para ordenar cronológicamente)
   const matchesByDay = phaseMatches.reduce((acc, m) => {
-    if (!m.kickoff_at) return acc
+    if (!m.kickoff_at) {
+      if (!acc['sin-fecha']) acc['sin-fecha'] = { matches: [], timestamp: Infinity }
+      acc['sin-fecha'].matches.push(m)
+      return acc
+    }
     const date = new Date(m.kickoff_at)
     const dateKey = date.toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit' })
-    if (!acc[dateKey]) acc[dateKey] = []
-    acc[dateKey].push(m)
+    if (!acc[dateKey]) {
+      acc[dateKey] = { 
+        matches: [], 
+        timestamp: new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime() 
+      }
+    }
+    acc[dateKey].matches.push(m)
     return acc
-  }, {} as Record<string, Match[]>)
+  }, {} as Record<string, { matches: Match[], timestamp: number }>)
 
-  const sortedDays = Object.keys(matchesByDay).sort()
+  // Ordenar días cronológicamente (no alfabéticamente)
+  const sortedDays = Object.entries(matchesByDay)
+    .sort(([, a], [, b]) => a.timestamp - b.timestamp)
+    .map(([key]) => key)
 
   const SHORT: Record<Phase, string> = {
     group: '', r32: '16avos', r16: 'Octavos', qf: 'Cuartos', sf: 'Semis', third: '3er', final: 'Final',
@@ -733,14 +746,15 @@ function EliminatoriasTab({
 
       <div className="space-y-6">
         {sortedDays.map((dateKey) => {
-          const dayMatches = matchesByDay[dateKey]
+          const dayData = matchesByDay[dateKey]
+          const dayMatches = dayData.matches
           const firstMatch = dayMatches[0]
           const kickoffDate = firstMatch.kickoff_at ? new Date(firstMatch.kickoff_at) : null
-          const dayLabel = kickoffDate ? kickoffDate.toLocaleDateString('es-ES', { 
-            weekday: 'long', 
-            day: 'numeric', 
-            month: 'long' 
-          }) : dateKey
+          const dayLabel = dateKey === 'sin-fecha' 
+            ? 'Por confirmar'
+            : kickoffDate 
+              ? kickoffDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+              : dateKey
           
           return (
             <div key={dateKey}>

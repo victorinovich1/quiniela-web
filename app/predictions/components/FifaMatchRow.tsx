@@ -66,8 +66,9 @@ export default function FifaMatchRow({
 
   const kickoff = match.kickoff_at ? parseUTCDate(match.kickoff_at) : null
   const timeStr = kickoff ? kickoff.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '--:--'
-  const tzShort = kickoff ? kickoff.toLocaleTimeString('es-ES', { timeZoneName: 'short' }).split(' ').pop() : ''
-  const dayStr = kickoff ? kickoff.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase() : ''
+  const dayNum = kickoff ? kickoff.toLocaleDateString('es-ES', { day: 'numeric' }) : ''
+  const monthShort = kickoff ? kickoff.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase() : ''
+  const weekday = kickoff ? kickoff.toLocaleDateString('es-ES', { weekday: 'short' }).toUpperCase() : ''
 
   const stadium = match.stadium || ''
   const stadiumParts = stadium.split(',').map((s) => s.trim())
@@ -76,22 +77,26 @@ export default function FifaMatchRow({
 
   return (
     <div className={`card p-3 ${matchLocked ? 'opacity-60' : ''}`}>
-      <div className="grid grid-cols-[60px_1fr_auto_1fr_1px] sm:grid-cols-[80px_1fr_auto_1fr_100px] items-center gap-2 sm:gap-3">
-        <div className="min-w-0">
+      <div className="grid grid-cols-[80px_1fr_auto_1fr_1px] sm:grid-cols-[90px_1fr_auto_1fr_100px] items-center gap-2 sm:gap-3">
+        <div className="flex flex-col items-center justify-center bg-white/5 rounded-lg px-2 py-1.5 sm:px-3 sm:py-2 border border-white/10 min-w-[75px] sm:min-w-[90px]">
           {!isMounted ? (
-            <div className="text-white/40 font-bold text-xs sm:text-base">••:••</div>
+            <div className="text-white/40 font-bold text-xs">••:••</div>
           ) : (
             <>
-              <div className="text-white font-extrabold text-xs sm:text-base leading-tight">
-                {isLockedByStatus ? (
-                  <span className="text-white/40 text-[10px] sm:text-xs uppercase tracking-wider">Cerrado</span>
-                ) : showLive ? (
-                  <span className="text-red-500 animate-pulse">EN VIVO</span>
-                ) : (
-                  timeStr
-                )}
-              </div>
-              <div className="text-[9px] sm:text-[10px] font-bold text-white/40 uppercase tracking-wider hidden sm:block">{tzShort} {dayStr && `· ${dayStr}`}</div>
+              {isLockedByStatus ? (
+                <span className="text-white/40 text-[10px] uppercase tracking-wider font-black">Cerrado</span>
+              ) : showLive ? (
+                <div className="flex flex-col items-center">
+                  <span className="text-red-500 animate-pulse font-black text-xs sm:text-sm">EN VIVO</span>
+                  <span className="text-[8px] text-red-400/70 font-bold uppercase tracking-wider">Live</span>
+                </div>
+              ) : (
+                <>
+                  <div className="text-fifaGreen font-black text-sm sm:text-base leading-none">{timeStr}</div>
+                  <div className="text-[8px] sm:text-[9px] font-bold text-white/50 uppercase tracking-wider mt-0.5">{weekday}</div>
+                  <div className="text-[7px] sm:text-[8px] font-extrabold text-white/30 uppercase tracking-wider">{dayNum} {monthShort}</div>
+                </>
+              )}
             </>
           )}
         </div>

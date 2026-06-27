@@ -695,6 +695,18 @@ function EliminatoriasTab({
       return aTime - bTime
     })
 
+  // Agrupar partidos por día
+  const matchesByDay = phaseMatches.reduce((acc, m) => {
+    if (!m.kickoff_at) return acc
+    const date = new Date(m.kickoff_at)
+    const dateKey = date.toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit' })
+    if (!acc[dateKey]) acc[dateKey] = []
+    acc[dateKey].push(m)
+    return acc
+  }, {} as Record<string, Match[]>)
+
+  const sortedDays = Object.keys(matchesByDay).sort()
+
   const SHORT: Record<Phase, string> = {
     group: '', r32: '16avos', r16: 'Octavos', qf: 'Cuartos', sf: 'Semis', third: '3er', final: 'Final',
   }
@@ -719,11 +731,36 @@ function EliminatoriasTab({
         <p className="label-up mt-1">{phaseMatches.length} {phaseMatches.length === 1 ? 'partido' : 'partidos'}</p>
       </div>
 
-      <div className="space-y-2">
-        {phaseMatches.map((m) => (
-          <FifaMatchRow key={m.id} match={m} preds={preds} setScore={setScore}
-            locked={locked} teamsById={teamsById} showKoWinner setKoWinner={setKoWinner} teamsForKo={teams} />
-        ))}
+      <div className="space-y-6">
+        {sortedDays.map((dateKey) => {
+          const dayMatches = matchesByDay[dateKey]
+          const firstMatch = dayMatches[0]
+          const kickoffDate = firstMatch.kickoff_at ? new Date(firstMatch.kickoff_at) : null
+          const dayLabel = kickoffDate ? kickoffDate.toLocaleDateString('es-ES', { 
+            weekday: 'long', 
+            day: 'numeric', 
+            month: 'long' 
+          }) : dateKey
+          
+          return (
+            <div key={dateKey}>
+              <div className="bg-fifaGreen/10 border-l-4 border-fifaGreen px-3 py-2 mb-3 rounded-r">
+                <h3 className="text-sm font-black uppercase tracking-wide text-fifaGreen">
+                  {dayLabel}
+                </h3>
+                <p className="text-[10px] text-white/50 font-bold uppercase tracking-wider mt-0.5">
+                  {dayMatches.length} {dayMatches.length === 1 ? 'partido' : 'partidos'}
+                </p>
+              </div>
+              <div className="space-y-2">
+                {dayMatches.map((m) => (
+                  <FifaMatchRow key={m.id} match={m} preds={preds} setScore={setScore}
+                    locked={locked} teamsById={teamsById} showKoWinner setKoWinner={setKoWinner} teamsForKo={teams} />
+                ))}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

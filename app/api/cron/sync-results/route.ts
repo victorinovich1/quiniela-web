@@ -438,16 +438,17 @@ export async function GET(request: NextRequest) {
     let skippedOptimization = 0
     const sampleUnmapped: Array<{ home: string; away: string; status: string | null | undefined }> = []
 
-    // SNAPSHOT DE RANKING: Guardar posiciones actuales antes de actualizar
-    const { data: currentRanking } = await supabase
-      .from('leaderboard')
-      .select('entry_id, rank, total_points')
-      .order('rank', { ascending: true })
-
     // Ventana de optimización: solo procesar partidos relevantes si no es full_scan
     const now = new Date()
     const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000)
     const twelveHoursFromNow = new Date(now.getTime() + 12 * 60 * 60 * 1000)
+
+    // SNAPSHOT CRÍTICO: Guardar ranking actual ANTES de actualizar marcadores
+    // Esto permite que las flechas de tendencia comparen el estado previo con el nuevo
+    const { data: snapshotCount, error: snapshotErr } = await supabase.rpc('update_ranking_memory')
+    if (!snapshotErr && snapshotCount !== null) {
+      console.log(`[Pre-Update Snapshot] Guardado ranking previo para ${snapshotCount} usuarios`)
+    }
 
     for (const fm of externalMatches) {
       const homeCode = fm.homeTeam?.tla?.toUpperCase()
@@ -729,14 +730,6 @@ export async function GET(request: NextRequest) {
 
       updated += 1
       lastMatchNumber = Math.max(lastMatchNumber, mapped.match_number)
-    }
-
-    // ACTUALIZAR last_known_rank vía RPC
-    if (updated > 0) {
-      const { data: updatedCount, error: rpcErr } = await supabase.rpc('update_ranking_memory')
-      if (!rpcErr && updatedCount) {
-        console.log(`[Snapshot] Actualizado last_known_rank para ${updatedCount} usuarios`)
-      }
     }
 
     // Actualizar timestamp y estado de última sincronización exitosa

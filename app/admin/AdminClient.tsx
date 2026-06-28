@@ -187,6 +187,10 @@ function MatchesTab({ initialMatches, teams, settings }: {
     setSavingId(m.id)
     setMsg(null)
     const supabase = createClient()
+    
+    // SNAPSHOT: Guardar ranking actual antes de modificar marcador
+    await supabase.rpc('update_ranking_memory')
+    
     const { error } = await supabase
       .from('matches')
       .update({

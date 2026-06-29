@@ -23,7 +23,15 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
   useEffect(() => {
     const koWinnerPreds = predictions.filter(p => p.ko_winner_team_id !== null)
     if (koWinnerPreds.length > 0) {
-      console.log('[Ranking] Pronósticos con ko_winner:', koWinnerPreds.length, koWinnerPreds.slice(0, 3))
+      console.log('[Ranking] Pronósticos con ko_winner:', koWinnerPreds.length)
+      console.log('[Ranking] Primeros 3 ejemplos:', koWinnerPreds.slice(0, 3).map(p => ({
+        entry_id: p.entry_id,
+        match_id: p.match_id,
+        score: `${p.home_score}-${p.away_score}`,
+        ko_winner_team_id: p.ko_winner_team_id
+      })))
+    } else {
+      console.log('[Ranking] ⚠️ No hay pronósticos con ko_winner_team_id')
     }
   }, [predictions])
 
@@ -279,9 +287,9 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                         }
                       }
                       
-                      // Determinar equipo ganador predicho para mostrar bandera
+                      // Determinar equipo ganador predicho para mostrar bandera (SIEMPRE en eliminatorias con empate)
                       const predTie = hasPred && pred.home_score === pred.away_score
-                      const koWinnerTeam = predTie && pred.ko_winner_team_id ? teamsById[pred.ko_winner_team_id] : null
+                      const koWinnerTeam = isKO && predTie && pred.ko_winner_team_id ? teamsById[pred.ko_winner_team_id] : null
                       
                       return (
                         <div key={m?.id ?? Math.random()} className="flex justify-center min-w-[60px]">

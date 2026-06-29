@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Info } from 'lucide-react'
 import Flag from '@/components/Flag'
 import type { LeaderboardRow, Match, Team, Prediction } from '@/lib/types'
@@ -18,6 +18,14 @@ interface Props {
 
 export default function LeaderboardClient({ user, rows, recentMatches, teams, predictions, dataError }: Props) {
   const [showTooltip, setShowTooltip] = useState(false)
+
+  // Log de depuración para verificar ko_winner_team_id
+  useEffect(() => {
+    const koWinnerPreds = predictions.filter(p => p.ko_winner_team_id !== null)
+    if (koWinnerPreds.length > 0) {
+      console.log('[Ranking] Pronósticos con ko_winner:', koWinnerPreds.length, koWinnerPreds.slice(0, 3))
+    }
+  }, [predictions])
 
   const teamsById = teams.reduce((acc, t) => {
     if (t?.id) acc[t.id] = t
@@ -271,20 +279,29 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                         }
                       }
                       
+                      // Determinar equipo ganador predicho para mostrar bandera
+                      const predTie = hasPred && pred.home_score === pred.away_score
+                      const koWinnerTeam = predTie && pred.ko_winner_team_id ? teamsById[pred.ko_winner_team_id] : null
+                      
                       return (
                         <div key={m?.id ?? Math.random()} className="flex justify-center min-w-[60px]">
                           {hasPred ? (
-                            <div 
-                              className={`px-1.5 py-0.5 md:px-3 md:py-1 rounded-lg text-xs md:text-base font-bold bg-white/10 border transition-all ${
-                                hasPoints
-                                  ? 'border-fifaGreen text-fifaGreen shadow-sm shadow-fifaGreen/20'
-                                  : isFinished
-                                  ? 'border-white/20 text-white/40'
-                                  : 'border-white/20 text-white/70'
-                              }`}
-                              title={hasPoints ? `✓ ${pointType}` : isFinished ? 'Sin puntos' : 'Pendiente'}
-                            >
-                              {pred.home_score}-{pred.away_score}
+                            <div className="flex flex-col items-center gap-0.5">
+                              <div 
+                                className={`px-1.5 py-0.5 md:px-3 md:py-1 rounded-lg text-xs md:text-base font-bold bg-white/10 border transition-all ${
+                                  hasPoints
+                                    ? 'border-fifaGreen text-fifaGreen shadow-sm shadow-fifaGreen/20'
+                                    : isFinished
+                                    ? 'border-white/20 text-white/40'
+                                    : 'border-white/20 text-white/70'
+                                }`}
+                                title={hasPoints ? `✓ ${pointType}` : isFinished ? 'Sin puntos' : 'Pendiente'}
+                              >
+                                {pred.home_score}-{pred.away_score}
+                              </div>
+                              {koWinnerTeam && (
+                                <Flag team={koWinnerTeam} size={10} className="opacity-80" />
+                              )}
                             </div>
                           ) : (
                             <div className="text-sm text-white/20">-/-</div>

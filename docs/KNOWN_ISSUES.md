@@ -46,6 +46,7 @@
 
 ## Completados (histórico)
 
+- [x] **Visualización de Bandera Ko_Winner en Ranking** (2026-06-29): Mini-bandera del equipo elegido para avanzar ahora aparece bajo el badge del pronóstico cuando el usuario predijo empate + ganador en penales. Mejora la transparencia visual en eliminatorias.
 - [x] **Transparencia de Puntos en Eliminatorias** (2026-06-29): Mejorada visualización de aciertos en el ranking. Badges de pronósticos ahora distinguen entre fase de grupos y eliminatorias, mostrando correctamente puntos por ganador en penales. Tooltips informativos ('Ganador por penales', 'Marcador exacto', etc.). Color verde FIFA consistente con sombra sutil.
 - [x] **Sistema de Avatares por Niveles** (2026-05-12): Sistema completo de gamificación con 4 categorías (Básicos, Especiales, Premium, Leyendas) y desbloqueo basado en desempeño. Incluye carrusel con navegación por flechas, scrollbar estilizado, y requisitos configurables desde Admin.
 - [x] **Optimización de Imágenes a WebP** (2026-05-12): Migración completa de todos los avatares (75 imágenes) y assets de landing page a formato WebP. Reducción de ~30-50% en tamaño de archivos sin pérdida perceptible de calidad.

@@ -34,7 +34,7 @@ export default async function LeaderboardPage() {
     const now = new Date().toISOString()
     const { data: recentMatchesData, error: recentError } = await supabase
       .from('matches')
-      .select('*')
+      .select('id, match_number, phase, home_team_id, away_team_id, home_score, away_score, shootout_winner_team_id, status, kickoff_at')
       .not('kickoff_at', 'is', null)
       .gte('kickoff_at', '2000-01-01')
       .or(`status.eq.live,status.eq.finished,and(status.eq.scheduled,kickoff_at.lte.${now})`)

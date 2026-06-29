@@ -1,5 +1,24 @@
 ﻿# Known issues / TODO
 
+## 🔴 CRÍTICO - Ranking Caído
+
+**Estado:** Migración 080 lista para aplicar (2026-06-29)
+
+**Problema:**
+- Vista `leaderboard` rota por falta de columna `last_known_rank` en `profiles`
+- Scoring injusto en eliminatorias: no premia empate + ganador correcto
+
+**Solución:** Aplicar `migrations/080_fix_knockout_scoring_logic.sql` en Supabase SQL Editor
+
+**Qué arregla:**
+1. Agrega `last_known_rank` a `profiles` para tracking de tendencias
+2. Recrea `match_scores` con lógica corregida de scoring KO
+3. Recrea `leaderboard` con columnas `previous_rank` y `rank_movement`
+4. Crea función `update_ranking_memory()` para snapshots automáticos
+5. Grants permisos a `service_role` y `authenticated`
+
+---
+
 ## Pendientes de funcionalidad
 
 ### Alta prioridad
@@ -27,6 +46,7 @@
 
 ## Completados (histórico)
 
+- [x] **Transparencia de Puntos en Eliminatorias** (2026-06-29): Mejorada visualización de aciertos en el ranking. Badges de pronósticos ahora distinguen entre fase de grupos y eliminatorias, mostrando correctamente puntos por ganador en penales. Tooltips informativos ('Ganador por penales', 'Marcador exacto', etc.). Color verde FIFA consistente con sombra sutil.
 - [x] **Sistema de Avatares por Niveles** (2026-05-12): Sistema completo de gamificación con 4 categorías (Básicos, Especiales, Premium, Leyendas) y desbloqueo basado en desempeño. Incluye carrusel con navegación por flechas, scrollbar estilizado, y requisitos configurables desde Admin.
 - [x] **Optimización de Imágenes a WebP** (2026-05-12): Migración completa de todos los avatares (75 imágenes) y assets de landing page a formato WebP. Reducción de ~30-50% en tamaño de archivos sin pérdida perceptible de calidad.
 - [x] **Estado Virtual de Partidos** (2026-05-12): Implementación de lógica de estado virtual donde partidos se marcan como "EN VIVO" exactamente a su `kickoff_at` sin depender de la API. Marcador 0-0 placeholder hasta que la API sincronice datos reales.

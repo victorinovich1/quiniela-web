@@ -220,29 +220,70 @@ export default function LeaderboardClient({ user, rows, recentMatches, teams, pr
                       const [homeScore, awayScore] = getMatchScores(m)
                       const isFinished = status === 'finished'
                       const hasMatchScore = homeScore !== null && awayScore !== null
+                      const isKO = m?.phase !== 'group'
                       
-                      // Calcular si el pronóstico acertó
+                      // Calcular si el pronóstico acertó y el tipo de acierto
                       let hasPoints = false
+                      let pointType = ''
+                      
                       if (hasPred && isFinished && hasMatchScore) {
-                        // Marcador exacto
                         const isExact = pred.home_score === homeScore && pred.away_score === awayScore
-                        // Ganador correcto (mismo signo)
-                        const predSign = Math.sign((pred.home_score ?? 0) - (pred.away_score ?? 0))
-                        const matchSign = Math.sign((homeScore ?? 0) - (awayScore ?? 0))
-                        const isWinnerCorrect = predSign === matchSign
-                        hasPoints = isExact || isWinnerCorrect
+                        
+                        if (isExact) {
+                          hasPoints = true
+                          pointType = 'Marcador exacto'
+                        } else if (isKO) {
+                          // En eliminatorias: verificar ganador (por goles o penales)
+                          const predTie = pred.home_score === pred.away_score
+                          const matchTie = homeScore === awayScore
+                          
+                          let predWinner: number | null = null
+                          let realWinner: number | null = null
+                          
+                          if (predTie && pred.ko_winner_team_id) {
+                            predWinner = pred.ko_winner_team_id
+                          } else if (pred.home_score! > pred.away_score!) {
+                            predWinner = m.home_team_id
+                          } else if (pred.home_score! < pred.away_score!) {
+                            predWinner = m.away_team_id
+                          }
+                          
+                          if (matchTie && m.shootout_winner_team_id) {
+                            realWinner = m.shootout_winner_team_id
+                          } else if (homeScore! > awayScore!) {
+                            realWinner = m.home_team_id
+                          } else if (homeScore! < awayScore!) {
+                            realWinner = m.away_team_id
+                          }
+                          
+                          if (predWinner && realWinner && predWinner === realWinner) {
+                            hasPoints = true
+                            pointType = matchTie ? 'Ganador por penales' : 'Ganador correcto'
+                          }
+                        } else {
+                          // Fase de grupos: ganador correcto por diferencia de goles
+                          const predSign = Math.sign((pred.home_score ?? 0) - (pred.away_score ?? 0))
+                          const matchSign = Math.sign((homeScore ?? 0) - (awayScore ?? 0))
+                          if (predSign === matchSign) {
+                            hasPoints = true
+                            pointType = matchSign === 0 ? 'Empate correcto' : 'Ganador correcto'
+                          }
+                        }
                       }
                       
                       return (
                         <div key={m?.id ?? Math.random()} className="flex justify-center min-w-[60px]">
                           {hasPred ? (
-                            <div className={`px-1.5 py-0.5 md:px-3 md:py-1 rounded-lg text-xs md:text-base font-bold bg-white/10 border ${
-                              hasPoints
-                                ? 'border-fifaGreen text-fifaGreen'
-                                : isFinished
-                                ? 'border-white/20 text-white/40'
-                                : 'border-white/20 text-white/70'
-                            }`}>
+                            <div 
+                              className={`px-1.5 py-0.5 md:px-3 md:py-1 rounded-lg text-xs md:text-base font-bold bg-white/10 border transition-all ${
+                                hasPoints
+                                  ? 'border-fifaGreen text-fifaGreen shadow-sm shadow-fifaGreen/20'
+                                  : isFinished
+                                  ? 'border-white/20 text-white/40'
+                                  : 'border-white/20 text-white/70'
+                              }`}
+                              title={hasPoints ? `✓ ${pointType}` : isFinished ? 'Sin puntos' : 'Pendiente'}
+                            >
                               {pred.home_score}-{pred.away_score}
                             </div>
                           ) : (

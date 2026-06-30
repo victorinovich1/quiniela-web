@@ -78,7 +78,7 @@ export default function TournamentClient({
   groupMatches: Match[]
   koMatches: Match[]
 }) {
-  const [activeTab, setActiveTab] = useState<'grupos' | 'bracket'>('grupos')
+  const [activeTab, setActiveTab] = useState<'grupos' | 'bracket'>('bracket')
   const groupCodes = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']
 
   // Aplicar h2h a cada grupo
@@ -108,16 +108,6 @@ export default function TournamentClient({
         {/* Tabs */}
         <div className="flex items-center justify-center gap-4 mb-6">
           <button
-            onClick={() => setActiveTab('grupos')}
-            className={`px-6 py-3 rounded-lg font-bold uppercase tracking-wider transition-all ${
-              activeTab === 'grupos'
-                ? 'bg-fifaGreen text-navy-deepest shadow-lg shadow-fifaGreen/30'
-                : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
-            }`}
-          >
-            Fase de Grupos
-          </button>
-          <button
             onClick={() => setActiveTab('bracket')}
             className={`px-6 py-3 rounded-lg font-bold uppercase tracking-wider transition-all ${
               activeTab === 'bracket'
@@ -126,6 +116,16 @@ export default function TournamentClient({
             }`}
           >
             🏆 Bracket Eliminatorias
+          </button>
+          <button
+            onClick={() => setActiveTab('grupos')}
+            className={`px-6 py-3 rounded-lg font-bold uppercase tracking-wider transition-all ${
+              activeTab === 'grupos'
+                ? 'bg-fifaGreen text-navy-deepest shadow-lg shadow-fifaGreen/30'
+                : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            Fase de Grupos
           </button>
         </div>
 

@@ -14,257 +14,168 @@ export default function KnockoutBracket({ matches, teams }: Props) {
     return acc
   }, {} as Record<number, Team>)
 
-  // Organizar partidos por fase
-  const r32Matches = matches.filter(m => m.phase === 'r32').sort((a, b) => a.match_number - b.match_number)
-  const r16Matches = matches.filter(m => m.phase === 'r16').sort((a, b) => a.match_number - b.match_number)
-  const qfMatches = matches.filter(m => m.phase === 'qf').sort((a, b) => a.match_number - b.match_number)
-  const sfMatches = matches.filter(m => m.phase === 'sf').sort((a, b) => a.match_number - b.match_number)
-  const finalMatch = matches.find(m => m.phase === 'final')
-  const thirdPlaceMatch = matches.find(m => m.phase === 'third')
+  // Mapeo de partidos por ID (estructura de llaves lógica, no orden numérico)
+  const matchesById = matches.reduce((acc, m) => {
+    acc[m.match_number] = m
+    return acc
+  }, {} as Record<number, Match>)
 
-  // Flujo correcto del bracket:
-  // LLAVE IZQUIERDA (SF 101): R32 [73-80] → R16 [89-92] → QF [97-98] → SF 101
-  // LLAVE DERECHA (SF 102): R32 [81-88] → R16 [93-96] → QF [99-100] → SF 102
+  // DISTRIBUCIÓN POR COLUMNAS (orden visual de arriba a abajo)
+  // Columna 1 - R32 Extremo Izquierdo
+  const col1Ids = [74, 77, 73, 75, 83, 84, 81, 82]
   
-  const r32Left = r32Matches.slice(0, 8)   // 73-80
-  const r32Right = r32Matches.slice(8, 16) // 81-88
+  // Columna 2 - R16 Interior Izquierdo
+  const col2Ids = [89, 90, 93, 94]
   
-  const r16Left = r16Matches.slice(0, 4)   // 89-92
-  const r16Right = r16Matches.slice(4, 8)  // 93-96
+  // Columna 3 - QF Cerca del Centro Izquierda
+  const col3Ids = [97, 98]
   
-  const qfLeft = qfMatches.slice(0, 2)     // 97-98
-  const qfRight = qfMatches.slice(2, 4)    // 99-100
+  // Columna 4 - CENTRO (SF1, Final, SF2, 3er lugar)
+  const col4Ids = [101, 104, 102, 103]
   
-  const sfLeft = sfMatches[0]   // 101
-  const sfRight = sfMatches[1]  // 102
+  // Columna 5 - QF Cerca del Centro Derecha
+  const col5Ids = [99, 100]
+  
+  // Columna 6 - R16 Interior Derecho
+  const col6Ids = [91, 92, 95, 96]
+  
+  // Columna 7 - R32 Extremo Derecho
+  const col7Ids = [76, 78, 79, 80, 86, 88, 85, 87]
+  
+  const finalMatch = matchesById[104]
+  const thirdPlaceMatch = matchesById[103]
 
   return (
     <div className="space-y-6">
-      {/* Bracket compacto simétrico */}
-      <div className="relative overflow-x-auto">
-        <div className="min-w-[1200px] max-w-full mx-auto py-6">
-          <div className="grid grid-cols-[repeat(5,auto)] gap-x-3 items-center justify-center">
+      {/* Bracket de 7 columnas con llaves simétricas */}
+      <div className="relative overflow-x-auto pb-4">
+        <div className="min-w-[1400px] max-w-full mx-auto py-6">
+          <div className="grid grid-cols-7 gap-x-4 items-center justify-center">
             
-            {/* COLUMNA 1: R32 + R16 IZQUIERDA */}
-            <div className="space-y-2">
-              <div className="text-[8px] uppercase tracking-wider text-fifaGreen/50 font-bold text-center mb-3 h-4">
+            {/* COLUMNA 1: R32 Extremo Izquierdo */}
+            <div className="flex flex-col justify-around space-y-3">
+              <div className="text-[9px] uppercase tracking-wider text-fifaGreen/50 font-bold text-center mb-2">
                 DIECISEISAVOS
               </div>
-              <div className="grid grid-cols-2 gap-x-3">
-                {/* R32 Izquierda - Agrupados por pares que alimentan cada R16 */}
-                <div className="space-y-1">
-                  {r32Left.map((m, idx) => (
-                    <div key={m.id} className={idx % 2 === 1 ? 'mb-4' : ''}>
-                      <MicroMatch match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
-                    </div>
-                  ))}
-                </div>
-                
-                {/* R16 Izquierda - Alineados con sus 2 partidos R32 */}
-                <div className="space-y-1 flex flex-col">
-                  <div className="text-[8px] uppercase tracking-wider text-fifaGreen/50 font-bold text-center mb-1 h-4">
-                    OCTAVOS
-                  </div>
-                  {r16Left.map((m, idx) => (
-                    <div key={m.id} className="flex items-center" style={{ marginTop: idx === 0 ? '0' : '3.25rem' }}>
-                      <MiniMatch match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {col1Ids.map(id => {
+                const m = matchesById[id]
+                if (!m) return null
+                return <MatchCard key={id} match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
+              })}
             </div>
 
-            {/* COLUMNA 2: QF IZQUIERDA */}
-            <div className="space-y-2">
-              <div className="text-[8px] uppercase tracking-wider text-fifaGreen/50 font-bold text-center mb-3 h-4">
+            {/* COLUMNA 2: R16 Interior Izquierdo */}
+            <div className="flex flex-col justify-around space-y-3">
+              <div className="text-[9px] uppercase tracking-wider text-fifaGreen/50 font-bold text-center mb-2">
+                OCTAVOS
+              </div>
+              {col2Ids.map(id => {
+                const m = matchesById[id]
+                if (!m) return null
+                return <MatchCard key={id} match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
+              })}
+            </div>
+
+            {/* COLUMNA 3: QF Cerca del Centro Izquierda */}
+            <div className="flex flex-col justify-around space-y-3">
+              <div className="text-[9px] uppercase tracking-wider text-fifaGreen/50 font-bold text-center mb-2">
                 CUARTOS
               </div>
-              <div className="flex flex-col space-y-1">
-                {qfLeft.map((m, idx) => (
-                  <div key={m.id} style={{ marginTop: idx === 0 ? '2rem' : '7rem' }}>
-                    <MiniMatch match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
-                  </div>
-                ))}
-              </div>
+              {col3Ids.map(id => {
+                const m = matchesById[id]
+                if (!m) return null
+                return <MatchCard key={id} match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
+              })}
             </div>
 
-            {/* COLUMNA 3: SEMIFINALES + FINAL (CENTRO) */}
-            <div className="space-y-4 px-4">
-              <div className="text-[9px] uppercase tracking-wider text-gold/70 font-black text-center mb-2 h-4">
-                🏆 FINAL
+            {/* COLUMNA 4: CENTRO (SF1 → Final → SF2 → 3er lugar) */}
+            <div className="flex flex-col justify-around space-y-4 px-2">
+              <div className="text-[10px] uppercase tracking-wider text-gold/70 font-black text-center mb-2">
+                🏆 FINAL 2026
               </div>
               
-              {/* Semifinal Izquierda */}
-              {sfLeft && (
-                <div className="mb-4" style={{ marginTop: '8rem' }}>
-                  <div className="text-[7px] uppercase tracking-wider text-fifaGreen/40 font-bold text-center mb-1">SF</div>
-                  <CompactMatch match={sfLeft} homeTeam={teamsById[sfLeft.home_team_id!]} awayTeam={teamsById[sfLeft.away_team_id!]} />
+              {/* Semifinal 1 */}
+              {matchesById[101] && (
+                <div>
+                  <div className="text-[8px] uppercase tracking-wider text-fifaGreen/40 font-bold text-center mb-1">SF1</div>
+                  <MatchCard match={matchesById[101]} homeTeam={teamsById[matchesById[101].home_team_id!]} awayTeam={teamsById[matchesById[101].away_team_id!]} />
                 </div>
               )}
 
-              {/* Final */}
+              {/* Gran Final - Destacada */}
               {finalMatch && (
-                <div className="relative my-6">
-                  <div className="absolute -inset-2 bg-gold/5 rounded-lg"></div>
+                <div className="relative my-4">
+                  <div className="absolute -inset-3 bg-gold/5 rounded-xl blur-sm"></div>
                   <FinalMatch match={finalMatch} homeTeam={teamsById[finalMatch.home_team_id!]} awayTeam={teamsById[finalMatch.away_team_id!]} />
                 </div>
               )}
 
-              {/* Semifinal Derecha */}
-              {sfRight && (
-                <div className="mt-4">
-                  <div className="text-[7px] uppercase tracking-wider text-fifaGreen/40 font-bold text-center mb-1">SF</div>
-                  <CompactMatch match={sfRight} homeTeam={teamsById[sfRight.home_team_id!]} awayTeam={teamsById[sfRight.away_team_id!]} />
+              {/* Semifinal 2 */}
+              {matchesById[102] && (
+                <div>
+                  <div className="text-[8px] uppercase tracking-wider text-fifaGreen/40 font-bold text-center mb-1">SF2</div>
+                  <MatchCard match={matchesById[102]} homeTeam={teamsById[matchesById[102].home_team_id!]} awayTeam={teamsById[matchesById[102].away_team_id!]} />
+                </div>
+              )}
+
+              {/* Tercer Lugar - Discreto */}
+              {thirdPlaceMatch && (
+                <div className="mt-6 opacity-70">
+                  <div className="text-[8px] uppercase tracking-wider text-yellow-500/50 font-bold text-center mb-1">🥉 3ER LUGAR</div>
+                  <MatchCard match={thirdPlaceMatch} homeTeam={teamsById[thirdPlaceMatch.home_team_id!]} awayTeam={teamsById[thirdPlaceMatch.away_team_id!]} />
                 </div>
               )}
             </div>
 
-            {/* COLUMNA 4: QF DERECHA */}
-            <div className="space-y-2">
-              <div className="text-[8px] uppercase tracking-wider text-fifaGreen/50 font-bold text-center mb-3 h-4">
+            {/* COLUMNA 5: QF Cerca del Centro Derecha */}
+            <div className="flex flex-col justify-around space-y-3">
+              <div className="text-[9px] uppercase tracking-wider text-fifaGreen/50 font-bold text-center mb-2">
                 CUARTOS
               </div>
-              <div className="flex flex-col space-y-1">
-                {qfRight.map((m, idx) => (
-                  <div key={m.id} style={{ marginTop: idx === 0 ? '2rem' : '7rem' }}>
-                    <MiniMatch match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
-                  </div>
-                ))}
-              </div>
+              {col5Ids.map(id => {
+                const m = matchesById[id]
+                if (!m) return null
+                return <MatchCard key={id} match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
+              })}
             </div>
 
-            {/* COLUMNA 5: R16 + R32 DERECHA */}
-            <div className="space-y-2">
-              <div className="text-[8px] uppercase tracking-wider text-fifaGreen/50 font-bold text-center mb-3 h-4">
+            {/* COLUMNA 6: R16 Interior Derecho */}
+            <div className="flex flex-col justify-around space-y-3">
+              <div className="text-[9px] uppercase tracking-wider text-fifaGreen/50 font-bold text-center mb-2">
+                OCTAVOS
+              </div>
+              {col6Ids.map(id => {
+                const m = matchesById[id]
+                if (!m) return null
+                return <MatchCard key={id} match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
+              })}
+            </div>
+
+            {/* COLUMNA 7: R32 Extremo Derecho */}
+            <div className="flex flex-col justify-around space-y-3">
+              <div className="text-[9px] uppercase tracking-wider text-fifaGreen/50 font-bold text-center mb-2">
                 DIECISEISAVOS
               </div>
-              <div className="grid grid-cols-2 gap-x-3">
-                {/* R16 Derecha - Alineados con sus 2 partidos R32 */}
-                <div className="space-y-1 flex flex-col">
-                  <div className="text-[8px] uppercase tracking-wider text-fifaGreen/50 font-bold text-center mb-1 h-4">
-                    OCTAVOS
-                  </div>
-                  {r16Right.map((m, idx) => (
-                    <div key={m.id} className="flex items-center" style={{ marginTop: idx === 0 ? '0' : '3.25rem' }}>
-                      <MiniMatch match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
-                    </div>
-                  ))}
-                </div>
-                
-                {/* R32 Derecha - Agrupados por pares */}
-                <div className="space-y-1">
-                  {r32Right.map((m, idx) => (
-                    <div key={m.id} className={idx % 2 === 1 ? 'mb-4' : ''}>
-                      <MicroMatch match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {col7Ids.map(id => {
+                const m = matchesById[id]
+                if (!m) return null
+                return <MatchCard key={id} match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
+              })}
             </div>
 
           </div>
         </div>
         
-        <div className="text-center text-[10px] text-white/30 mt-3">
-          Desliza horizontalmente para ver todo el cuadro
+        <div className="text-center text-[10px] text-white/30 mt-4">
+          Desliza horizontalmente para ver el cuadro completo
         </div>
-
-        {/* Leyenda de flujo */}
-        <div className="mt-4 text-center">
-          <details className="inline-block text-left">
-            <summary className="text-[9px] uppercase tracking-wider text-fifaGreen/60 font-bold cursor-pointer hover:text-fifaGreen transition-colors">
-              Ver flujo de partidos
-            </summary>
-            <div className="mt-2 p-3 bg-navy-dark border border-white/10 rounded-lg text-[9px] text-white/70 space-y-1 max-w-md mx-auto">
-              <div className="font-bold text-fifaGreen/80 mb-2">LLAVE IZQUIERDA → SF M101:</div>
-              <div>• M73, M74 → M89 │ M75, M76 → M90 → M97</div>
-              <div>• M77, M78 → M91 │ M79, M80 → M92 → M98</div>
-              <div className="font-bold text-fifaGreen/80 mt-2 mb-2">LLAVE DERECHA → SF M102:</div>
-              <div>• M81, M82 → M93 │ M83, M84 → M94 → M99</div>
-              <div>• M85, M86 → M95 │ M87, M88 → M96 → M100</div>
-              <div className="font-bold text-gold/80 mt-2">FINAL M104: M101 vs M102</div>
-            </div>
-          </details>
-        </div>
-      </div>
-
-      {/* Tercer Lugar */}
-      {thirdPlaceMatch && (
-        <div className="flex justify-center pt-4 border-t border-white/10">
-          <div className="w-full max-w-xs">
-            <div className="text-[9px] uppercase tracking-wider text-yellow-500/60 font-bold text-center mb-2">
-              🥉 Tercer Lugar
-            </div>
-            <CompactMatch match={thirdPlaceMatch} homeTeam={teamsById[thirdPlaceMatch.home_team_id!]} awayTeam={teamsById[thirdPlaceMatch.away_team_id!]} />
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// Componente micro para R32 (ultra compacto)
-function MicroMatch({ match, homeTeam, awayTeam }: { match: Match, homeTeam: Team | null, awayTeam: Team | null }) {
-  const isFinished = match.status === 'finished'
-  const hasScore = match.home_score !== null && match.away_score !== null
-  
-  const homeWon = isFinished && hasScore && (
-    match.home_score! > match.away_score! || 
-    (match.home_score === match.away_score && match.shootout_winner_team_id === match.home_team_id)
-  )
-  const awayWon = isFinished && hasScore && (
-    match.away_score! > match.home_score! || 
-    (match.home_score === match.away_score && match.shootout_winner_team_id === match.away_team_id)
-  )
-
-  return (
-    <div className="w-24 bg-navy-dark border border-white/5 rounded overflow-hidden hover:border-fifaGreen/30 transition-all">
-      {/* Header con número de partido */}
-      <div className="bg-white/5 px-1 py-0.5">
-        <span className="text-[7px] uppercase tracking-wider text-white/30 font-mono">M{match.match_number}</span>
-      </div>
-      <div className="p-1 space-y-0.5">
-        <TeamRow team={homeTeam} score={match.home_score} isWinner={homeWon} size="micro" label={match.home_team_label} />
-        <TeamRow team={awayTeam} score={match.away_score} isWinner={awayWon} size="micro" label={match.away_team_label} />
       </div>
     </div>
   )
 }
 
-// Componente mini para R16 y QF
-function MiniMatch({ match, homeTeam, awayTeam }: { match: Match, homeTeam: Team | null, awayTeam: Team | null }) {
-  const isFinished = match.status === 'finished'
-  const hasScore = match.home_score !== null && match.away_score !== null
-  const isLive = match.status === 'live'
-  
-  const homeWon = isFinished && hasScore && (
-    match.home_score! > match.away_score! || 
-    (match.home_score === match.away_score && match.shootout_winner_team_id === match.home_team_id)
-  )
-  const awayWon = isFinished && hasScore && (
-    match.away_score! > match.home_score! || 
-    (match.home_score === match.away_score && match.shootout_winner_team_id === match.away_team_id)
-  )
-
-  return (
-    <div className={`w-32 bg-navy-dark border rounded overflow-hidden hover:border-fifaGreen/40 transition-all ${
-      isLive ? 'border-red-500/50 animate-pulse' : 'border-white/10'
-    }`}>
-      {/* Header con número de partido */}
-      <div className="bg-white/5 px-1.5 py-0.5 flex items-center justify-between">
-        <span className="text-[7px] uppercase tracking-wider text-white/30 font-mono">M{match.match_number}</span>
-        {isLive && <span className="text-[7px] uppercase text-red-500 font-bold">LIVE</span>}
-      </div>
-      <div className="p-1.5 space-y-1">
-        <TeamRow team={homeTeam} score={match.home_score} isWinner={homeWon} size="mini" label={match.home_team_label} />
-        <TeamRow team={awayTeam} score={match.away_score} isWinner={awayWon} size="mini" label={match.away_team_label} />
-      </div>
-    </div>
-  )
-}
-
-// Componente compacto para SF y tercer lugar
-function CompactMatch({ match, homeTeam, awayTeam }: { match: Match, homeTeam: Team | null, awayTeam: Team | null }) {
+// Componente unificado para partidos estándar (150px)
+function MatchCard({ match, homeTeam, awayTeam }: { match: Match, homeTeam: Team | null, awayTeam: Team | null }) {
   const isFinished = match.status === 'finished'
   const hasScore = match.home_score !== null && match.away_score !== null
   const isLive = match.status === 'live'
@@ -281,23 +192,28 @@ function CompactMatch({ match, homeTeam, awayTeam }: { match: Match, homeTeam: T
   const isPenalties = hasScore && match.home_score === match.away_score && match.shootout_winner_team_id
 
   return (
-    <div className={`w-40 bg-navy-dark border rounded-lg overflow-hidden hover:border-fifaGreen/50 transition-all ${
-      isLive ? 'border-red-500/60 shadow-lg shadow-red-500/20' : 'border-fifaGreen/20'
+    <div className={`w-[150px] bg-navy-dark border rounded-lg overflow-hidden transition-all hover:border-fifaGreen/50 ${
+      isLive ? 'border-red-500 shadow-lg shadow-red-500/20 animate-pulse' : 'border-white/10'
     }`}>
-      <div className="bg-white/5 px-2 py-0.5 flex items-center justify-between">
-        <span className="text-[7px] uppercase tracking-wider text-white/30 font-mono">M{match.match_number}</span>
-        {isLive && <span className="text-[7px] uppercase text-red-500 font-bold">LIVE</span>}
-        {isPenalties && <span className="text-[7px] uppercase text-yellow-500 font-bold">PEN</span>}
+      {/* Header con # partido e indicadores */}
+      <div className="bg-white/5 px-2 py-1 flex items-center justify-between">
+        <span className="text-[9px] uppercase tracking-wider text-white/40 font-bold">#{match.match_number}</span>
+        <div className="flex items-center gap-1">
+          {isLive && <span className="text-[8px] uppercase text-red-500 font-black">● LIVE</span>}
+          {isPenalties && <span className="text-[8px] uppercase text-yellow-500 font-bold">PEN</span>}
+        </div>
       </div>
-      <div className="p-2 space-y-1">
-        <TeamRow team={homeTeam} score={match.home_score} isWinner={homeWon} size="compact" label={match.home_team_label} />
-        <TeamRow team={awayTeam} score={match.away_score} isWinner={awayWon} size="compact" label={match.away_team_label} />
+      
+      {/* Teams */}
+      <div className="p-2 space-y-1.5">
+        <TeamRow team={homeTeam} score={match.home_score} isWinner={homeWon} label={match.home_team_label} />
+        <TeamRow team={awayTeam} score={match.away_score} isWinner={awayWon} label={match.away_team_label} />
       </div>
     </div>
   )
 }
 
-// Componente para la FINAL
+// Componente especial para la FINAL (diseño destacado)
 function FinalMatch({ match, homeTeam, awayTeam }: { match: Match, homeTeam: Team | null, awayTeam: Team | null }) {
   const isFinished = match.status === 'finished'
   const hasScore = match.home_score !== null && match.away_score !== null
@@ -316,22 +232,22 @@ function FinalMatch({ match, homeTeam, awayTeam }: { match: Match, homeTeam: Tea
   const champion = homeWon ? homeTeam : awayWon ? awayTeam : null
 
   return (
-    <div className={`w-48 bg-gradient-to-br from-navy-dark via-navy-deepest to-navy-dark border-2 rounded-xl overflow-hidden shadow-2xl transition-all ${
-      isLive ? 'border-red-500 shadow-red-500/30' : 'border-gold/50 shadow-gold/20'
+    <div className={`w-[180px] bg-gradient-to-br from-navy-dark via-navy-deepest to-navy-dark border-2 rounded-xl overflow-hidden shadow-2xl transition-all ${
+      isLive ? 'border-red-500 shadow-red-500/40 animate-pulse' : 'border-gold shadow-gold/30'
     }`}>
-      <div className="bg-gradient-to-r from-gold/20 via-gold/10 to-gold/20 px-3 py-1 flex items-center justify-between">
-        <span className="text-[8px] uppercase tracking-wider text-gold/80 font-black">FINAL 2026</span>
-        {isLive && <span className="text-[8px] uppercase text-red-500 font-bold animate-pulse">● LIVE</span>}
-        {isPenalties && <span className="text-[8px] uppercase text-yellow-500 font-bold">PENALES</span>}
+      <div className="bg-gradient-to-r from-gold/30 via-gold/20 to-gold/30 px-3 py-1.5 flex items-center justify-between">
+        <span className="text-[9px] uppercase tracking-widest text-gold font-black">FINAL 2026</span>
+        {isLive && <span className="text-[9px] uppercase text-red-500 font-black">● LIVE</span>}
+        {isPenalties && <span className="text-[8px] uppercase text-yellow-400 font-bold">PEN</span>}
       </div>
-      <div className="p-3 space-y-1.5">
-        <TeamRow team={homeTeam} score={match.home_score} isWinner={homeWon} size="final" label={match.home_team_label} />
-        <TeamRow team={awayTeam} score={match.away_score} isWinner={awayWon} size="final" label={match.away_team_label} />
+      <div className="p-3 space-y-2">
+        <FinalTeamRow team={homeTeam} score={match.home_score} isWinner={homeWon} label={match.home_team_label} />
+        <FinalTeamRow team={awayTeam} score={match.away_score} isWinner={awayWon} label={match.away_team_label} />
       </div>
       {champion && isFinished && (
-        <div className="bg-gold/20 border-t border-gold/30 px-3 py-1 text-center">
-          <span className="text-[8px] uppercase tracking-wider text-gold font-black">
-            🏆 {champion.name}
+        <div className="bg-gold/20 border-t border-gold/40 px-3 py-1.5 text-center">
+          <span className="text-[9px] uppercase tracking-widest text-gold font-black">
+            🏆 CAMPEÓN: {champion.name}
           </span>
         </div>
       )}
@@ -339,45 +255,80 @@ function FinalMatch({ match, homeTeam, awayTeam }: { match: Match, homeTeam: Tea
   )
 }
 
-// Componente reutilizable para fila de equipo
+// TeamRow para partidos estándar
 function TeamRow({ 
   team, 
   score, 
   isWinner, 
-  size, 
   label 
 }: { 
   team: Team | null
   score: number | null
   isWinner: boolean
-  size: 'micro' | 'mini' | 'compact' | 'final'
   label?: string | null
 }) {
-  const flagSize = size === 'micro' ? 8 : size === 'mini' ? 10 : size === 'compact' ? 12 : 14
-  const textSize = size === 'micro' ? 'text-[8px]' : size === 'mini' ? 'text-[9px]' : size === 'compact' ? 'text-[10px]' : 'text-xs'
-  const scoreSize = size === 'micro' ? 'text-[10px]' : size === 'mini' ? 'text-xs' : size === 'compact' ? 'text-sm' : 'text-base'
-  
   return (
-    <div className={`flex items-center justify-between rounded px-1 py-0.5 ${
-      isWinner ? 'bg-fifaGreen/20 border border-fifaGreen/40' : 'bg-white/5'
+    <div className={`flex items-center justify-between rounded px-2 py-1.5 transition-all ${
+      isWinner ? 'bg-fifaGreen/20 border border-fifaGreen/50' : 'bg-white/5 border border-transparent'
     }`}>
-      <div className="flex items-center gap-1 min-w-0 flex-1">
+      <div className="flex items-center gap-2 min-w-0 flex-1">
         {team ? (
           <>
-            <Flag team={team} size={flagSize} className="flex-shrink-0" />
-            <span className={`${textSize} font-bold uppercase tracking-tight truncate ${
-              isWinner ? 'text-fifaGreen' : 'text-white/80'
+            <Flag team={team} size={12} className="flex-shrink-0" />
+            <span className={`text-[10px] font-black uppercase tracking-tight truncate ${
+              isWinner ? 'text-fifaGreen' : 'text-white/90'
             }`}>
-              {size === 'micro' ? team.iso_code : team.name}
+              {team.name}
             </span>
           </>
         ) : (
-          <span className={`${textSize} text-white/30 italic`}>{label || 'TBD'}</span>
+          <span className="text-[10px] text-white/40 italic truncate">{label || 'Ganador MXX'}</span>
         )}
       </div>
       {score !== null && (
-        <span className={`${scoreSize} font-black ml-1 ${
-          isWinner ? 'text-fifaGreen' : 'text-white/50'
+        <span className={`text-sm font-black ml-2 tabular-nums ${
+          isWinner ? 'text-fifaGreen' : 'text-white/60'
+        }`}>
+          {score}
+        </span>
+      )}
+    </div>
+  )
+}
+
+// TeamRow especial para la Final
+function FinalTeamRow({ 
+  team, 
+  score, 
+  isWinner, 
+  label 
+}: { 
+  team: Team | null
+  score: number | null
+  isWinner: boolean
+  label?: string | null
+}) {
+  return (
+    <div className={`flex items-center justify-between rounded-lg px-2.5 py-2 transition-all ${
+      isWinner ? 'bg-gold/20 border-2 border-gold/60' : 'bg-white/10 border-2 border-white/20'
+    }`}>
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        {team ? (
+          <>
+            <Flag team={team} size={16} className="flex-shrink-0" />
+            <span className={`text-xs font-black uppercase tracking-tight truncate ${
+              isWinner ? 'text-gold' : 'text-white'
+            }`}>
+              {team.name}
+            </span>
+          </>
+        ) : (
+          <span className="text-xs text-white/50 italic truncate">{label || 'TBD'}</span>
+        )}
+      </div>
+      {score !== null && (
+        <span className={`text-lg font-black ml-2 tabular-nums ${
+          isWinner ? 'text-gold' : 'text-white/70'
         }`}>
           {score}
         </span>

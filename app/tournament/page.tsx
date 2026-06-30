@@ -32,12 +32,14 @@ export default async function TournamentPage() {
     { data: standings },
     { data: bestThirds },
     { data: teams },
-    { data: matches },
+    { data: groupMatches },
+    { data: koMatches },
   ] = await Promise.all([
     supabase.from('official_group_standings').select('*'),
     supabase.from('official_best_thirds').select('*'),
     supabase.from('teams').select('*'),
     supabase.from('matches').select('*').eq('phase', 'group'),
+    supabase.from('matches').select('*').in('phase', ['r32', 'r16', 'qf', 'sf', 'third', 'final']),
   ])
 
   // Agrupar por grupo (A-L)
@@ -52,7 +54,8 @@ export default async function TournamentPage() {
       standingsByGroup={standingsByGroup}
       bestThirds={(bestThirds || []) as BestThird[]}
       teams={teams || []}
-      matches={(matches || []) as Match[]}
+      groupMatches={(groupMatches || []) as Match[]}
+      koMatches={(koMatches || []) as Match[]}
     />
   )
 }

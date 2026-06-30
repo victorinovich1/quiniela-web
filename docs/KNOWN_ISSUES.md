@@ -46,6 +46,7 @@
 
 ## Completados (histórico)
 
+- [x] **Bracket de Eliminatorias en /tournament** (2026-06-30): Implementado cuadro visual simétrico de eliminatorias con diseño de videojuego deportivo. Dieciseisavos en extremos, Final en el centro. Tabs para alternar entre Fase de Grupos y Bracket. Componente KnockoutBracket.tsx con líneas de conexión, highlights para semifinales y final, indicadores de ganador, estado EN VIVO, y penales. Estilo FIFA dark con gradientes gold/fifaGreen.
 - [x] **Visualización de Bandera Ko_Winner en Ranking** (2026-06-29): Mini-bandera del equipo elegido para avanzar ahora aparece bajo el badge del pronóstico cuando el usuario predijo empate en eliminatorias, independientemente de si ganó o perdió puntos. Log de depuración mejorado para verificar datos de ko_winner_team_id.
 - [x] **Transparencia de Puntos en Eliminatorias** (2026-06-29): Mejorada visualización de aciertos en el ranking. Badges de pronósticos ahora distinguen entre fase de grupos y eliminatorias, mostrando correctamente puntos por ganador en penales. Tooltips informativos ('Ganador por penales', 'Marcador exacto', etc.). Color verde FIFA consistente con sombra sutil.
 - [x] **Sistema de Avatares por Niveles** (2026-05-12): Sistema completo de gamificación con 4 categorías (Básicos, Especiales, Premium, Leyendas) y desbloqueo basado en desempeño. Incluye carrusel con navegación por flechas, scrollbar estilizado, y requisitos configurables desde Admin.

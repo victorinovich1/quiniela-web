@@ -1,8 +1,9 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import PageHeader from '@/components/PageHeader'
 import Flag from '@/components/Flag'
+import KnockoutBracket from './KnockoutBracket'
 import type { Team, Match } from '@/lib/types'
 
 interface OfficialStanding {
@@ -68,13 +69,16 @@ export default function TournamentClient({
   standingsByGroup,
   bestThirds,
   teams,
-  matches,
+  groupMatches,
+  koMatches,
 }: {
   standingsByGroup: Record<string, OfficialStanding[]>
   bestThirds: BestThird[]
   teams: Team[]
-  matches: Match[]
+  groupMatches: Match[]
+  koMatches: Match[]
 }) {
+  const [activeTab, setActiveTab] = useState<'grupos' | 'bracket'>('grupos')
   const groupCodes = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']
 
   // Aplicar h2h a cada grupo
@@ -82,15 +86,15 @@ export default function TournamentClient({
     const result: Record<string, OfficialStanding[]> = {}
     const codes = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']
     for (const code of codes) {
-      result[code] = applyHeadToHead(standingsByGroup[code] || [], matches)
+      result[code] = applyHeadToHead(standingsByGroup[code] || [], groupMatches)
     }
     return result
-  }, [standingsByGroup, matches])
+  }, [standingsByGroup, groupMatches])
 
   // Aplicar h2h a best thirds
   const sortedBestThirds = useMemo(() => {
-    return applyHeadToHead(bestThirds, matches)
-  }, [bestThirds, matches])
+    return applyHeadToHead(bestThirds, groupMatches)
+  }, [bestThirds, groupMatches])
 
   return (
     <>
@@ -101,6 +105,30 @@ export default function TournamentClient({
       />
 
       <div className="max-w-7xl mx-auto space-y-8 pb-24">
+        {/* Tabs */}
+        <div className="flex items-center justify-center gap-4 mb-6">
+          <button
+            onClick={() => setActiveTab('grupos')}
+            className={`px-6 py-3 rounded-lg font-bold uppercase tracking-wider transition-all ${
+              activeTab === 'grupos'
+                ? 'bg-fifaGreen text-navy-deepest shadow-lg shadow-fifaGreen/30'
+                : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            Fase de Grupos
+          </button>
+          <button
+            onClick={() => setActiveTab('bracket')}
+            className={`px-6 py-3 rounded-lg font-bold uppercase tracking-wider transition-all ${
+              activeTab === 'bracket'
+                ? 'bg-fifaGreen text-navy-deepest shadow-lg shadow-fifaGreen/30'
+                : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            🏆 Bracket Eliminatorias
+          </button>
+        </div>
+
         {/* Badge de datos oficiales */}
         <div className="flex items-center justify-center">
           <div className="badge bg-fifaGreen/20 text-fifaGreen border border-fifaGreen/30 px-4 py-2">
@@ -111,11 +139,14 @@ export default function TournamentClient({
           </div>
         </div>
 
-        {/* Grupos Oficiales */}
-        <div>
-          <h2 className="text-2xl font-black uppercase tracking-tight text-white mb-6 flex items-center gap-3">
-            <span className="bg-fifaGreen/20 text-fifaGreen px-3 py-1 rounded-lg">Fase de Grupos</span>
-          </h2>
+        {/* Contenido según tab activo */}
+        {activeTab === 'grupos' ? (
+          <>
+            {/* Grupos Oficiales */}
+            <div>
+              <h2 className="text-2xl font-black uppercase tracking-tight text-white mb-6 flex items-center gap-3">
+                <span className="bg-fifaGreen/20 text-fifaGreen px-3 py-1 rounded-lg">Fase de Grupos</span>
+              </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {groupCodes.map((code) => (
               <GroupCard
@@ -215,6 +246,20 @@ export default function TournamentClient({
             </table>
           </div>
         </div>
+      </>
+        ) : (
+          <>
+            {/* Bracket de Eliminatorias */}
+            <div>
+              <h2 className="text-2xl font-black uppercase tracking-tight text-white mb-6 text-center">
+                <span className="bg-gradient-to-r from-gold/20 via-fifaGreen/20 to-gold/20 text-white px-6 py-2 rounded-lg border border-gold/30">
+                  🏆 Cuadro de Eliminatorias 2026
+                </span>
+              </h2>
+              <KnockoutBracket matches={koMatches} teams={teams} />
+            </div>
+          </>
+        )}
       </div>
     </>
   )

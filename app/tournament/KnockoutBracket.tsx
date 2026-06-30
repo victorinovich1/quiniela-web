@@ -22,43 +22,53 @@ export default function KnockoutBracket({ matches, teams }: Props) {
   const finalMatch = matches.find(m => m.phase === 'final')
   const thirdPlaceMatch = matches.find(m => m.phase === 'third')
 
-  // Dividir en mitades simétricas
-  const r32Top = r32Matches.slice(0, 8)
-  const r32Bottom = r32Matches.slice(8, 16)
-  const r16Top = r16Matches.slice(0, 4)
-  const r16Bottom = r16Matches.slice(4, 8)
-  const qfTop = qfMatches.slice(0, 2)
-  const qfBottom = qfMatches.slice(2, 4)
-  const sfTop = sfMatches[0]
-  const sfBottom = sfMatches[1]
+  // Flujo correcto del bracket:
+  // LLAVE IZQUIERDA (SF 101): R32 [73-80] → R16 [89-92] → QF [97-98] → SF 101
+  // LLAVE DERECHA (SF 102): R32 [81-88] → R16 [93-96] → QF [99-100] → SF 102
+  
+  const r32Left = r32Matches.slice(0, 8)   // 73-80
+  const r32Right = r32Matches.slice(8, 16) // 81-88
+  
+  const r16Left = r16Matches.slice(0, 4)   // 89-92
+  const r16Right = r16Matches.slice(4, 8)  // 93-96
+  
+  const qfLeft = qfMatches.slice(0, 2)     // 97-98
+  const qfRight = qfMatches.slice(2, 4)    // 99-100
+  
+  const sfLeft = sfMatches[0]   // 101
+  const sfRight = sfMatches[1]  // 102
 
   return (
     <div className="space-y-6">
       {/* Bracket compacto simétrico */}
       <div className="relative overflow-x-auto">
         <div className="min-w-[1200px] max-w-full mx-auto py-6">
-          <div className="grid grid-cols-[repeat(5,auto)] gap-x-2 items-center justify-center">
+          <div className="grid grid-cols-[repeat(5,auto)] gap-x-3 items-center justify-center">
             
             {/* COLUMNA 1: R32 + R16 IZQUIERDA */}
             <div className="space-y-2">
               <div className="text-[8px] uppercase tracking-wider text-fifaGreen/50 font-bold text-center mb-3 h-4">
                 DIECISEISAVOS
               </div>
-              <div className="grid grid-cols-2 gap-x-2 gap-y-2">
-                {/* R32 Izquierda */}
-                <div className="space-y-2">
-                  {r32Top.map(m => (
-                    <MicroMatch key={m.id} match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
+              <div className="grid grid-cols-2 gap-x-3">
+                {/* R32 Izquierda - Agrupados por pares que alimentan cada R16 */}
+                <div className="space-y-1">
+                  {r32Left.map((m, idx) => (
+                    <div key={m.id} className={idx % 2 === 1 ? 'mb-4' : ''}>
+                      <MicroMatch match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
+                    </div>
                   ))}
                 </div>
                 
-                {/* R16 Izquierda */}
-                <div className="flex flex-col justify-around">
+                {/* R16 Izquierda - Alineados con sus 2 partidos R32 */}
+                <div className="space-y-1 flex flex-col">
                   <div className="text-[8px] uppercase tracking-wider text-fifaGreen/50 font-bold text-center mb-1 h-4">
                     OCTAVOS
                   </div>
-                  {r16Top.map(m => (
-                    <MiniMatch key={m.id} match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
+                  {r16Left.map((m, idx) => (
+                    <div key={m.id} className="flex items-center" style={{ marginTop: idx === 0 ? '0' : '3.25rem' }}>
+                      <MiniMatch match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
+                    </div>
                   ))}
                 </div>
               </div>
@@ -69,9 +79,11 @@ export default function KnockoutBracket({ matches, teams }: Props) {
               <div className="text-[8px] uppercase tracking-wider text-fifaGreen/50 font-bold text-center mb-3 h-4">
                 CUARTOS
               </div>
-              <div className="flex flex-col justify-around space-y-8">
-                {qfTop.map(m => (
-                  <MiniMatch key={m.id} match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
+              <div className="flex flex-col space-y-1">
+                {qfLeft.map((m, idx) => (
+                  <div key={m.id} style={{ marginTop: idx === 0 ? '2rem' : '7rem' }}>
+                    <MiniMatch match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
+                  </div>
                 ))}
               </div>
             </div>
@@ -82,27 +94,27 @@ export default function KnockoutBracket({ matches, teams }: Props) {
                 🏆 FINAL
               </div>
               
-              {/* Semifinal Superior */}
-              {sfTop && (
-                <div className="mb-4">
+              {/* Semifinal Izquierda */}
+              {sfLeft && (
+                <div className="mb-4" style={{ marginTop: '8rem' }}>
                   <div className="text-[7px] uppercase tracking-wider text-fifaGreen/40 font-bold text-center mb-1">SF</div>
-                  <CompactMatch match={sfTop} homeTeam={teamsById[sfTop.home_team_id!]} awayTeam={teamsById[sfTop.away_team_id!]} />
+                  <CompactMatch match={sfLeft} homeTeam={teamsById[sfLeft.home_team_id!]} awayTeam={teamsById[sfLeft.away_team_id!]} />
                 </div>
               )}
 
               {/* Final */}
               {finalMatch && (
-                <div className="relative my-3">
+                <div className="relative my-6">
                   <div className="absolute -inset-2 bg-gold/5 rounded-lg"></div>
                   <FinalMatch match={finalMatch} homeTeam={teamsById[finalMatch.home_team_id!]} awayTeam={teamsById[finalMatch.away_team_id!]} />
                 </div>
               )}
 
-              {/* Semifinal Inferior */}
-              {sfBottom && (
+              {/* Semifinal Derecha */}
+              {sfRight && (
                 <div className="mt-4">
                   <div className="text-[7px] uppercase tracking-wider text-fifaGreen/40 font-bold text-center mb-1">SF</div>
-                  <CompactMatch match={sfBottom} homeTeam={teamsById[sfBottom.home_team_id!]} awayTeam={teamsById[sfBottom.away_team_id!]} />
+                  <CompactMatch match={sfRight} homeTeam={teamsById[sfRight.home_team_id!]} awayTeam={teamsById[sfRight.away_team_id!]} />
                 </div>
               )}
             </div>
@@ -112,9 +124,11 @@ export default function KnockoutBracket({ matches, teams }: Props) {
               <div className="text-[8px] uppercase tracking-wider text-fifaGreen/50 font-bold text-center mb-3 h-4">
                 CUARTOS
               </div>
-              <div className="flex flex-col justify-around space-y-8">
-                {qfBottom.map(m => (
-                  <MiniMatch key={m.id} match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
+              <div className="flex flex-col space-y-1">
+                {qfRight.map((m, idx) => (
+                  <div key={m.id} style={{ marginTop: idx === 0 ? '2rem' : '7rem' }}>
+                    <MiniMatch match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
+                  </div>
                 ))}
               </div>
             </div>
@@ -124,21 +138,25 @@ export default function KnockoutBracket({ matches, teams }: Props) {
               <div className="text-[8px] uppercase tracking-wider text-fifaGreen/50 font-bold text-center mb-3 h-4">
                 DIECISEISAVOS
               </div>
-              <div className="grid grid-cols-2 gap-x-2 gap-y-2">
-                {/* R16 Derecha */}
-                <div className="flex flex-col justify-around">
+              <div className="grid grid-cols-2 gap-x-3">
+                {/* R16 Derecha - Alineados con sus 2 partidos R32 */}
+                <div className="space-y-1 flex flex-col">
                   <div className="text-[8px] uppercase tracking-wider text-fifaGreen/50 font-bold text-center mb-1 h-4">
                     OCTAVOS
                   </div>
-                  {r16Bottom.map(m => (
-                    <MiniMatch key={m.id} match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
+                  {r16Right.map((m, idx) => (
+                    <div key={m.id} className="flex items-center" style={{ marginTop: idx === 0 ? '0' : '3.25rem' }}>
+                      <MiniMatch match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
+                    </div>
                   ))}
                 </div>
                 
-                {/* R32 Derecha */}
-                <div className="space-y-2">
-                  {r32Bottom.map(m => (
-                    <MicroMatch key={m.id} match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
+                {/* R32 Derecha - Agrupados por pares */}
+                <div className="space-y-1">
+                  {r32Right.map((m, idx) => (
+                    <div key={m.id} className={idx % 2 === 1 ? 'mb-4' : ''}>
+                      <MicroMatch match={m} homeTeam={teamsById[m.home_team_id!]} awayTeam={teamsById[m.away_team_id!]} />
+                    </div>
                   ))}
                 </div>
               </div>
@@ -149,6 +167,24 @@ export default function KnockoutBracket({ matches, teams }: Props) {
         
         <div className="text-center text-[10px] text-white/30 mt-3">
           Desliza horizontalmente para ver todo el cuadro
+        </div>
+
+        {/* Leyenda de flujo */}
+        <div className="mt-4 text-center">
+          <details className="inline-block text-left">
+            <summary className="text-[9px] uppercase tracking-wider text-fifaGreen/60 font-bold cursor-pointer hover:text-fifaGreen transition-colors">
+              Ver flujo de partidos
+            </summary>
+            <div className="mt-2 p-3 bg-navy-dark border border-white/10 rounded-lg text-[9px] text-white/70 space-y-1 max-w-md mx-auto">
+              <div className="font-bold text-fifaGreen/80 mb-2">LLAVE IZQUIERDA → SF M101:</div>
+              <div>• M73, M74 → M89 │ M75, M76 → M90 → M97</div>
+              <div>• M77, M78 → M91 │ M79, M80 → M92 → M98</div>
+              <div className="font-bold text-fifaGreen/80 mt-2 mb-2">LLAVE DERECHA → SF M102:</div>
+              <div>• M81, M82 → M93 │ M83, M84 → M94 → M99</div>
+              <div>• M85, M86 → M95 │ M87, M88 → M96 → M100</div>
+              <div className="font-bold text-gold/80 mt-2">FINAL M104: M101 vs M102</div>
+            </div>
+          </details>
         </div>
       </div>
 
@@ -183,6 +219,10 @@ function MicroMatch({ match, homeTeam, awayTeam }: { match: Match, homeTeam: Tea
 
   return (
     <div className="w-24 bg-navy-dark border border-white/5 rounded overflow-hidden hover:border-fifaGreen/30 transition-all">
+      {/* Header con número de partido */}
+      <div className="bg-white/5 px-1 py-0.5">
+        <span className="text-[7px] uppercase tracking-wider text-white/30 font-mono">M{match.match_number}</span>
+      </div>
       <div className="p-1 space-y-0.5">
         <TeamRow team={homeTeam} score={match.home_score} isWinner={homeWon} size="micro" label={match.home_team_label} />
         <TeamRow team={awayTeam} score={match.away_score} isWinner={awayWon} size="micro" label={match.away_team_label} />
@@ -210,15 +250,15 @@ function MiniMatch({ match, homeTeam, awayTeam }: { match: Match, homeTeam: Team
     <div className={`w-32 bg-navy-dark border rounded overflow-hidden hover:border-fifaGreen/40 transition-all ${
       isLive ? 'border-red-500/50 animate-pulse' : 'border-white/10'
     }`}>
+      {/* Header con número de partido */}
+      <div className="bg-white/5 px-1.5 py-0.5 flex items-center justify-between">
+        <span className="text-[7px] uppercase tracking-wider text-white/30 font-mono">M{match.match_number}</span>
+        {isLive && <span className="text-[7px] uppercase text-red-500 font-bold">LIVE</span>}
+      </div>
       <div className="p-1.5 space-y-1">
         <TeamRow team={homeTeam} score={match.home_score} isWinner={homeWon} size="mini" label={match.home_team_label} />
         <TeamRow team={awayTeam} score={match.away_score} isWinner={awayWon} size="mini" label={match.away_team_label} />
       </div>
-      {isLive && (
-        <div className="bg-red-600 text-white text-[7px] text-center py-0.5 font-bold uppercase tracking-wider">
-          EN VIVO
-        </div>
-      )}
     </div>
   )
 }
@@ -245,7 +285,7 @@ function CompactMatch({ match, homeTeam, awayTeam }: { match: Match, homeTeam: T
       isLive ? 'border-red-500/60 shadow-lg shadow-red-500/20' : 'border-fifaGreen/20'
     }`}>
       <div className="bg-white/5 px-2 py-0.5 flex items-center justify-between">
-        <span className="text-[7px] uppercase tracking-wider text-white/30 font-mono">#{match.match_number}</span>
+        <span className="text-[7px] uppercase tracking-wider text-white/30 font-mono">M{match.match_number}</span>
         {isLive && <span className="text-[7px] uppercase text-red-500 font-bold">LIVE</span>}
         {isPenalties && <span className="text-[7px] uppercase text-yellow-500 font-bold">PEN</span>}
       </div>

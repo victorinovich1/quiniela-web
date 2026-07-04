@@ -686,6 +686,9 @@ function ParticipantsTab({
   const [entries, setEntries] = useState(initialEntries)
   const [msg, setMsg] = useState<string | null>(null)
   const [sendingResetTo, setSendingResetTo] = useState<string | null>(null)
+  const [passwordModalUser, setPasswordModalUser] = useState<Profile | null>(null)
+  const [newPassword, setNewPassword] = useState('')
+  const [updatingPassword, setUpdatingPassword] = useState(false)
 
   // Agrupar entries por user_id
   const entriesByUser = useMemo(() => {
@@ -756,6 +759,45 @@ function ParticipantsTab({
       setTimeout(() => setMsg(null), 3000)
     } finally {
       setSendingResetTo(null)
+    }
+  }
+
+  async function updatePassword() {
+    if (!passwordModalUser) return
+    if (newPassword.length < 6) {
+      setMsg('La contraseña debe tener al menos 6 caracteres')
+      setTimeout(() => setMsg(null), 2000)
+      return
+    }
+    
+    setUpdatingPassword(true)
+    setMsg(null)
+    
+    try {
+      const res = await fetch('/api/admin/update-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          userId: passwordModalUser.id, 
+          newPassword 
+        }),
+      })
+      
+      const data = await res.json()
+      
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'Error al actualizar contraseña')
+      }
+      
+      setMsg(`✅ Contraseña actualizada correctamente para ${passwordModalUser.display_name || passwordModalUser.email}`)
+      setPasswordModalUser(null)
+      setNewPassword('')
+      setTimeout(() => setMsg(null), 3000)
+    } catch (err) {
+      setMsg(`Error: ${err instanceof Error ? err.message : 'No se pudo actualizar la contraseña'}`)
+      setTimeout(() => setMsg(null), 3000)
+    } finally {
+      setUpdatingPassword(false)
     }
   }
 
@@ -856,6 +898,14 @@ function ParticipantsTab({
                     )}
                   </button>
                   <button
+                    onClick={() => setPasswordModalUser(p)}
+                    disabled={isManager}
+                    className="p-2 rounded hover:bg-fifaGreen/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    title="Cambiar contraseña manualmente"
+                  >
+                    <span className="text-sm">🔑</span>
+                  </button>
+                  <button
                     onClick={() => deleteUser(p)}
                     disabled={isManager}
                     className="p-2 rounded hover:bg-danger/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
@@ -915,6 +965,52 @@ function ParticipantsTab({
           )
         })}
       </div>
+
+      {/* Modal de cambio de contraseña */}
+      {passwordModalUser && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-navy-dark border border-white/20 rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-bold text-fifaGreen mb-4">
+              Cambiar Contraseña Manual
+            </h3>
+            <p className="text-sm text-white/70 mb-4">
+              Usuario: <strong>{passwordModalUser.display_name || passwordModalUser.email}</strong>
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-white/70 mb-1">Nueva Contraseña</label>
+                <input
+                  type="text"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Mínimo 6 caracteres"
+                  className="input w-full"
+                  disabled={updatingPassword}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={updatePassword}
+                  disabled={updatingPassword || newPassword.length < 6}
+                  className="btn btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {updatingPassword ? 'Actualizando...' : 'Confirmar Cambio'}
+                </button>
+                <button
+                  onClick={() => {
+                    setPasswordModalUser(null)
+                    setNewPassword('')
+                  }}
+                  disabled={updatingPassword}
+                  className="btn btn-outline flex-1 disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

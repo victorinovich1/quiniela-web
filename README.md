@@ -8,7 +8,8 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL_17-green?style=for-the-badge&logo=supabase)](https://supabase.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
-[![PWA](https://img.shields.io/badge/PWA-Instalable-5A0FC8?style=for-the-badge&logo=pwa)](https://web.dev/progressive-web-apps/)
+[![Vercel](https://img.shields.io/badge/Vercel-Deployed-black?style=for-the-badge&logo=vercel)](https://vercel.com/)
+[![PWA](https://img.shields.io/badge/PWA-Ready-5A0FC8?style=for-the-badge&logo=pwa)](https://web.dev/progressive-web-apps/)
 
 **Una aplicación web moderna, escalable y segura para gestionar quinielas del Mundial de Fútbol 2026.**
 
@@ -21,6 +22,33 @@
 ## 🎯 Descripción del Proyecto
 
 **Quiniela Mundial 2026** es una **Progressive Web App (PWA)** full-stack diseñada para grupos privados que desean competir pronosticando los resultados del Mundial de Fútbol. La plataforma permite a cada usuario crear múltiples "jugadas" independientes, cada una con su alias y cuota, compitiendo en un ranking dinámico en tiempo real.
+
+---
+
+## 📸 Vista Previa
+
+### 🖥️ Interfaz de Usuario
+
+<div align="center">
+
+| 🏠 Landing Page | 🏆 Ranking Dinámico |
+| :---: | :---: |
+| ![Landing Page](./docs/screenshots/landing.webp) | ![Ranking con Tendencias](./docs/screenshots/ranking.webp) |
+| Sistema de login con códigos de invitación | Ranking en vivo con indicadores de tendencia ▲▼→ |
+
+| ⚽ Pronósticos de Partidos | 📋 Perfil de Usuario |
+| :---: | :---: |
+| ![Sistema de Predicciones](./docs/screenshots/pronostico.webp) | ![Perfil y Multi-jugada](./docs/screenshots/perfil.webp) |
+| Interfaz intuitiva para pronosticar 104 partidos | Gestión de múltiples entries con alias únicos |
+
+| 🔧 Panel de Administración | 📱 PWA Instalable |
+| :---: | :---: |
+| ![Admin Dashboard](./docs/screenshots/admin.webp) | ![PWA en Móvil](./docs/screenshots/mobile.webp) |
+| Gestión completa de partidos, equipos e invitaciones | Experiencia nativa en iOS/Android sin App Store |
+
+</div>
+
+---
 
 ### ✨ Características Principales
 

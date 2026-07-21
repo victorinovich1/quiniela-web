@@ -927,32 +927,190 @@ INSERT INTO public.teams (code, name, iso_code, group_code, flag_emoji, position
 ON CONFLICT (code) DO NOTHING;
 
 -- -----------------------------------------------------
--- 6.2 SEED: matches (104 partidos oficiales)
+-- 6.2 SEED: matches (104 partidos oficiales FIFA 2026)
 -- -----------------------------------------------------
--- Por brevedad, aquí incluimos un subconjunto representativo
--- El archivo completo con los 104 partidos está disponible
--- en migrations/056_official_fifa_104_matches.sql
+-- Calendario oficial FIFA con todos los horarios en UTC
+-- Fuente: https://www.fifa.com/es/tournaments/mens/worldcup/canadamexicousa2026
 
--- NOTA: Para cargar los 104 partidos completos, ejecutar:
--- migrations/056_official_fifa_104_matches.sql
--- después de este archivo
+-- ==========================================
+-- FASE DE GRUPOS (72 partidos)
+-- ==========================================
 
--- Insertar partidos de muestra (Fase de Grupos - primeros 10)
 INSERT INTO public.matches (match_number, phase, group_code, home_team_id, away_team_id, kickoff_at, stadium, status) VALUES
+-- Jueves 11 junio
 (1, 'group', 'A', (SELECT id FROM teams WHERE code = 'MEX'), (SELECT id FROM teams WHERE code = 'RSA'), '2026-06-11 19:00:00+00', 'Estadio Ciudad de México', 'scheduled'),
 (2, 'group', 'A', (SELECT id FROM teams WHERE code = 'KOR'), (SELECT id FROM teams WHERE code = 'CZE'), '2026-06-12 02:00:00+00', 'Estadio Guadalajara', 'scheduled'),
+-- Viernes 12 junio
 (3, 'group', 'B', (SELECT id FROM teams WHERE code = 'CAN'), (SELECT id FROM teams WHERE code = 'BIH'), '2026-06-12 19:00:00+00', 'Estadio Toronto', 'scheduled'),
 (4, 'group', 'D', (SELECT id FROM teams WHERE code = 'USA'), (SELECT id FROM teams WHERE code = 'PAR'), '2026-06-13 01:00:00+00', 'Estadio Los Ángeles', 'scheduled'),
+-- Sábado 13 junio
 (5, 'group', 'B', (SELECT id FROM teams WHERE code = 'QAT'), (SELECT id FROM teams WHERE code = 'SUI'), '2026-06-13 19:00:00+00', 'Estadio Bahía de San Francisco', 'scheduled'),
 (6, 'group', 'C', (SELECT id FROM teams WHERE code = 'BRA'), (SELECT id FROM teams WHERE code = 'MAR'), '2026-06-13 22:00:00+00', 'Estadio Nueva York Nueva Jersey', 'scheduled'),
 (7, 'group', 'C', (SELECT id FROM teams WHERE code = 'HAI'), (SELECT id FROM teams WHERE code = 'SCO'), '2026-06-14 01:00:00+00', 'Estadio Boston', 'scheduled'),
 (8, 'group', 'D', (SELECT id FROM teams WHERE code = 'AUS'), (SELECT id FROM teams WHERE code = 'TUR'), '2026-06-14 04:00:00+00', 'Estadio BC Place Vancouver', 'scheduled'),
+-- Domingo 14 junio
 (9, 'group', 'E', (SELECT id FROM teams WHERE code = 'GER'), (SELECT id FROM teams WHERE code = 'CUW'), '2026-06-14 17:00:00+00', 'Estadio Houston', 'scheduled'),
-(10, 'group', 'F', (SELECT id FROM teams WHERE code = 'NED'), (SELECT id FROM teams WHERE code = 'JPN'), '2026-06-14 20:00:00+00', 'Estadio Dallas', 'scheduled')
+(10, 'group', 'F', (SELECT id FROM teams WHERE code = 'NED'), (SELECT id FROM teams WHERE code = 'JPN'), '2026-06-14 20:00:00+00', 'Estadio Dallas', 'scheduled'),
+(11, 'group', 'E', (SELECT id FROM teams WHERE code = 'CIV'), (SELECT id FROM teams WHERE code = 'ECU'), '2026-06-14 23:00:00+00', 'Estadio Filadelfia', 'scheduled'),
+(12, 'group', 'F', (SELECT id FROM teams WHERE code = 'SWE'), (SELECT id FROM teams WHERE code = 'TUN'), '2026-06-15 02:00:00+00', 'Estadio Monterrey', 'scheduled'),
+-- Lunes 15 junio
+(13, 'group', 'H', (SELECT id FROM teams WHERE code = 'ESP'), (SELECT id FROM teams WHERE code = 'CPV'), '2026-06-15 16:00:00+00', 'Estadio Atlanta', 'scheduled'),
+(14, 'group', 'G', (SELECT id FROM teams WHERE code = 'BEL'), (SELECT id FROM teams WHERE code = 'EGY'), '2026-06-15 19:00:00+00', 'Estadio Seattle', 'scheduled'),
+(15, 'group', 'H', (SELECT id FROM teams WHERE code = 'KSA'), (SELECT id FROM teams WHERE code = 'URU'), '2026-06-15 22:00:00+00', 'Estadio Miami', 'scheduled'),
+(16, 'group', 'G', (SELECT id FROM teams WHERE code = 'IRN'), (SELECT id FROM teams WHERE code = 'NZL'), '2026-06-16 01:00:00+00', 'Estadio Los Ángeles', 'scheduled'),
+-- Martes 16 junio
+(17, 'group', 'I', (SELECT id FROM teams WHERE code = 'FRA'), (SELECT id FROM teams WHERE code = 'SEN'), '2026-06-16 19:00:00+00', 'Estadio Nueva York Nueva Jersey', 'scheduled'),
+(18, 'group', 'I', (SELECT id FROM teams WHERE code = 'IRQ'), (SELECT id FROM teams WHERE code = 'NOR'), '2026-06-16 22:00:00+00', 'Estadio Boston', 'scheduled'),
+(19, 'group', 'J', (SELECT id FROM teams WHERE code = 'ARG'), (SELECT id FROM teams WHERE code = 'ALG'), '2026-06-17 01:00:00+00', 'Estadio Kansas City', 'scheduled'),
+(20, 'group', 'J', (SELECT id FROM teams WHERE code = 'AUT'), (SELECT id FROM teams WHERE code = 'JOR'), '2026-06-17 04:00:00+00', 'Estadio Bahía de San Francisco', 'scheduled'),
+-- Miércoles 17 junio
+(21, 'group', 'K', (SELECT id FROM teams WHERE code = 'POR'), (SELECT id FROM teams WHERE code = 'COD'), '2026-06-17 17:00:00+00', 'Estadio Houston', 'scheduled'),
+(22, 'group', 'L', (SELECT id FROM teams WHERE code = 'ENG'), (SELECT id FROM teams WHERE code = 'CRO'), '2026-06-17 20:00:00+00', 'Estadio Dallas', 'scheduled'),
+(23, 'group', 'L', (SELECT id FROM teams WHERE code = 'GHA'), (SELECT id FROM teams WHERE code = 'PAN'), '2026-06-17 23:00:00+00', 'Estadio Toronto', 'scheduled'),
+(24, 'group', 'K', (SELECT id FROM teams WHERE code = 'UZB'), (SELECT id FROM teams WHERE code = 'COL'), '2026-06-18 02:00:00+00', 'Estadio Ciudad de México', 'scheduled'),
+-- Jueves 18 junio
+(25, 'group', 'A', (SELECT id FROM teams WHERE code = 'CZE'), (SELECT id FROM teams WHERE code = 'RSA'), '2026-06-18 16:00:00+00', 'Estadio Atlanta', 'scheduled'),
+(26, 'group', 'B', (SELECT id FROM teams WHERE code = 'SUI'), (SELECT id FROM teams WHERE code = 'BIH'), '2026-06-18 19:00:00+00', 'Estadio Los Ángeles', 'scheduled'),
+(27, 'group', 'B', (SELECT id FROM teams WHERE code = 'CAN'), (SELECT id FROM teams WHERE code = 'QAT'), '2026-06-18 22:00:00+00', 'Estadio BC Place Vancouver', 'scheduled'),
+(28, 'group', 'A', (SELECT id FROM teams WHERE code = 'MEX'), (SELECT id FROM teams WHERE code = 'KOR'), '2026-06-19 01:00:00+00', 'Estadio Guadalajara', 'scheduled'),
+-- Viernes 19 junio
+(29, 'group', 'D', (SELECT id FROM teams WHERE code = 'USA'), (SELECT id FROM teams WHERE code = 'AUS'), '2026-06-19 19:00:00+00', 'Estadio Seattle', 'scheduled'),
+(30, 'group', 'C', (SELECT id FROM teams WHERE code = 'SCO'), (SELECT id FROM teams WHERE code = 'MAR'), '2026-06-19 22:00:00+00', 'Estadio Boston', 'scheduled'),
+(31, 'group', 'C', (SELECT id FROM teams WHERE code = 'BRA'), (SELECT id FROM teams WHERE code = 'HAI'), '2026-06-20 01:00:00+00', 'Estadio Filadelfia', 'scheduled'),
+(32, 'group', 'D', (SELECT id FROM teams WHERE code = 'TUR'), (SELECT id FROM teams WHERE code = 'PAR'), '2026-06-20 04:00:00+00', 'Estadio Bahía de San Francisco', 'scheduled'),
+-- Sábado 20 junio
+(33, 'group', 'F', (SELECT id FROM teams WHERE code = 'NED'), (SELECT id FROM teams WHERE code = 'SWE'), '2026-06-20 17:00:00+00', 'Estadio Houston', 'scheduled'),
+(34, 'group', 'E', (SELECT id FROM teams WHERE code = 'GER'), (SELECT id FROM teams WHERE code = 'CIV'), '2026-06-20 20:00:00+00', 'Estadio Toronto', 'scheduled'),
+(35, 'group', 'E', (SELECT id FROM teams WHERE code = 'ECU'), (SELECT id FROM teams WHERE code = 'CUW'), '2026-06-21 02:00:00+00', 'Estadio Kansas City', 'scheduled'),
+(36, 'group', 'F', (SELECT id FROM teams WHERE code = 'TUN'), (SELECT id FROM teams WHERE code = 'JPN'), '2026-06-21 04:00:00+00', 'Estadio Monterrey', 'scheduled'),
+-- Domingo 21 junio
+(37, 'group', 'H', (SELECT id FROM teams WHERE code = 'ESP'), (SELECT id FROM teams WHERE code = 'KSA'), '2026-06-21 16:00:00+00', 'Estadio Atlanta', 'scheduled'),
+(38, 'group', 'G', (SELECT id FROM teams WHERE code = 'BEL'), (SELECT id FROM teams WHERE code = 'IRN'), '2026-06-21 19:00:00+00', 'Estadio Los Ángeles', 'scheduled'),
+(39, 'group', 'H', (SELECT id FROM teams WHERE code = 'URU'), (SELECT id FROM teams WHERE code = 'CPV'), '2026-06-21 22:00:00+00', 'Estadio Miami', 'scheduled'),
+(40, 'group', 'G', (SELECT id FROM teams WHERE code = 'NZL'), (SELECT id FROM teams WHERE code = 'EGY'), '2026-06-22 01:00:00+00', 'Estadio BC Place Vancouver', 'scheduled'),
+-- Lunes 22 junio
+(41, 'group', 'J', (SELECT id FROM teams WHERE code = 'ARG'), (SELECT id FROM teams WHERE code = 'AUT'), '2026-06-22 17:00:00+00', 'Estadio Dallas', 'scheduled'),
+(42, 'group', 'I', (SELECT id FROM teams WHERE code = 'FRA'), (SELECT id FROM teams WHERE code = 'IRQ'), '2026-06-22 21:00:00+00', 'Estadio Filadelfia', 'scheduled'),
+(43, 'group', 'I', (SELECT id FROM teams WHERE code = 'NOR'), (SELECT id FROM teams WHERE code = 'SEN'), '2026-06-23 00:00:00+00', 'Estadio Nueva York Nueva Jersey', 'scheduled'),
+(44, 'group', 'J', (SELECT id FROM teams WHERE code = 'JOR'), (SELECT id FROM teams WHERE code = 'ALG'), '2026-06-23 03:00:00+00', 'Estadio Bahía de San Francisco', 'scheduled'),
+-- Martes 23 junio
+(45, 'group', 'K', (SELECT id FROM teams WHERE code = 'POR'), (SELECT id FROM teams WHERE code = 'UZB'), '2026-06-23 17:00:00+00', 'Estadio Houston', 'scheduled'),
+(46, 'group', 'L', (SELECT id FROM teams WHERE code = 'ENG'), (SELECT id FROM teams WHERE code = 'GHA'), '2026-06-23 20:00:00+00', 'Estadio Boston', 'scheduled'),
+(47, 'group', 'L', (SELECT id FROM teams WHERE code = 'PAN'), (SELECT id FROM teams WHERE code = 'CRO'), '2026-06-23 23:00:00+00', 'Estadio Toronto', 'scheduled'),
+(48, 'group', 'K', (SELECT id FROM teams WHERE code = 'COL'), (SELECT id FROM teams WHERE code = 'COD'), '2026-06-24 02:00:00+00', 'Estadio Guadalajara', 'scheduled'),
+-- Miércoles 24 junio (Jornada 3 - Partidos simultáneos)
+(49, 'group', 'B', (SELECT id FROM teams WHERE code = 'SUI'), (SELECT id FROM teams WHERE code = 'CAN'), '2026-06-24 19:00:00+00', 'Estadio BC Place Vancouver', 'scheduled'),
+(50, 'group', 'B', (SELECT id FROM teams WHERE code = 'BIH'), (SELECT id FROM teams WHERE code = 'QAT'), '2026-06-24 19:00:00+00', 'Estadio Seattle', 'scheduled'),
+(51, 'group', 'C', (SELECT id FROM teams WHERE code = 'SCO'), (SELECT id FROM teams WHERE code = 'BRA'), '2026-06-24 22:00:00+00', 'Estadio Miami', 'scheduled'),
+(52, 'group', 'C', (SELECT id FROM teams WHERE code = 'MAR'), (SELECT id FROM teams WHERE code = 'HAI'), '2026-06-24 22:00:00+00', 'Estadio Atlanta', 'scheduled'),
+(53, 'group', 'A', (SELECT id FROM teams WHERE code = 'CZE'), (SELECT id FROM teams WHERE code = 'MEX'), '2026-06-25 01:00:00+00', 'Estadio Ciudad de México', 'scheduled'),
+(54, 'group', 'A', (SELECT id FROM teams WHERE code = 'RSA'), (SELECT id FROM teams WHERE code = 'KOR'), '2026-06-25 01:00:00+00', 'Estadio Monterrey', 'scheduled'),
+-- Jueves 25 junio
+(55, 'group', 'E', (SELECT id FROM teams WHERE code = 'CUW'), (SELECT id FROM teams WHERE code = 'CIV'), '2026-06-25 20:00:00+00', 'Estadio Filadelfia', 'scheduled'),
+(56, 'group', 'E', (SELECT id FROM teams WHERE code = 'ECU'), (SELECT id FROM teams WHERE code = 'GER'), '2026-06-25 20:00:00+00', 'Estadio Nueva York Nueva Jersey', 'scheduled'),
+(57, 'group', 'F', (SELECT id FROM teams WHERE code = 'JPN'), (SELECT id FROM teams WHERE code = 'SWE'), '2026-06-25 23:00:00+00', 'Estadio Dallas', 'scheduled'),
+(58, 'group', 'F', (SELECT id FROM teams WHERE code = 'TUN'), (SELECT id FROM teams WHERE code = 'NED'), '2026-06-25 23:00:00+00', 'Estadio Kansas City', 'scheduled'),
+(59, 'group', 'D', (SELECT id FROM teams WHERE code = 'TUR'), (SELECT id FROM teams WHERE code = 'USA'), '2026-06-26 02:00:00+00', 'Estadio Los Ángeles', 'scheduled'),
+(60, 'group', 'D', (SELECT id FROM teams WHERE code = 'PAR'), (SELECT id FROM teams WHERE code = 'AUS'), '2026-06-26 02:00:00+00', 'Estadio Bahía de San Francisco', 'scheduled'),
+-- Viernes 26 junio
+(61, 'group', 'I', (SELECT id FROM teams WHERE code = 'NOR'), (SELECT id FROM teams WHERE code = 'FRA'), '2026-06-26 19:00:00+00', 'Estadio Boston', 'scheduled'),
+(62, 'group', 'I', (SELECT id FROM teams WHERE code = 'SEN'), (SELECT id FROM teams WHERE code = 'IRQ'), '2026-06-26 19:00:00+00', 'Estadio Toronto', 'scheduled'),
+(63, 'group', 'H', (SELECT id FROM teams WHERE code = 'CPV'), (SELECT id FROM teams WHERE code = 'KSA'), '2026-06-27 00:00:00+00', 'Estadio Houston', 'scheduled'),
+(64, 'group', 'H', (SELECT id FROM teams WHERE code = 'URU'), (SELECT id FROM teams WHERE code = 'ESP'), '2026-06-27 00:00:00+00', 'Estadio Guadalajara', 'scheduled'),
+(65, 'group', 'G', (SELECT id FROM teams WHERE code = 'EGY'), (SELECT id FROM teams WHERE code = 'IRN'), '2026-06-27 03:00:00+00', 'Estadio Seattle', 'scheduled'),
+(66, 'group', 'G', (SELECT id FROM teams WHERE code = 'NZL'), (SELECT id FROM teams WHERE code = 'BEL'), '2026-06-27 03:00:00+00', 'Estadio BC Place Vancouver', 'scheduled'),
+-- Sábado 27 junio
+(67, 'group', 'L', (SELECT id FROM teams WHERE code = 'PAN'), (SELECT id FROM teams WHERE code = 'ENG'), '2026-06-27 21:00:00+00', 'Estadio Nueva York Nueva Jersey', 'scheduled'),
+(68, 'group', 'L', (SELECT id FROM teams WHERE code = 'CRO'), (SELECT id FROM teams WHERE code = 'GHA'), '2026-06-27 21:00:00+00', 'Estadio Filadelfia', 'scheduled'),
+(69, 'group', 'K', (SELECT id FROM teams WHERE code = 'COL'), (SELECT id FROM teams WHERE code = 'POR'), '2026-06-27 23:30:00+00', 'Estadio Miami', 'scheduled'),
+(70, 'group', 'K', (SELECT id FROM teams WHERE code = 'COD'), (SELECT id FROM teams WHERE code = 'UZB'), '2026-06-27 23:30:00+00', 'Estadio Atlanta', 'scheduled'),
+(71, 'group', 'J', (SELECT id FROM teams WHERE code = 'ALG'), (SELECT id FROM teams WHERE code = 'AUT'), '2026-06-28 02:00:00+00', 'Estadio Kansas City', 'scheduled'),
+(72, 'group', 'J', (SELECT id FROM teams WHERE code = 'JOR'), (SELECT id FROM teams WHERE code = 'ARG'), '2026-06-28 02:00:00+00', 'Estadio Dallas', 'scheduled')
 ON CONFLICT (match_number) DO NOTHING;
 
--- IMPORTANTE: Para cargar los 104 partidos completos, ejecutar el contenido
--- de migrations/056_official_fifa_104_matches.sql después de este schema
+-- ==========================================
+-- DIECISEISAVOS DE FINAL (16 partidos)
+-- ==========================================
+
+INSERT INTO public.matches (match_number, phase, kickoff_at, stadium, status) VALUES
+-- Domingo 28 junio
+(73, 'r32', '2026-06-28 19:00:00+00', 'Estadio Los Ángeles', 'scheduled'),
+-- Lunes 29 junio
+(74, 'r32', '2026-06-29 20:30:00+00', 'Estadio Boston', 'scheduled'),
+(75, 'r32', '2026-06-30 01:00:00+00', 'Estadio Monterrey', 'scheduled'),
+(76, 'r32', '2026-06-29 17:00:00+00', 'Estadio Houston', 'scheduled'),
+-- Martes 30 junio
+(77, 'r32', '2026-06-30 21:00:00+00', 'Estadio Nueva York Nueva Jersey', 'scheduled'),
+(78, 'r32', '2026-06-30 17:00:00+00', 'Estadio Dallas', 'scheduled'),
+-- Miércoles 1 julio
+(79, 'r32', '2026-07-01 02:00:00+00', 'Estadio Ciudad de México', 'scheduled'),
+(80, 'r32', '2026-07-01 16:00:00+00', 'Estadio Atlanta', 'scheduled'),
+(81, 'r32', '2026-07-01 21:00:00+00', 'Estadio Bahía de San Francisco', 'scheduled'),
+(82, 'r32', '2026-07-01 20:00:00+00', 'Estadio Seattle', 'scheduled'),
+-- Jueves 2 julio
+(83, 'r32', '2026-07-02 23:00:00+00', 'Estadio Toronto', 'scheduled'),
+(84, 'r32', '2026-07-02 19:00:00+00', 'Estadio Los Ángeles', 'scheduled'),
+-- Viernes 3 julio
+(85, 'r32', '2026-07-03 03:00:00+00', 'Estadio BC Place Vancouver', 'scheduled'),
+(86, 'r32', '2026-07-03 22:00:00+00', 'Estadio Miami', 'scheduled'),
+(87, 'r32', '2026-07-04 00:30:00+00', 'Estadio Kansas City', 'scheduled'),
+(88, 'r32', '2026-07-03 18:00:00+00', 'Estadio Dallas', 'scheduled')
+ON CONFLICT (match_number) DO NOTHING;
+
+-- ==========================================
+-- OCTAVOS DE FINAL (8 partidos)
+-- ==========================================
+
+INSERT INTO public.matches (match_number, phase, kickoff_at, stadium, status) VALUES
+-- Sábado 4 julio
+(89, 'r16', '2026-07-04 21:00:00+00', 'Estadio Filadelfia', 'scheduled'),
+(90, 'r16', '2026-07-04 17:00:00+00', 'Estadio Houston', 'scheduled'),
+-- Domingo 5 julio
+(91, 'r16', '2026-07-05 21:00:00+00', 'Estadio Nueva York Nueva Jersey', 'scheduled'),
+(92, 'r16', '2026-07-05 22:00:00+00', 'Estadio Ciudad de México', 'scheduled'),
+-- Lunes 6 julio
+(93, 'r16', '2026-07-06 19:00:00+00', 'Estadio Dallas', 'scheduled'),
+(94, 'r16', '2026-07-07 00:00:00+00', 'Estadio Seattle', 'scheduled'),
+-- Martes 7 julio
+(95, 'r16', '2026-07-07 16:00:00+00', 'Estadio Atlanta', 'scheduled'),
+(96, 'r16', '2026-07-07 20:00:00+00', 'Estadio BC Place Vancouver', 'scheduled')
+ON CONFLICT (match_number) DO NOTHING;
+
+-- ==========================================
+-- CUARTOS DE FINAL (4 partidos)
+-- ==========================================
+
+INSERT INTO public.matches (match_number, phase, kickoff_at, stadium, status) VALUES
+-- Jueves 9 julio
+(97, 'qf', '2026-07-09 20:00:00+00', 'Estadio Boston', 'scheduled'),
+-- Viernes 10 julio
+(98, 'qf', '2026-07-10 19:00:00+00', 'Estadio Los Ángeles', 'scheduled'),
+-- Sábado 11 julio
+(99, 'qf', '2026-07-11 21:00:00+00', 'Estadio Miami', 'scheduled'),
+(100, 'qf', '2026-07-12 01:00:00+00', 'Estadio Kansas City', 'scheduled')
+ON CONFLICT (match_number) DO NOTHING;
+
+-- ==========================================
+-- SEMIFINALES (2 partidos)
+-- ==========================================
+
+INSERT INTO public.matches (match_number, phase, kickoff_at, stadium, status) VALUES
+-- Martes 14 julio
+(101, 'sf', '2026-07-14 19:00:00+00', 'Estadio Dallas', 'scheduled'),
+-- Miércoles 15 julio
+(102, 'sf', '2026-07-15 19:00:00+00', 'Estadio Atlanta', 'scheduled')
+ON CONFLICT (match_number) DO NOTHING;
+
+-- ==========================================
+-- TERCER PUESTO Y FINAL
+-- ==========================================
+
+INSERT INTO public.matches (match_number, phase, kickoff_at, stadium, status) VALUES
+-- Sábado 18 julio (Tercer puesto)
+(103, 'third', '2026-07-18 21:00:00+00', 'Estadio Miami', 'scheduled'),
+-- Domingo 19 julio (FINAL)
+(104, 'final', '2026-07-19 19:00:00+00', 'Estadio Nueva York Nueva Jersey', 'scheduled')
+ON CONFLICT (match_number) DO NOTHING;
 
 -- =====================================================
 -- FINALIZACIÓN
@@ -967,10 +1125,8 @@ BEGIN
   RAISE NOTICE '⚙️  Funciones creadas: 4';
   RAISE NOTICE '🔒 RLS habilitado en todas las tablas';
   RAISE NOTICE '🌍 Equipos cargados: 48';
-  RAISE NOTICE '⚽ Partidos de muestra: 10';
-  RAISE NOTICE '';
-  RAISE NOTICE '⚠️  IMPORTANTE: Para cargar los 104 partidos completos, ejecutar:';
-  RAISE NOTICE '   migrations/056_official_fifa_104_matches.sql';
+  RAISE NOTICE '⚽ Partidos cargados: 104 (calendario oficial FIFA 2026)';
   RAISE NOTICE '';
   RAISE NOTICE '🚀 La base de datos está lista para usar';
+  RAISE NOTICE '📦 Este archivo contiene todo lo necesario para el proyecto';
 END $$;

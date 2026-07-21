@@ -4,6 +4,10 @@
 
 ### Plataforma Web Profesional para Pronósticos Deportivos
 
+> **📦 PROYECTO ARCHIVADO**  
+> Este proyecto fue desarrollado como demostración técnica y pieza de portfolio.  
+> Código abierto bajo licencia MIT. No está en desarrollo activo.
+
 [![Next.js](https://img.shields.io/badge/Next.js-14.2-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL_17-green?style=for-the-badge&logo=supabase)](https://supabase.com/)
@@ -14,7 +18,7 @@
 
 **Una aplicación web moderna, escalable y segura para gestionar quinielas del Mundial de Fútbol 2026.**
 
-[[📖 Documentación](./docs/) • [🐛 Reportar Bug](#)
+[📖 Documentación](./docs/) • [🐛 Reportar Bug](#)
 
 </div>
 
@@ -46,6 +50,16 @@
 | :---: | :---: |
 | ![Admin Dashboard](./docs/screenshots/admin.webp) | ![PWA en Móvil](./docs/screenshots/mobile.webp) |
 | Gestión completa de partidos, equipos e invitaciones | Experiencia nativa en iOS/Android sin App Store |
+
+| 🌳 Bracket de Eliminatorias | 📊 Tabla de Posiciones |
+| :---: | :---: |
+| ![Bracket Interactivo](./docs/screenshots/bracket.webp) | ![Fase de Grupos](./docs/screenshots/fasedegrupos.webp) |
+| Cuadro simétrico de 7 columnas con conectores visuales | Clasificación oficial con enfrentamiento directo |
+
+| 🎨 Sistema de Avatares | 🎟️ Gestión de Invitaciones |
+| :---: | :---: |
+| ![Avatares Gamificados](./docs/screenshots/avatares.webp) | ![Panel de Invitaciones](./docs/screenshots/invitaciones.webp) |
+| 4 niveles desbloqueables por puntuación | Códigos únicos con control de uso y expiración |
 
 </div>
 
@@ -412,16 +426,16 @@ El archivo **`schema.sql`** en la raíz contiene toda la estructura de la base d
 2. Ir a **SQL Editor**
 3. Copiar el contenido de `schema.sql`
 4. Pegar y ejecutar (toma ~30 segundos)
-5. ✅ Listo: 11 tablas, 4 vistas, 4 funciones, RLS completo, 48 equipos
+5. ✅ Listo: 11 tablas, 4 vistas, 4 funciones, RLS completo, 48 equipos, 104 partidos
 
 **Incluye:**
 - ✅ DDL completo (todas las tablas con columnas finales)
 - ✅ Vistas (match_scores, leaderboard, official_group_standings, best_thirds)
 - ✅ Funciones (predictions_locked, is_admin, redeem_invite, etc.)
 - ✅ RLS policies (seguridad a nivel de fila)
-- ✅ Seed data (48 equipos, partidos de muestra, settings)
+- ✅ Seed data (48 equipos, 104 partidos oficiales FIFA 2026, settings)
 
-⚠️ **Nota:** El archivo incluye solo 10 partidos de muestra. Para cargar los **104 partidos completos**, ejecutar adicionalmente `migrations/056_official_fifa_104_matches.sql`.
+**📦 Todo en un solo archivo** — No se requieren pasos adicionales.
 
 ### 📚 Opción B: Migraciones secuenciales (desarrollo)
 

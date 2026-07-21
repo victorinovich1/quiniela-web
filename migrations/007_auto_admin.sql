@@ -12,7 +12,7 @@ as $$
 declare
   v_role text := 'participant';
 begin
-  if lower(new.email) = 'victorinovich@gmail.com' then
+  if lower(new.email) = 'tu-email-admin@ejemplo.com' then
     v_role := 'admin';
   end if;
 
@@ -30,4 +30,4 @@ $$;
 -- Por si el organizador ya existiera antes
 update public.profiles
 set role = 'admin'
-where lower(email) = 'victorinovich@gmail.com';
+where lower(email) = 'tu-email-admin@ejemplo.com';

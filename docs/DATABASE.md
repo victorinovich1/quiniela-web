@@ -34,7 +34,7 @@ Extiende `auth.users`. Una fila por usuario, creada automáticamente por trigger
 | `alias` | text | Legacy — ahora el alias vive en `entries` |
 | `favorite_team_id` | int | Opcional |
 | `paid` | bool | Legacy — ahora `paid` vive en `entries` |
-| `role` | text | `'participant'`, `'manager'` o `'admin'`. Hardcoded admin: email = `victorinovich@gmail.com` |
+| `role` | text | `'participant'`, `'manager'` o `'admin'`. Hardcoded admin: email = `tu-email-admin@ejemplo.com` |
 | `avatar_perm_id` | int | ID del avatar seleccionado (1-75). NULL = avatar default |
 | `avatar_category` | text | Categoría del avatar: 'permanentes', 'especiales', 'premium', 'leyendas' |
 | `country_code` | text | Código ISO alpha-2 del país (ej. 'mx', 'ar'). Opcional. |
@@ -279,7 +279,7 @@ Lectura: ¿es válido? Sin marcarlo usado.
 Security definer. Acceso: `anon`, `authenticated` (se llama antes del signup).
 
 ### `handle_new_user()` (trigger)
-Función trigger ejecutada `after insert on auth.users`. Crea fila en `profiles` con `role='admin'` si email coincide con `victorinovich@gmail.com`, sino `'participant'`. Los managers se asignan manualmente desde el panel de administración.
+Función trigger ejecutada `after insert on auth.users`. Crea fila en `profiles` con `role='admin'` si email coincide con `tu-email-admin@ejemplo.com`, sino `'participant'`. Los managers se asignan manualmente desde el panel de administración.
 
 ### `touch_updated_at()` (trigger)
 Setea `new.updated_at = now()`. Usado en triggers BEFORE UPDATE.

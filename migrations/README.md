@@ -22,7 +22,7 @@ O usa Supabase MCP `apply_migration(name, query)` si tienes un agente con acceso
 | 004 | invite_rpc | Funciones `redeem_invite(code)` y `validate_invite(code, email)` |
 | 005 | seed_teams_and_matches | 48 equipos placeholder + 104 partidos |
 | 006 | fix_security_advisors | Convierte views a security_invoker + fija search_path en funciones |
-| 007 | auto_admin | Trigger handle_new_user marca a `victorinovich@gmail.com` como admin |
+| 007 | auto_admin | Trigger handle_new_user marca a `tu-email-admin@ejemplo.com` como admin |
 | 008 | real_teams_2026 | Carga nombres oficiales del sorteo Mundial 2026 + flag_emoji |
 | 009 | multi_jugada_entries_v2 | Nueva tabla `entries` + migra predictions/specials de user_id a entry_id |
 | 010 | recreate_views_with_entries | Recrea las views con la nueva estructura entry_id |
@@ -42,7 +42,7 @@ O usa Supabase MCP `apply_migration(name, query)` si tienes un agente con acceso
 | 041 | profile_location | Añade columna country_code a profiles, actualiza view leaderboard para incluir país |
 | 056 | official_fifa_104_matches | (Renombrada desde 027) Carga completa de los 104 partidos del Mundial 2026 |
 | 057 | sync_team_names_fifa | (Renombrada desde 028) Sincroniza nombres de equipos con datos oficiales FIFA |
-| 063 | fix_manager_invitation_rights | Funci�n is_manager_or_admin() y RLS policies actualizadas para permitir a Manager gestionar invitaciones |
+| 063 | fix_manager_invitation_rights | Funci�n is_manager_or_admin() y RLS policies actualizadas para permitir a Manager gestionar invitaciones |
 | 064 | add_last_full_check_at | Columna last_full_check_at en settings para rastrear verificaciones manuales completas |
 
 ## Notas de reorganización (2026-06-03)

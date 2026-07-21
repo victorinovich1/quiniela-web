@@ -13,7 +13,7 @@
 
 **Una aplicación web moderna, escalable y segura para gestionar quinielas del Mundial de Fútbol 2026.**
 
-[🚀 Demo en Vivo](#) • [📖 Documentación](./docs/) • [🐛 Reportar Bug](#)
+[[📖 Documentación](./docs/) • [🐛 Reportar Bug](#)
 
 </div>
 

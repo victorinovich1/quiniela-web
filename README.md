@@ -362,10 +362,10 @@ Este proyecto es de código cerrado y pertenece a su autor. No se permite redist
 
 **Desarrollador Full-Stack Especializado en Next.js + Supabase**
 
-- Portfolio: [tu-portfolio.com](#)
-- GitHub: [@tu-usuario](https://github.com/tu-usuario)
-- LinkedIn: [Tu Nombre](https://linkedin.com/in/tu-perfil)
-- Email: tu-email@ejemplo.com
+- Portfolio: Aun en construcción(#)
+- GitHub: [@victorinovich1](https://github.com/victorinovich1)
+- LinkedIn: [Victor Rodriguez](https://www.linkedin.com/in/victor-rodriguez-80494129/)
+- Email: victorinovich@gmail.com
 
 ---
 

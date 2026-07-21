@@ -10,6 +10,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
 [![Vercel](https://img.shields.io/badge/Vercel-Deployed-black?style=for-the-badge&logo=vercel)](https://vercel.com/)
 [![PWA](https://img.shields.io/badge/PWA-Ready-5A0FC8?style=for-the-badge&logo=pwa)](https://web.dev/progressive-web-apps/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](./LICENSE)
 
 **Una aplicación web moderna, escalable y segura para gestionar quinielas del Mundial de Fútbol 2026.**
 
@@ -382,7 +383,9 @@ Este es un proyecto personal con fines educativos y de portfolio. Si deseas cont
 
 ## 📝 Licencia
 
-Este proyecto es de código cerrado y pertenece a su autor. No se permite redistribución sin autorización explícita.
+Este proyecto está bajo la [Licencia MIT](./LICENSE).
+
+Eres libre de usar, modificar y distribuir este código con la única condición de incluir el aviso de copyright original.
 
 ---
 
